@@ -37,8 +37,11 @@ export default function PropertyCard({ property }) {
             <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--gray-light)', fontSize: 12 }}>
-              <span style={{ fontSize: 36 }}>🏠</span>
-              <span>上傳照片後顯示</span>
+              <svg width="44" height="44" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                <path d="M50 50 m0 -1.5 a1.5 1.5 0 0 1 1.5 1.5 a3.5 3.5 0 0 1 -3.5 3.5 a7 7 0 0 1 -7 -7 a12 12 0 0 1 12 -12 a18 18 0 0 1 18 18 a25 25 0 0 1 -25 25 a33 33 0 0 1 -33 -33"
+                  stroke="var(--oat-deep)" strokeWidth="4" strokeLinecap="round" />
+              </svg>
+              <span style={{ letterSpacing: 1 }}>照片整理中</span>
             </div>
           )}
           {/* Badges */}
@@ -64,10 +67,12 @@ export default function PropertyCard({ property }) {
       {/* Body */}
       <Link href={`/property/${id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <div style={{ padding: '16px 18px 18px' }}>
-          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--sage-dark)' }}>
-            ${price.toLocaleString()}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-light)', marginLeft: 2 }}>/月</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--sage)', fontFamily: 'Montserrat,sans-serif' }}>NT$</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage-dark)', fontFamily: 'Montserrat,sans-serif', letterSpacing: -0.5 }}>{price.toLocaleString()}</span>
+            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-light)' }}>/月</span>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, margin: '6px 0 4px', color: 'var(--charcoal)' }}>{title}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, margin: '8px 0 4px', color: 'var(--charcoal)', letterSpacing: 0.3, lineHeight: 1.5 }}>{title}</div>
           <div style={{ fontSize: 12, color: 'var(--gray-mid)' }}>📍 {city}{district}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
             {tags.slice(0, 3).map(t => (

@@ -8,11 +8,11 @@ export default function StatsRow({ listings = 0, landlords = 0, matches = 0 }) {
     { num: '4.8', label: '平均評分' },
   ]
   return (
-    <div className="flex gap-8 mt-10 flex-wrap">
-      {items.map(({ num, label }) => (
-        <div key={label} className="text-center">
-          <div className="text-[28px] font-black text-[var(--sage-dark)] leading-none font-[Montserrat,sans-serif]">{num}</div>
-          <div className="text-[11px] text-[var(--gray-light)] tracking-widest mt-1">{label}</div>
+    <div style={{ display: 'flex', gap: 0, marginTop: 44, flexWrap: 'wrap', background: 'rgba(250,250,248,0.7)', backdropFilter: 'blur(8px)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--oat-mid)', overflow: 'hidden', maxWidth: 560 }}>
+      {items.map(({ num, label }, i) => (
+        <div key={label} style={{ flex: 1, minWidth: 110, textAlign: 'center', padding: '20px 12px', borderLeft: i > 0 ? '1px solid var(--oat-mid)' : 'none' }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--sage-dark)', lineHeight: 1, fontFamily: 'Montserrat,sans-serif', letterSpacing: -0.5 }}>{num}</div>
+          <div style={{ fontSize: 11, color: 'var(--gray-mid)', letterSpacing: 3, marginTop: 7 }}>{label}</div>
         </div>
       ))}
     </div>

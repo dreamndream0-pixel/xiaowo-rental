@@ -1,5 +1,5 @@
 // src/app/layout.js
-import { Noto_Sans_TC, Montserrat } from 'next/font/google'
+import { Noto_Sans_TC, Noto_Serif_TC, Montserrat } from 'next/font/google'
 import Providers from './providers'
 import '../styles/globals.css'
 
@@ -7,6 +7,13 @@ const notoSansTC = Noto_Sans_TC({
   subsets: ['latin'],
   weight: ['300', '400', '500', '700', '900'],
   variable: '--font-noto',
+  display: 'swap',
+})
+
+const notoSerifTC = Noto_Serif_TC({
+  subsets: ['latin'],
+  weight: ['600', '700', '900'],
+  variable: '--font-noto-serif',
   display: 'swap',
 })
 
@@ -31,7 +38,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="zh-TW" className={`${notoSansTC.variable} ${montserrat.variable}`}>
+    <html lang="zh-TW" className={`${notoSansTC.variable} ${notoSerifTC.variable} ${montserrat.variable}`}>
       <body><Providers>{children}</Providers></body>
     </html>
   )
