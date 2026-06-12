@@ -1,5 +1,6 @@
 // src/app/layout.js
 import { Noto_Sans_TC, Montserrat } from 'next/font/google'
+import Providers from './providers'
 import '../styles/globals.css'
 
 const notoSansTC = Noto_Sans_TC({
@@ -31,7 +32,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="zh-TW" className={`${notoSansTC.variable} ${montserrat.variable}`}>
-      <body>{children}</body>
+      <body><Providers>{children}</Providers></body>
     </html>
   )
 }
