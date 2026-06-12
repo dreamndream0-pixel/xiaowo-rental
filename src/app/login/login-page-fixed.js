@@ -1,13 +1,13 @@
 'use client'
 // src/app/login/page.js
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
   const callbackUrl = params.get('callbackUrl') || '/dashboard'
@@ -70,5 +70,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>載入中...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
