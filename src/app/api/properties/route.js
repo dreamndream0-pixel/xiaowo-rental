@@ -11,6 +11,7 @@ export async function GET(request) {
   const type     = searchParams.get('type')     || undefined
   const minPrice = parseInt(searchParams.get('minPrice') || '0')
   const maxPrice = parseInt(searchParams.get('maxPrice') || '999999')
+  const landlord = searchParams.get('landlord') || undefined
   const page     = parseInt(searchParams.get('page')  || '1')
   const limit    = parseInt(searchParams.get('limit') || '20')
   const offset   = (page - 1) * limit
@@ -23,6 +24,7 @@ export async function GET(request) {
       ...(city     && { city }),
       ...(district && { district }),
       ...(type     && { type }),
+      ...(landlord && { ownerId: landlord }),
       price: { gte: minPrice, lte: maxPrice },
       ...(keyword && {
         OR: [
