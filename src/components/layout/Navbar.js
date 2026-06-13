@@ -43,7 +43,6 @@ export default function Navbar() {
         <div className="hidden md:flex gap-1 ml-2">
           {[
             { href: '/', label: '首頁' },
-            { href: '/listings', label: '全部房源' },
           ].map(({ href, label }) => (
             <Link key={href} href={href} style={{
               padding: '6px 14px', borderRadius: 20, fontSize: 13,
@@ -77,18 +76,18 @@ export default function Navbar() {
               }}>登出</button>
             </>
           ) : (
-            <Link href="/login" style={{
+            <Link href="/register" style={{
               padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
               color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
               fontWeight: 600, textDecoration: 'none',
-            }}>登入</Link>
+            }}>租客註冊會員</Link>
           )}
-          <Link href="/post-listing" style={{
+          <Link href="/contact" style={{
             padding: '8px 20px', borderRadius: 20, background: 'var(--sage)',
             color: 'white', fontSize: 12.5, fontWeight: 700, textDecoration: 'none',
           }}>
-            <span className="hidden sm:inline">＋ 刊登房源</span>
-            <span className="sm:hidden">＋ 刊登</span>
+            <span className="hidden sm:inline">成為房東</span>
+            <span className="sm:hidden">成為房東</span>
           </Link>
 
           {/* Hamburger */}
@@ -113,8 +112,6 @@ export default function Navbar() {
             onClick={e => e.stopPropagation()}>
             {[
               { href: '/', label: '🏡 首頁' },
-              { href: '/listings', label: '🏠 全部房源' },
-              ...(session?.user.role !== 'TENANT' ? [{ href: '/dashboard', label: '📊 房東後台' }] : []),
             ].map(({ href, label }) => (
               <Link key={href} href={href} onClick={() => setMobileOpen(false)} style={{
                 padding: '12px 16px', borderRadius: 12, fontSize: 14,
@@ -128,14 +125,14 @@ export default function Navbar() {
                 border: 'none', fontSize: 14, color: 'var(--gray-mid)', cursor: 'pointer',
               }}>👤 登出</button>
             ) : (
-              <Link href="/login" onClick={() => setMobileOpen(false)} style={{
+              <Link href="/register" onClick={() => setMobileOpen(false)} style={{
                 padding: '12px 16px', fontSize: 14, color: 'var(--gray-mid)', textDecoration: 'none', display: 'block',
-              }}>👤 登入 / 註冊</Link>
+              }}>👤 租客註冊會員</Link>
             )}
-            <Link href="/post-listing" onClick={() => setMobileOpen(false)} style={{
+            <Link href="/contact" onClick={() => setMobileOpen(false)} style={{
               margin: 8, padding: '12px', borderRadius: 12, background: 'var(--sage)',
               color: 'white', fontWeight: 700, fontSize: 14, textAlign: 'center', textDecoration: 'none',
-            }}>＋ 刊登房源</Link>
+            }}>成為房東</Link>
           </div>
         </div>
       )}
