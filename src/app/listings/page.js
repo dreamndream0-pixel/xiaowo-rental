@@ -8,7 +8,7 @@ export const metadata = { title: '全部房源' }
 
 async function getProperties(searchParams) {
   const {
-    city, district, keyword, type,
+    city, district, keyword, type, landlord,
     minPrice = 0, maxPrice = 999999,
     page = 1,
   } = searchParams
@@ -22,6 +22,7 @@ async function getProperties(searchParams) {
     ...(city     && { city }),
     ...(district && { district }),
     ...(type     && { type }),
+    ...(landlord && { ownerId: landlord }),
     price: {
       gte: Number(minPrice),
       lte: Number(maxPrice),
