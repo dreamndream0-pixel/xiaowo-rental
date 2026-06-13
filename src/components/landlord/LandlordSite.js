@@ -25,12 +25,12 @@ export default function LandlordSite({ landlord, properties, recommendations, se
     if (kw) params.set('keyword', kw)
     if (city) params.set('city', city)
     if (maxPrice) params.set('maxPrice', maxPrice)
-    router.push(`/landlord/${landlord.id}?${params.toString()}`)
+    router.push(`/site/${landlord.id}?${params.toString()}`)
   }
 
   function resetSearch() {
     setKw(''); setCity(''); setMaxPrice('')
-    router.push(`/landlord/${landlord.id}`)
+    router.push(`/site/${landlord.id}`)
   }
 
   return (
@@ -42,7 +42,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
         boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
       }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href={`/landlord/${landlord.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+          <Link href={`/site/${landlord.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             {landlord.siteLogo ? (
               <img src={landlord.siteLogo} alt={siteName} style={{ height: 40, width: 40, borderRadius: 10, objectFit: 'cover', background: 'white' }} />
             ) : (
@@ -50,7 +50,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
             )}
             <span style={{ color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: 1, fontFamily: 'var(--font-serif)' }}>{siteName}</span>
           </Link>
-          <Link href={`/landlord/${landlord.id}`} style={{
+          <Link href={`/site/${landlord.id}`} style={{
             color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none',
             padding: '8px 16px', borderRadius: 99, border: '1.5px solid rgba(255,255,255,0.5)',
           }}>🏡 房源首頁</Link>

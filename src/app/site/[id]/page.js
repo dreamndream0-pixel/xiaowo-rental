@@ -1,4 +1,4 @@
-// src/app/landlord/[id]/page.js
+// src/app/site/[id]/page.js
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import LandlordSite from '@/components/landlord/LandlordSite'
@@ -24,7 +24,6 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   if (!landlord || !landlord.isActive) notFound()
 
-  // 搜尋條件
   const { city, district, keyword, minPrice = 0, maxPrice = 999999 } = searchParams || {}
   const where = {
     ownerId: landlord.id,
@@ -41,14 +40,12 @@ export default async function LandlordSitePage({ params, searchParams }) {
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }
 
-  // 該房東的房源
   const properties = await db.property.findMany({
     where,
     include: { images: { where: { isCover: true }, take: 1 } },
     orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
   })
 
-  // 其他房東的推薦房源（排除自己，最多 6 間）
   const recommendations = await db.property.findMany({
     where: {
       ownerId: { not: landlord.id },
