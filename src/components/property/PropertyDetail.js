@@ -444,9 +444,9 @@ export default function PropertyDetail({ property }) {
                 ['押金',     property.deposit],
                 ['管理費',   property.mgmtFee > 0 ? `$${property.mgmtFee.toLocaleString()} / 月` : '含在租金內'],
                 ['電費', property.electricType === 'included' ? '含在租金內'
-                  : property.electricType === 'flat' && property.electricFlat ? `固定 $${property.electricFlat} / 月`
-                  : property.electricType === 'meter' && property.electricRate ? `台電度數 × $${property.electricRate}`
-                  : '依台電計費'],
+                  : property.electricType === 'flat' ? '固定平均電價'
+                  : property.electricType === 'meter' ? '台水台電計費'
+                  : '未設定'],
                 ['清潔費',   property.cleaningFee > 0 ? `$${property.cleaningFee.toLocaleString()}` : '無'],
                 ['含費用',   [property.inclWifi && '網路', property.inclWater && '水費', property.inclCable && '第四台'].filter(Boolean).join('、') || '無'],
               ].map(([k, v]) => (
