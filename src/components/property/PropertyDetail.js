@@ -112,7 +112,7 @@ export default function PropertyDetail({ property }) {
   const amenities = property.amenities?.map(a => a.name) ?? []
 
   // LINE 聯繫 URL（優先用房東設定的 LINE，否則導向首頁）
-  const lineUrl = property.landlord?.lineUrl || `https://line.me/ti/p/~${property.landlord?.lineId || ''}`
+  const lineUrl = property.lineUrl || null
 
   return (
     <>
@@ -316,7 +316,7 @@ export default function PropertyDetail({ property }) {
               </Button>
 
               {/* LINE 按鈕 */}
-              <a href={lineUrl} target="_blank" rel="noopener noreferrer" style={{
+              {lineUrl ? <a href={lineUrl} target="_blank" rel="noopener noreferrer" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 width: '100%', padding: 13, borderRadius: 'var(--radius-md)',
                 background: '#06C755', color: 'white', fontWeight: 700, fontSize: 14,
@@ -328,7 +328,13 @@ export default function PropertyDetail({ property }) {
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.89c.50 0 .866.35.866.87v4.71c0 .51-.366.87-.866.87H4.635c-.5 0-.866-.36-.866-.87V10.76c0-.52.366-.87.866-.87h14.73zM12 2C6.48 2 2 5.8 2 10.5c0 2.8 1.5 5.3 3.8 6.9l-.5 1.8 2.1-.9c.8.2 1.7.3 2.6.3 5.52 0 10-3.8 10-8.5S17.52 2 12 2z"/></svg>
                 LINE 詢問房東
-              </a>
+              </a> : (
+                <div style={{
+                  width: '100%', padding: 13, borderRadius: 'var(--radius-md)',
+                  background: 'var(--oat)', color: 'var(--gray-mid)', fontWeight: 600,
+                  fontSize: 13, textAlign: 'center', boxSizing: 'border-box',
+                }}>房東尚未設定 LINE 官方帳號</div>
+              )}
 
               <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '16px 0' }} />
               <div style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', lineHeight: 1.8 }}>
@@ -340,7 +346,7 @@ export default function PropertyDetail({ property }) {
       </div>
 
       {/* 固定 LINE 浮動按鈕（手機版） */}
-      <a href={lineUrl} target="_blank" rel="noopener noreferrer" style={{
+      {lineUrl && <a href={lineUrl} target="_blank" rel="noopener noreferrer" style={{
         position: 'fixed', bottom: 24, right: 24, zIndex: 100,
         background: '#06C755', color: 'white',
         width: 56, height: 56, borderRadius: '50%',
@@ -354,7 +360,7 @@ export default function PropertyDetail({ property }) {
         title="LINE 詢問房東"
       >
         💬
-      </a>
+      </a>}
     </>
   )
 }

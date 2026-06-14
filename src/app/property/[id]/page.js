@@ -1,4 +1,5 @@
 // src/app/property/[id]/page.js
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import Navbar from '@/components/layout/Navbar'
@@ -32,7 +33,10 @@ export default async function PropertyPage({ params, searchParams }) {
       images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
       amenities: true,
       owner: {
-        select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true },
+        select: {
+          id: true, name: true, siteName: true, siteLogo: true, isActive: true,
+          lineOfficialId: true, lineChannelToken: true,
+        },
       },
     },
   })
@@ -42,6 +46,30 @@ export default async function PropertyPage({ params, searchParams }) {
   const siteLandlord = siteId && property.owner?.id === siteId && property.owner.isActive
     ? property.owner
     : null
+  let lineOfficialId = property.owner?.lineOfficialId || null
+  if (!lineOfficialId && property.owner?.lineChannelToken) {
+    try {
+      const botInfoRes = await fetch('https://api.line.me/v2/bot/info', {
+        headers: { Authorization: `Bearer ${property.owner.lineChannelToken}` },
+        cache: 'no-store',
+      })
+      if (botInfoRes.ok) {
+        const botInfo = await botInfoRes.json()
+        lineOfficialId = botInfo.premiumId || botInfo.basicId || null
+        if (lineOfficialId) {
+          await db.landlord.update({
+            where: { id: property.owner.id },
+            data: { lineOfficialId },
+          })
+        }
+      }
+    } catch (_) {}
+  }
+  const lineMessage = `您好，我想詢問房源：${property.title}`
+  const lineUrl = lineOfficialId
+    ? `https://line.me/R/oaMessage/${encodeURIComponent(lineOfficialId)}/?${encodeURIComponent(lineMessage)}`
+    : null
+  const { owner, ...safeProperty } = property
 
   // Increment view count
   db.property.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
@@ -49,7 +77,7 @@ export default async function PropertyPage({ params, searchParams }) {
   return (
     <>
       {siteLandlord ? <LandlordSiteHeader landlord={siteLandlord} /> : <Navbar />}
-      <PropertyDetail property={property} />
+      <PropertyDetail property={{ ...safeProperty, lineUrl }} />
     </>
   )
 }
