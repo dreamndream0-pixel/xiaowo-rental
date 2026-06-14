@@ -11,7 +11,7 @@ export default function PropertyCard({ property, detailHref }) {
   const {
     id, title, type, status, city, district,
     size, price, coverUrl, tags = [],
-    landlordId, landlordName, landlordHandle, landlordAvatar, landlordVerified,
+    landlordId, landlordName, landlordHandle, landlordSiteId, landlordAvatar, landlordVerified,
   } = property
 
   const statusVariant = {
@@ -85,7 +85,7 @@ export default function PropertyCard({ property, detailHref }) {
 
       {/* Footer */}
       <div style={{ padding: '0 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--oat-mid)', paddingTop: 12 }}>
-        <Link href={landlordHandle ? `/landlord/${landlordHandle}` : '#'} onClick={e => e.stopPropagation()} style={{
+        <Link href={landlordSiteId ? `/site/${landlordSiteId}` : landlordHandle ? `/landlord/${landlordHandle}` : '#'} onClick={e => e.stopPropagation()} style={{
           display: 'flex', alignItems: 'center', gap: 7,
           fontSize: 11, color: 'var(--gray-mid)', textDecoration: 'none',
         }}

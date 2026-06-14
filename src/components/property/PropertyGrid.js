@@ -27,6 +27,7 @@ export default function PropertyGrid({ properties = [] }) {
             tags: p.tags?.map(t => t.name) ?? [],
             landlordName: p.owner?.name || p.landlord?.name,
             landlordHandle: p.landlord?.handle,
+            landlordSiteId: p.owner?.id,
             landlordAvatar: p.landlord?.avatar,
             landlordVerified: p.landlord?.verified,
           }} />
