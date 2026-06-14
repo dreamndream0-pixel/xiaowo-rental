@@ -286,14 +286,7 @@ export default function PropertyDetail({ property }) {
   const [imagesReady, setImagesReady] = useState(false)
   const images = property.images ?? []
   const amenities = property.amenities?.map(a => a.name) ?? []
-  const lineUrl = property.landlord?.lineOfficialId
-    ? `https://line.me/R/ti/p/@${property.landlord.lineOfficialId}`
-    : null
-
-  // LINE 一鍵詢問：帶入房源名稱的預填訊息
-  const lineInquiryUrl = property.landlord?.lineOfficialId
-    ? `https://line.me/R/oaMessage/@${property.landlord.lineOfficialId}/?${encodeURIComponent(`您好，我想詢問「${property.title}」，請問目前是否可以預約看房？`)}`
-    : lineUrl
+  const lineInquiryUrl = property.lineUrl || null
 
   const isAvailable = property.status === 'AVAILABLE'
 
