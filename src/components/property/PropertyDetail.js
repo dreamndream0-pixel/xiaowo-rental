@@ -498,7 +498,7 @@ export default function PropertyDetail({ property }) {
               <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '16px 0' }} />
 
               {/* 房東卡片 */}
-              <Link href={property.landlord?.handle ? `/landlord/${property.landlord.handle}` : '#'} style={{ textDecoration: 'none' }}>
+              <Link href={property.ownerId ? `/site/${property.ownerId}` : property.landlord?.handle ? `/landlord/${property.landlord.handle}` : '#'} style={{ textDecoration: 'none' }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: 14, background: 'var(--oat-light)',
@@ -513,11 +513,11 @@ export default function PropertyDetail({ property }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 18, fontWeight: 900, color: 'var(--sage-dark)', flexShrink: 0,
                   }}>
-                    {property.landlord?.name?.[0] ?? '?'}
+                    {(property.ownerSiteName || property.landlord?.name)?.[0] ?? '?'}
                   </div>
                   <div>
                     <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                      {property.landlord?.name}
+                      {property.ownerSiteName || property.landlord?.name}
                       {property.landlord?.verified && <span style={{ fontSize: 10, color: 'var(--sage)', marginLeft: 4 }}>✓ 認證</span>}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--gray-mid)' }}>

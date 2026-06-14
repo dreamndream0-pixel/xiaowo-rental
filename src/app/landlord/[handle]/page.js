@@ -4,23 +4,30 @@ import { db } from '@/lib/db'
 import LandlordSite from '@/components/landlord/LandlordSite'
 
 export async function generateMetadata({ params }) {
-  const landlord = await db.landlord.findUnique({
-    where: { id: params.id },
-    select: { name: true, siteName: true },
+  const user = await db.user.findUnique({
+    where: { handle: params.handle },
+    select: { name: true },
   })
-  if (!landlord) return { title: '找不到此房東' }
-  const title = landlord.siteName || `${landlord.name} 的租屋`
+  if (!user) return { title: '找不到此房東' }
   return {
-    title: `${title} | 小蝸出租`,
-    description: `${title} — 提供優質房源`,
+    title: `${user.name} 的房源 | 小蝸出租`,
+    description: `${user.name} — 提供優質房源`,
   }
 }
 
 export default async function LandlordSitePage({ params, searchParams }) {
-  const landlord = await db.landlord.findUnique({
-    where: { id: params.id },
-    select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true },
+  const user = await db.user.findUnique({
+    where: { handle: params.handle },
+    select: { id: true, name: true, avatar: true },
   })
+  if (!user) notFound()
+
+  // 找到這個 User 作為 landlord 的 Landlord 實體（透過 Property.landlordId）
+  const firstProp = await db.property.findFirst({
+    where: { landlordId: user.id, deletedAt: null, owner: { isActive: true } },
+    select: { owner: { select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true } } },
+  })
+  const landlord = firstProp?.owner
 
   if (!landlord || !landlord.isActive) notFound()
 
@@ -36,6 +43,11 @@ export default async function LandlordSitePage({ params, searchParams }) {
       OR: [
         { title: { contains: keyword } },
         { description: { contains: keyword } },
+        { city: { contains: keyword } },
+        { district: { contains: keyword } },
+        { address: { contains: keyword } },
+        { amenities: { some: { name: { contains: keyword } } } },
+        { tags: { some: { name: { contains: keyword } } } },
       ],
     }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
@@ -44,7 +56,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
   // 該房東的房源
   const properties = await db.property.findMany({
     where,
-    include: { images: { where: { isCover: true }, take: 1 } },
+    include: { images: { where: { isCover: true }, take: 1 }, tags: true, amenities: true },
     orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
   })
 

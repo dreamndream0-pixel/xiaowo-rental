@@ -8,7 +8,7 @@ export const metadata = { title: '全部房源' }
 
 async function getProperties(searchParams) {
   const {
-    city, district, keyword, type, landlord,
+    city, district, keyword, type, landlord, tags,
     minPrice = 0, maxPrice = 999999,
     page = 1,
   } = searchParams
@@ -27,6 +27,9 @@ async function getProperties(searchParams) {
       gte: Number(minPrice),
       lte: Number(maxPrice),
     },
+    ...(tags && {
+      tags: { some: { name: { in: tags.split(',') } } },
+    }),
     ...(keyword && {
       OR: [
         { title:       { contains: keyword, mode: 'insensitive' } },
@@ -45,7 +48,7 @@ async function getProperties(searchParams) {
       where,
       include: {
         landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
-        owner:    { select: { id: true, name: true } },
+        owner:    { select: { id: true, name: true, siteName: true } },
         images:   { where: { isCover: true }, take: 1 },
         tags:     true,
       },

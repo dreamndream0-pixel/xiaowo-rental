@@ -71,6 +71,8 @@ export default async function PropertyPage({ params, searchParams }) {
     ? `https://line.me/R/oaMessage/${encodeURIComponent(lineOfficialId)}/?${encodeURIComponent(lineMessage)}`
     : null
   const { owner, ...safeProperty } = property
+  safeProperty.ownerSiteName = owner?.siteName || null
+  safeProperty.ownerId = owner?.id || null
 
   // Increment view count
   db.property.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
