@@ -399,12 +399,25 @@ export default function PropertyDetail({ property }) {
               <span style={{ fontSize: 12, color: 'var(--gray-mid)' }}>押金 {property.deposit}</span>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+            {/* 基本資訊標籤 */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
               {[PROPERTY_TYPE_LABELS[property.type], `${property.size} 坪`, property.floor && `${property.floor}F`]
                 .filter(Boolean).map(t => (
                   <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600 }}>{t}</span>
                 ))}
             </div>
+
+            {/* 房源特色標籤 */}
+            {property.tags?.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 24 }}>
+                {property.tags.map(tag => (
+                  <span key={tag.name} style={{
+                    background: '#fff7e6', color: '#c05621', border: '1px solid #fbd38d',
+                    borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 700,
+                  }}>🏷 {tag.name}</span>
+                ))}
+              </div>
+            )}
 
             <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
 
@@ -425,16 +438,21 @@ export default function PropertyDetail({ property }) {
             <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
 
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>費用明細</h2>
-            <div className="property-fee-grid" style={{ background: 'var(--oat-light)', borderRadius: 'var(--radius-md)', padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="property-fee-grid" style={{ background: 'var(--oat-light)', borderRadius: 'var(--radius-md)', padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
                 ['月租金',   `$${property.price.toLocaleString()}`],
-                ['管理費',   property.mgmtFee > 0 ? `$${property.mgmtFee}` : '含在租金內'],
                 ['押金',     property.deposit],
-                ['包含費用', [property.inclWifi && '網路', property.inclWater && '水費', property.inclCable && '第四台'].filter(Boolean).join('、') || '無'],
+                ['管理費',   property.mgmtFee > 0 ? `$${property.mgmtFee.toLocaleString()} / 月` : '含在租金內'],
+                ['電費', property.electricType === 'included' ? '含在租金內'
+                  : property.electricType === 'flat' && property.electricFlat ? `固定 $${property.electricFlat} / 月`
+                  : property.electricType === 'meter' && property.electricRate ? `台電度數 × $${property.electricRate}`
+                  : '依台電計費'],
+                ['清潔費',   property.cleaningFee > 0 ? `$${property.cleaningFee.toLocaleString()}` : '無'],
+                ['含費用',   [property.inclWifi && '網路', property.inclWater && '水費', property.inclCable && '第四台'].filter(Boolean).join('、') || '無'],
               ].map(([k, v]) => (
                 <div key={k}>
-                  <div style={{ fontSize: 11, color: 'var(--gray-light)' }}>{k}</div>
-                  <div style={{ fontWeight: 700 }}>{v}</div>
+                  <div style={{ fontSize: 11, color: 'var(--gray-light)', marginBottom: 3 }}>{k}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{v}</div>
                 </div>
               ))}
             </div>

@@ -197,6 +197,11 @@ model Property {
   inclWater   Boolean        @default(false)
   inclCable   Boolean        @default(false)
 
+  electricType  String?
+  electricRate  Float?
+  electricFlat  Int?
+  cleaningFee   Int?
+
   allowPets   Boolean        @default(false)
   allowCook   Boolean        @default(false)
   allowShortTerm Boolean     @default(false)
@@ -216,6 +221,7 @@ model Property {
 
   images      PropertyImage[]
   amenities   PropertyAmenity[]
+  tags        PropertyTag[]
   favorites   Favorite[]
   bookings    Booking[]
   reviews     Review[]
@@ -287,6 +293,20 @@ model PropertyAmenity {
   @@unique([propertyId, name])
   @@index([propertyId])
   @@map("property_amenities")
+}
+
+// ─────────────────────────────────────────────
+// 房源標籤
+// ─────────────────────────────────────────────
+model PropertyTag {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name       String
+
+  @@unique([propertyId, name])
+  @@index([propertyId])
+  @@map("property_tags")
 }
 
 // ─────────────────────────────────────────────

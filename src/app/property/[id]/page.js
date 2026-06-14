@@ -32,6 +32,7 @@ export default async function PropertyPage({ params, searchParams }) {
       },
       images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
       amenities: true,
+      tags:      true,
       owner: {
         select: {
           id: true, name: true, siteName: true, siteLogo: true, isActive: true,
