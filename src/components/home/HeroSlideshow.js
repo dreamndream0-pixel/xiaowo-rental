@@ -1,9 +1,16 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 
-export default function HeroSlideshow({ slides = [] }) {
+export default function HeroSlideshow() {
+  const [slides, setSlides] = useState([])
   const [current, setCurrent] = useState(0)
   const [fading, setFading] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/admin/hero').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setSlides(data.filter(s => s && s.url))
+    }).catch(() => {})
+  }, [])
 
   const goTo = useCallback((idx) => {
     if (idx === current) return

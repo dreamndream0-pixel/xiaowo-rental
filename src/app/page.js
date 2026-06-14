@@ -9,24 +9,6 @@ import HeroSlideshow from '@/components/home/HeroSlideshow'
 // Server Component: 在伺服器端取得精選房源
 export const revalidate = 60 // ISR: 每60秒重新生成
 
-async function getHeroSlides() {
-  try {
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS site_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `)
-    const rows = await db.$queryRawUnsafe(
-      `SELECT value FROM site_settings WHERE key = 'hero_slides' LIMIT 1`
-    )
-    if (!rows.length) return []
-    return JSON.parse(rows[0].value).filter(s => s && s.url)
-  } catch {
-    return []
-  }
-}
 
 async function getFeaturedProperties() {
   return db.property.findMany({
@@ -51,10 +33,9 @@ async function getPlatformStats() {
 }
 
 export default async function HomePage() {
-  const [featured, stats, heroSlides] = await Promise.all([
+  const [featured, stats] = await Promise.all([
     getFeaturedProperties(),
     getPlatformStats(),
-    getHeroSlides(),
   ])
 
   return (
@@ -64,7 +45,7 @@ export default async function HomePage() {
         {/* Hero */}
         <section className="hero-section" style={{ position: 'relative' }}>
           {/* 背景輪播圖 */}
-          <HeroSlideshow slides={heroSlides} />
+          <HeroSlideshow />
           {/* 蝸牛殼螺旋裝飾 */}
           <svg className="hero-spiral" viewBox="0 0 200 200" fill="none" aria-hidden="true">
             <path d="M100 100 m0 -2 a2 2 0 0 1 2 2 a4 4 0 0 1 -4 4 a8 8 0 0 1 -8 -8 a14 14 0 0 1 14 -14 a22 22 0 0 1 22 22 a32 32 0 0 1 -32 32 a44 44 0 0 1 -44 -44 a58 58 0 0 1 58 -58 a74 74 0 0 1 74 74 a92 92 0 0 1 -92 92"
