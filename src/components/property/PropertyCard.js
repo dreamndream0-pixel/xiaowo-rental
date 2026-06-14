@@ -76,7 +76,7 @@ export default function PropertyCard({ property, detailHref }) {
           <div style={{ fontSize: 15, fontWeight: 700, margin: '8px 0 4px', color: 'var(--charcoal)', letterSpacing: 0.3, lineHeight: 1.5 }}>{title}</div>
           <div style={{ fontSize: 12, color: 'var(--gray-mid)' }}>📍 {city}{district}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
-            {tags.slice(0, 3).map(t => (
+            {tags.slice(0, 5).map(t => (
               <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
             ))}
           </div>

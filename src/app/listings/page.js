@@ -31,7 +31,9 @@ async function getProperties(searchParams) {
       OR: [
         { title:       { contains: keyword, mode: 'insensitive' } },
         { description: { contains: keyword, mode: 'insensitive' } },
+        { city:        { contains: keyword, mode: 'insensitive' } },
         { district:    { contains: keyword, mode: 'insensitive' } },
+        { address:     { contains: keyword, mode: 'insensitive' } },
         { amenities:   { some: { name: { contains: keyword, mode: 'insensitive' } } } },
         { tags:        { some: { name: { contains: keyword, mode: 'insensitive' } } } },
       ],
