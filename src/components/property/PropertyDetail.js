@@ -122,7 +122,7 @@ export default function PropertyDetail({ property }) {
       )}
 
       {/* Photo Gallery 圖片牆 */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 32px 0' }}>
+      <div className="property-gallery-wrap" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 32px 0' }}>
         {images.length === 0 ? (
           <div style={{
             height: 280, background: 'var(--oat)', borderRadius: 'var(--radius-lg)',
@@ -133,7 +133,7 @@ export default function PropertyDetail({ property }) {
             <span>房源照片整理中</span>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: images.length >= 3 ? '1.6fr 1fr' : '1fr', gap: 8, height: 340, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+          <div className="property-gallery" style={{ display: 'grid', gridTemplateColumns: images.length >= 3 ? '1.6fr 1fr' : '1fr', gap: 8, height: 340, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
             {/* 主圖 */}
             <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => { setCurrentImg(0); setLightboxOpen(true) }}>
               <Image src={images[0].url} alt={property.title} fill style={{ objectFit: 'cover' }} priority />
@@ -176,18 +176,18 @@ export default function PropertyDetail({ property }) {
       </div>
 
       {/* Body */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 32px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32 }}>
+      <div className="property-detail-body" style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 32px' }}>
+        <div className="property-detail-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 32 }}>
 
           {/* Left: Details */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: 1, marginBottom: 6 }}>{property.title}</h1>
             <div style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 16 }}>
               📍 {property.city}{property.district}・{property.address}附近
             </div>
 
             {/* Price */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 20 }}>
+            <div className="property-price-row" style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 20 }}>
               <span style={{ fontSize: 32, fontWeight: 900, color: 'var(--sage-dark)' }}>${property.price.toLocaleString()}</span>
               <span style={{ fontSize: 14, color: 'var(--gray-light)' }}>/ 月</span>
               <span style={{ fontSize: 12, color: 'var(--gray-mid)' }}>押金 {property.deposit}</span>
@@ -211,7 +211,7 @@ export default function PropertyDetail({ property }) {
 
             {/* Amenities */}
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>設施設備</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            <div className="property-amenities-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
               {amenities.map(a => (
                 <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--gray-mid)' }}>
                   <span style={{ fontSize: 16 }}>{amenityIcon(a)}</span>{a}
@@ -223,7 +223,7 @@ export default function PropertyDetail({ property }) {
 
             {/* Fee breakdown */}
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>費用明細</h2>
-            <div style={{ background: 'var(--oat-light)', borderRadius: 'var(--radius-md)', padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="property-fee-grid" style={{ background: 'var(--oat-light)', borderRadius: 'var(--radius-md)', padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
                 ['月租金',   `$${property.price.toLocaleString()}`],
                 ['管理費',   property.mgmtFee > 0 ? `$${property.mgmtFee}` : '含在租金內'],
@@ -265,8 +265,8 @@ export default function PropertyDetail({ property }) {
           </div>
 
           {/* Right: Contact Sidebar */}
-          <div>
-            <div style={{
+          <div className="property-contact-column">
+            <div className="property-contact-card" style={{
               background: 'white', borderRadius: 'var(--radius-lg)',
               padding: 24, boxShadow: 'var(--shadow-md)',
               border: '1px solid var(--oat-mid)',

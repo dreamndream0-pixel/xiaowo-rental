@@ -12,7 +12,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav style={{
+      <nav className="main-navbar" style={{
         position: 'sticky', top: 0, zIndex: 200,
         background: 'rgba(250,250,248,0.95)',
         backdropFilter: 'blur(12px)',
@@ -76,13 +76,13 @@ export default function Navbar() {
               }}>登出</button>
             </>
           ) : (
-            <Link href="/register" style={{
+            <Link href="/register" className="navbar-register-link" style={{
               padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
               color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
               fontWeight: 600, textDecoration: 'none',
             }}>租客註冊會員</Link>
           )}
-          <Link href="/contact" style={{
+          <Link href="/contact" className="navbar-landlord-link" style={{
             padding: '8px 20px', borderRadius: 20, background: 'var(--sage)',
             color: 'white', fontSize: 12.5, fontWeight: 700, textDecoration: 'none',
           }}>
