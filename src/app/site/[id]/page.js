@@ -43,7 +43,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   const properties = await db.property.findMany({
     where,
-    include: { images: { where: { isCover: true }, take: 1 } },
+    include: { images: { where: { isCover: true }, take: 1 }, tags: true },
     orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
   })
 

@@ -18,6 +18,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       id: p.id, title: p.title, type: p.type, status: p.status,
       city: p.city, district: p.district, size: p.size, price: p.price,
       coverUrl: p.images?.[0]?.url || null,
+      tags: p.tags?.map(t => t.name) ?? [],
     }
   }
 
@@ -49,13 +50,13 @@ export default function LandlordSite({ landlord, properties, recommendations, se
           {/* 搜尋列 */}
           <div style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: 'var(--shadow-sm)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <input value={kw} onChange={e => setKw(e.target.value)} placeholder="關鍵字（如：採光、近捷運）"
-              onKeyDown={e => e.key === 'Enter' && doSearch()}
+              onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
               style={{ flex: 2, minWidth: 160, padding: '10px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, outline: 'none' }} />
             <input value={city} onChange={e => setCity(e.target.value)} placeholder="城市"
-              onKeyDown={e => e.key === 'Enter' && doSearch()}
+              onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
               style={{ flex: 1, minWidth: 90, padding: '10px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, outline: 'none' }} />
             <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="租金上限" type="number"
-              onKeyDown={e => e.key === 'Enter' && doSearch()}
+              onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
               style={{ flex: 1, minWidth: 90, padding: '10px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, outline: 'none' }} />
             <button onClick={doSearch} style={{ padding: '10px 24px', background: 'var(--sage)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>搜尋</button>
             {(searchParams.keyword || searchParams.city || searchParams.maxPrice) && (

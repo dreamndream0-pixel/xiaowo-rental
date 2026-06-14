@@ -19,15 +19,17 @@ export default function PropertyGrid({ properties = [] }) {
       gap: 20,
     }}>
       {properties.map(p => (
-        <PropertyCard key={p.id} property={{
-          ...p,
-          coverUrl: p.images?.[0]?.url ?? null,
-          tags: p.tags?.map(t => t.name) ?? [],
-          landlordName: p.landlord?.name,
-          landlordHandle: p.landlord?.handle,
-          landlordAvatar: p.landlord?.avatar,
-          landlordVerified: p.landlord?.verified,
-        }} />
+        <PropertyCard key={p.id}
+          detailHref={p.owner?.id ? `/property/${p.id}?site=${p.owner.id}` : `/property/${p.id}`}
+          property={{
+            ...p,
+            coverUrl: p.images?.[0]?.url ?? null,
+            tags: p.tags?.map(t => t.name) ?? [],
+            landlordName: p.owner?.name || p.landlord?.name,
+            landlordHandle: p.landlord?.handle,
+            landlordAvatar: p.landlord?.avatar,
+            landlordVerified: p.landlord?.verified,
+          }} />
       ))}
     </div>
   )

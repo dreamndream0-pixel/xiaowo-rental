@@ -45,8 +45,9 @@ async function getProperties(searchParams) {
       where,
       include: {
         landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
+        owner:    { select: { id: true, name: true } },
         images:   { where: { isCover: true }, take: 1 },
-        tags:     { take: 4 },
+        tags:     true,
       },
       orderBy: [{ boostPlan: 'desc' }, { featured: 'desc' }, { createdAt: 'desc' }],
       skip: offset,

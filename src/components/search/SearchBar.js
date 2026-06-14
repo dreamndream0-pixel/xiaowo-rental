@@ -79,7 +79,7 @@ export default function SearchBar() {
         <input
           value={keyword}
           onChange={e => setKeyword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && doSearch()}
+          onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
           placeholder="搜尋關鍵字，例：大安區套房、近捷運、含網路…"
           style={{ flex: 1, border: 'none', outline: 'none', background: 'none', fontSize: 14, color: 'var(--charcoal)', fontFamily: 'inherit', fontWeight: 500 }}
         />
