@@ -33,6 +33,7 @@ async function getProperties(searchParams) {
         { description: { contains: keyword, mode: 'insensitive' } },
         { district:    { contains: keyword, mode: 'insensitive' } },
         { amenities:   { some: { name: { contains: keyword, mode: 'insensitive' } } } },
+        { tags:        { some: { name: { contains: keyword, mode: 'insensitive' } } } },
       ],
     }),
   }
