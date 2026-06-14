@@ -25,7 +25,7 @@ export default function PropertyGrid({ properties = [] }) {
             ...p,
             coverUrl: p.images?.[0]?.url ?? null,
             tags: p.tags?.map(t => t.name) ?? [],
-            landlordName: p.owner?.siteName || p.owner?.name || p.landlord?.name,
+            landlordName: p.owner?.siteName || p.landlord?.name,
             landlordHandle: p.landlord?.handle,
             landlordSiteId: p.owner?.id,
             landlordAvatar: p.landlord?.avatar,
