@@ -25,7 +25,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   if (!landlord || !landlord.isActive) notFound()
 
-  const { city, district, keyword, minPrice = 0, maxPrice = 999999 } = searchParams || {}
+  const { city, district, keyword, minPrice = 0, maxPrice = 999999, tags } = searchParams || {}
   const where = {
     ownerId: landlord.id,
     status: 'AVAILABLE',
@@ -37,6 +37,9 @@ export default async function LandlordSitePage({ params, searchParams }) {
         { title: { contains: keyword } },
         { description: { contains: keyword } },
       ],
+    }),
+    ...(tags && {
+      tags: { some: { name: { in: tags.split(',') } } },
     }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }

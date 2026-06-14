@@ -32,7 +32,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
   if (!landlord || !landlord.isActive) notFound()
 
   // 搜尋條件
-  const { city, district, keyword, minPrice = 0, maxPrice = 999999 } = searchParams || {}
+  const { city, district, keyword, minPrice = 0, maxPrice = 999999, tags } = searchParams || {}
   const where = {
     ownerId: landlord.id,
     status: 'AVAILABLE',
@@ -49,6 +49,9 @@ export default async function LandlordSitePage({ params, searchParams }) {
         { amenities: { some: { name: { contains: keyword } } } },
         { tags: { some: { name: { contains: keyword } } } },
       ],
+    }),
+    ...(tags && {
+      tags: { some: { name: { in: tags.split(',') } } },
     }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }

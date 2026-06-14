@@ -155,12 +155,12 @@ function BookingModal({ property, onClose }) {
 
             {error && <div style={{ color: '#e53e3e', fontSize: 12, marginBottom: 12 }}>⚠️ {error}</div>}
 
-            <button onClick={submit} disabled={loading} style={{
+            <button onClick={submit} disabled={loading || done} style={{
               width: '100%', padding: 13, background: loading ? 'var(--oat-mid)' : 'var(--sage)',
               color: 'white', border: 'none', borderRadius: 10, fontSize: 15,
-              fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: 1,
+              fontWeight: 800, cursor: loading || done ? 'not-allowed' : 'pointer', letterSpacing: 1,
             }}>
-              {loading ? '送出中...' : '確認預約'}
+              {loading ? '傳送中…' : '確認預約'}
             </button>
             <div style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', marginTop: 10 }}>
               預約成功後房東將主動聯繫您・看房不收費

@@ -14,10 +14,19 @@ export default function SearchBar() {
   const [rentMin,  setRentMin]  = useState(0)
   const [rentMax,  setRentMax]  = useState(50000)
   const [popOpen,  setPopOpen]  = useState(false)
+  const [tags,     setTags]     = useState([])   // selected tag names
+  const [allTags,  setAllTags]  = useState([])   // all tags from API
   const popRef = useRef(null)
   const triggerRef = useRef(null)
 
   const districts = city ? getDistricts(city) : []
+
+  // Fetch all tags on mount
+  useEffect(() => {
+    fetch('/api/tags').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setAllTags(data)
+    }).catch(() => {})
+  }, [])
 
   // Close popover on outside click
   useEffect(() => {
@@ -55,6 +64,10 @@ export default function SearchBar() {
     { label: '不限',       min: 0,     max: 50000 },
   ]
 
+  const toggleTag = name => {
+    setTags(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name])
+  }
+
   const doSearch = () => {
     const params = new URLSearchParams()
     if (keyword)  params.set('keyword',  keyword)
@@ -63,6 +76,8 @@ export default function SearchBar() {
     if (type)     params.set('type',     type)
     if (rentMin > 0)      params.set('minPrice', rentMin)
     if (rentMax < 50000)  params.set('maxPrice', rentMax)
+    const selectedTags = [...tags]
+    if (selectedTags.length > 0) params.set('tags', selectedTags.join(','))
     router.push(`/listings?${params.toString()}`)
   }
 
@@ -189,6 +204,30 @@ export default function SearchBar() {
           </select>
         </div>
       </div>
+
+      {/* Tag chips row */}
+      {allTags.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--oat-mid)', padding: '10px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 9, fontFamily: 'Montserrat,sans-serif', letterSpacing: '1.5px', color: 'var(--gray-light)', fontWeight: 700, textTransform: 'uppercase', flexShrink: 0 }}>標籤篩選</span>
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+              {allTags.map(tag => {
+                const selected = tags.includes(tag.name)
+                return (
+                  <button key={tag.name} onClick={() => toggleTag(tag.name)} style={{
+                    flexShrink: 0, padding: '4px 12px', borderRadius: 99, fontSize: 12,
+                    fontFamily: 'inherit', cursor: 'pointer', fontWeight: selected ? 700 : 400,
+                    background: selected ? 'var(--sage-bg)' : 'white',
+                    color: selected ? 'var(--sage-dark)' : 'var(--gray-mid)',
+                    border: `1.5px solid ${selected ? 'var(--sage)' : 'var(--oat-mid)'}`,
+                    transition: 'all 0.15s',
+                  }}>{tag.name}</button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search button */}
       <div style={{ padding: '10px 14px', borderTop: '1px solid var(--oat-mid)' }}>
