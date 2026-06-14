@@ -1,4 +1,5 @@
 // src/app/site/[id]/page.js
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import LandlordSite from '@/components/landlord/LandlordSite'
