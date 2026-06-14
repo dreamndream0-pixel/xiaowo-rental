@@ -121,48 +121,56 @@ export default function PropertyDetail({ property }) {
         <Lightbox images={images} startIndex={currentImg} onClose={() => setLightboxOpen(false)} />
       )}
 
-      {/* Photo Gallery */}
-      <div style={{ background: 'var(--oat)', height: 380, position: 'relative', overflow: 'hidden', cursor: images.length > 0 ? 'zoom-in' : 'default' }}
-        onClick={() => images.length > 0 && setLightboxOpen(true)}
-      >
-        {images.length > 0 ? (
-          <>
-            <Image
-              src={images[currentImg]?.url}
-              alt={property.title}
-              fill style={{ objectFit: 'cover' }}
-              priority
-            />
-            {/* 放大提示 */}
-            <div style={{
-              position: 'absolute', top: 14, right: 14,
-              background: 'rgba(0,0,0,0.45)', color: 'white',
-              padding: '5px 12px', borderRadius: 99, fontSize: 12, fontWeight: 600,
-              pointerEvents: 'none',
-            }}>
-              🔍 點擊放大・共 {images.length} 張
-            </div>
-            {/* 縮圖導覽點 */}
-            {images.length > 1 && (
+      {/* Photo Gallery 圖片牆 */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 32px 0' }}>
+        {images.length === 0 ? (
+          <div style={{
+            height: 280, background: 'var(--oat)', borderRadius: 'var(--radius-lg)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 8, color: 'var(--gray-light)', fontSize: 13,
+          }}>
+            <span style={{ fontSize: 48 }}>🏠</span>
+            <span>房源照片整理中</span>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: images.length >= 3 ? '1.6fr 1fr' : '1fr', gap: 8, height: 340, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+            {/* 主圖 */}
+            <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => { setCurrentImg(0); setLightboxOpen(true) }}>
+              <Image src={images[0].url} alt={property.title} fill style={{ objectFit: 'cover' }} priority />
+              {/* 放大提示 */}
               <div style={{
-                position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-                display: 'flex', gap: 6,
-              }} onClick={e => e.stopPropagation()}>
-                {images.map((_, i) => (
-                  <button key={i} onClick={() => setCurrentImg(i)} style={{
-                    width: i === currentImg ? 24 : 8, height: 8,
-                    borderRadius: 4, border: 'none', cursor: 'pointer',
-                    background: i === currentImg ? 'white' : 'rgba(255,255,255,0.5)',
-                    transition: 'all 0.2s',
-                  }} />
+                position: 'absolute', bottom: 12, left: 12,
+                background: 'rgba(0,0,0,0.5)', color: 'white',
+                padding: '5px 12px', borderRadius: 99, fontSize: 12, fontWeight: 600,
+                pointerEvents: 'none',
+              }}>🔍 共 {images.length} 張・點擊查看</div>
+            </div>
+            {/* 右側縮圖（最多2張） */}
+            {images.length >= 3 && (
+              <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 8 }}>
+                {images.slice(1, 3).map((img, i) => (
+                  <div key={i} style={{ position: 'relative', cursor: 'zoom-in' }}
+                    onClick={() => { setCurrentImg(i + 1); setLightboxOpen(true) }}>
+                    <Image src={img.url} alt={`照片 ${i + 2}`} fill style={{ objectFit: 'cover' }} />
+                    {/* 最後一格顯示「+N 張」 */}
+                    {i === 1 && images.length > 3 && (
+                      <div style={{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', fontSize: 18, fontWeight: 700,
+                      }}>+{images.length - 3} 張</div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
-          </>
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--gray-light)' }}>
-            <span style={{ fontSize: 56 }}>🏠</span>
-            <span style={{ fontSize: 14, color: 'var(--gray-mid)' }}>房源照片展示區</span>
+            {/* 2張時右側顯示第二張 */}
+            {images.length === 2 && (
+              <div style={{ position: 'relative', cursor: 'zoom-in' }}
+                onClick={() => { setCurrentImg(1); setLightboxOpen(true) }}>
+                <Image src={images[1].url} alt="照片 2" fill style={{ objectFit: 'cover' }} />
+              </div>
+            )}
           </div>
         )}
       </div>

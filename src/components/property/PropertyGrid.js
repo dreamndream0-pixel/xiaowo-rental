@@ -19,7 +19,15 @@ export default function PropertyGrid({ properties = [] }) {
       gap: 20,
     }}>
       {properties.map(p => (
-        <PropertyCard key={p.id} property={p} />
+        <PropertyCard key={p.id} property={{
+          ...p,
+          coverUrl: p.images?.[0]?.url ?? null,
+          tags: p.amenities?.map(a => a.name) ?? [],
+          landlordName: p.landlord?.name,
+          landlordHandle: p.landlord?.handle,
+          landlordAvatar: p.landlord?.avatar,
+          landlordVerified: p.landlord?.verified,
+        }} />
       ))}
     </div>
   )
