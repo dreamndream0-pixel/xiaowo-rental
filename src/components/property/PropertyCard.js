@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/types'
 
-export default function PropertyCard({ property }) {
+export default function PropertyCard({ property, detailHref }) {
   const [fav, setFav] = useState(false)
   const {
     id, title, type, status, city, district,
@@ -19,6 +19,7 @@ export default function PropertyCard({ property }) {
     RENTED:    { label: '已租', color: 'white', bg: 'rgba(61,61,61,0.75)' },
     PENDING:   { label: '審核中', color: 'white', bg: 'var(--warn)' },
   }[status] ?? { label: status, color: 'white', bg: 'var(--gray-mid)' }
+  const propertyHref = detailHref || `/property/${id}`
 
   return (
     <div style={{
@@ -31,7 +32,7 @@ export default function PropertyCard({ property }) {
       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.borderColor = 'transparent' }}
     >
       {/* Image */}
-      <Link href={`/property/${id}`} style={{ textDecoration: 'none' }}>
+      <Link href={propertyHref} style={{ textDecoration: 'none' }}>
         <div style={{ height: 190, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
           {coverUrl ? (
             <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
@@ -65,7 +66,7 @@ export default function PropertyCard({ property }) {
       </Link>
 
       {/* Body */}
-      <Link href={`/property/${id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={propertyHref} style={{ textDecoration: 'none', color: 'inherit' }}>
         <div style={{ padding: '16px 18px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--sage)', fontFamily: 'Montserrat,sans-serif' }}>NT$</span>

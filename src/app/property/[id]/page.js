@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import Navbar from '@/components/layout/Navbar'
+import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import PropertyDetail from '@/components/property/PropertyDetail'
 
 export async function generateMetadata({ params }) {
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function PropertyPage({ params }) {
+export default async function PropertyPage({ params, searchParams }) {
   const property = await db.property.findFirst({
     where: { id: params.id, deletedAt: null },
     include: {
@@ -30,17 +31,24 @@ export default async function PropertyPage({ params }) {
       },
       images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
       amenities: true,
+      owner: {
+        select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true },
+      },
     },
   })
 
   if (!property) notFound()
+  const siteId = searchParams?.site
+  const siteLandlord = siteId && property.owner?.id === siteId && property.owner.isActive
+    ? property.owner
+    : null
 
   // Increment view count
   db.property.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
 
   return (
     <>
-      <Navbar />
+      {siteLandlord ? <LandlordSiteHeader landlord={siteLandlord} /> : <Navbar />}
       <PropertyDetail property={property} />
     </>
   )

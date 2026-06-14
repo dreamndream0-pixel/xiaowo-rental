@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import PropertyCard from '@/components/property/PropertyCard'
+import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 
 export default function LandlordSite({ landlord, properties, recommendations, searchParams }) {
   const router = useRouter()
@@ -35,27 +36,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
 
   return (
     <>
-      {/* 房東官網表頭 */}
-      <header style={{
-        background: 'linear-gradient(135deg, var(--sage), var(--sage-dark))',
-        padding: '0', position: 'sticky', top: 0, zIndex: 50,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-      }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href={`/site/${landlord.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            {landlord.siteLogo ? (
-              <img src={landlord.siteLogo} alt={siteName} style={{ height: 40, width: 40, borderRadius: 10, objectFit: 'cover', background: 'white' }} />
-            ) : (
-              <div style={{ height: 40, width: 40, borderRadius: 10, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🏠</div>
-            )}
-            <span style={{ color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: 1, fontFamily: 'var(--font-serif)' }}>{siteName}</span>
-          </Link>
-          <Link href={`/site/${landlord.id}`} style={{
-            color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none',
-            padding: '8px 16px', borderRadius: 99, border: '1.5px solid rgba(255,255,255,0.5)',
-          }}>🏡 房源首頁</Link>
-        </div>
-      </header>
+      <LandlordSiteHeader landlord={landlord} />
 
       {/* Hero + 搜尋 */}
       <section style={{ background: 'var(--oat-light)', padding: '40px 20px 32px' }}>
@@ -92,7 +73,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-            {properties.map(p => <PropertyCard key={p.id} property={toCard(p)} />)}
+            {properties.map(p => <PropertyCard key={p.id} property={toCard(p)} detailHref={`/property/${p.id}?site=${landlord.id}`} />)}
           </div>
         )}
       </section>
