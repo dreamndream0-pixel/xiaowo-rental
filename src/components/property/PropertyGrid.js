@@ -22,7 +22,7 @@ export default function PropertyGrid({ properties = [] }) {
         <PropertyCard key={p.id} property={{
           ...p,
           coverUrl: p.images?.[0]?.url ?? null,
-          tags: p.amenities?.map(a => a.name) ?? [],
+          tags: p.tags?.map(t => t.name) ?? [],
           landlordName: p.landlord?.name,
           landlordHandle: p.landlord?.handle,
           landlordAvatar: p.landlord?.avatar,
