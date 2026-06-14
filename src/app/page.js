@@ -7,7 +7,7 @@ import StatsRow from '@/components/ui/StatsRow'
 import HeroSlideshow from '@/components/home/HeroSlideshow'
 
 // Server Component: 在伺服器端取得精選房源
-export const revalidate = 60 // ISR: 每60秒重新生成
+export const dynamic = 'force-dynamic'
 
 
 async function getFeaturedProperties() {
