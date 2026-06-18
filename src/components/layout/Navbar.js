@@ -1,7 +1,7 @@
 'use client'
 // src/components/layout/Navbar.js
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
@@ -9,6 +9,13 @@ import { useSession, signOut } from 'next-auth/react'
 export default function Navbar() {
   const { data: session } = useSession()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [logoUrl, setLogoUrl] = useState('')
+
+  useEffect(() => {
+    fetch('/api/admin/hero').then(r => r.json()).then(data => {
+      if (data && data.logoUrl) setLogoUrl(data.logoUrl)
+    }).catch(() => {})
+  }, [])
 
   return (
     <>
@@ -22,38 +29,28 @@ export default function Navbar() {
       }}>
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 11,
-            background: 'linear-gradient(135deg, var(--sage), var(--sage-dark))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(78,113,83,0.3)',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-              <path d="M50 50 m0 -1.5 a1.5 1.5 0 0 1 1.5 1.5 a3.5 3.5 0 0 1 -3.5 3.5 a7 7 0 0 1 -7 -7 a12 12 0 0 1 12 -12 a18 18 0 0 1 18 18 a25 25 0 0 1 -25 25 a33 33 0 0 1 -33 -33"
-                stroke="rgba(250,250,248,0.95)" strokeWidth="5" strokeLinecap="round" />
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: 2, color: 'var(--charcoal)', lineHeight: 1.1, fontFamily: 'var(--font-serif)' }}>小蝸出租</div>
-            <div style={{ fontFamily: 'Montserrat,sans-serif', fontSize: 8, letterSpacing: 3, color: 'var(--sage)', fontWeight: 500 }}>SNAIL RENTAL</div>
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="logo" style={{ height: 40, maxWidth: 160, objectFit: 'contain' }} />
+          ) : (
+            <>
+              <div style={{
+                width: 38, height: 38, borderRadius: 11,
+                background: 'linear-gradient(135deg, var(--sage), var(--sage-dark))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(78,113,83,0.3)',
+              }}>
+                <svg width="22" height="22" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                  <path d="M50 50 m0 -1.5 a1.5 1.5 0 0 1 1.5 1.5 a3.5 3.5 0 0 1 -3.5 3.5 a7 7 0 0 1 -7 -7 a12 12 0 0 1 12 -12 a18 18 0 0 1 18 18 a25 25 0 0 1 -25 25 a33 33 0 0 1 -33 -33"
+                    stroke="rgba(250,250,248,0.95)" strokeWidth="5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: 2, color: 'var(--charcoal)', lineHeight: 1.1, fontFamily: 'var(--font-serif)' }}>小蝸出租</div>
+                <div style={{ fontFamily: 'Montserrat,sans-serif', fontSize: 8, letterSpacing: 3, color: 'var(--sage)', fontWeight: 500 }}>SNAIL RENTAL</div>
+              </div>
+            </>
+          )}
         </Link>
-
-        {/* Desktop Nav Links */}
-        <div className="hidden md:flex gap-1 ml-2">
-          {[
-            { href: '/', label: '首頁' },
-          ].map(({ href, label }) => (
-            <Link key={href} href={href} style={{
-              padding: '6px 14px', borderRadius: 20, fontSize: 13,
-              color: 'var(--gray-mid)', fontWeight: 500, letterSpacing: 0.5,
-              textDecoration: 'none', transition: 'var(--transition)',
-            }}
-              onMouseEnter={e => { e.target.style.color = 'var(--sage-dark)'; e.target.style.background = 'var(--sage-bg)' }}
-              onMouseLeave={e => { e.target.style.color = 'var(--gray-mid)'; e.target.style.background = 'none' }}
-            >{label}</Link>
-          ))}
-        </div>
 
         {/* Right side */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>

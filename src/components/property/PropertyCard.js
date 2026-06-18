@@ -15,7 +15,7 @@ export default function PropertyCard({ property, detailHref }) {
   } = property
 
   const statusVariant = {
-    AVAILABLE: { label: '可租', color: 'var(--sage-dark)', bg: 'rgba(78,113,83,0.9)' },
+    AVAILABLE: { label: '可租', color: 'white', bg: 'rgba(78,113,83,0.9)' },
     RENTED:    { label: '已租', color: 'white', bg: 'rgba(61,61,61,0.75)' },
     PENDING:   { label: '審核中', color: 'white', bg: 'var(--warn)' },
   }[status] ?? { label: status, color: 'white', bg: 'var(--gray-mid)' }

@@ -24,22 +24,24 @@ async function ensureTable() {
   `)
 }
 
-async function readSlides() {
+async function readSettings() {
   try {
     await ensureTable()
     const rows = await db.$queryRawUnsafe(
-      `SELECT value FROM site_settings WHERE key = 'hero_slides' LIMIT 1`
+      `SELECT key, value FROM site_settings WHERE key IN ('hero_slides', 'site_logo')`
     )
-    if (!rows.length) return []
-    return JSON.parse(rows[0].value)
+    const map = Object.fromEntries(rows.map(r => [r.key, r.value]))
+    const slides = map.hero_slides ? JSON.parse(map.hero_slides).filter(s => s && s.url) : []
+    const logoUrl = map.site_logo || ''
+    return { slides, logoUrl }
   } catch {
-    return []
+    return { slides: [], logoUrl: '' }
   }
 }
 
 export async function GET() {
-  const slides = await readSlides()
-  return NextResponse.json(slides, { headers: CORS })
+  const settings = await readSettings()
+  return NextResponse.json(settings, { headers: CORS })
 }
 
 export async function POST(request) {
@@ -58,6 +60,13 @@ export async function POST(request) {
        ON CONFLICT (key) DO UPDATE SET value = $1, "updatedAt" = NOW()`,
       JSON.stringify(slides)
     )
+    if (typeof body.logoUrl === 'string') {
+      await db.$executeRawUnsafe(
+        `INSERT INTO site_settings (key, value, "updatedAt") VALUES ('site_logo', $1, NOW())
+         ON CONFLICT (key) DO UPDATE SET value = $1, "updatedAt" = NOW()`,
+        body.logoUrl
+      )
+    }
     return NextResponse.json({ ok: true, count: slides.length }, { headers: CORS })
   } catch (e) {
     console.error('hero POST error:', e)

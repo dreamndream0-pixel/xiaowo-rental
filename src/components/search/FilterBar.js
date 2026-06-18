@@ -137,7 +137,10 @@ export default function FilterBar() {
               boxShadow: 'var(--shadow-lg)', border: '1px solid var(--oat-mid)',
               padding: '18px 20px',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-mid)', marginBottom: 12 }}>選擇標籤（可多選）</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-mid)' }}>選擇標籤（可多選）</div>
+                <button onClick={() => setTagPopOpen(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-mid)', padding: '0 4px' }}>×</button>
+              </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
                 {allTags.map(tag => {
                   const sel = tempTags.includes(tag)

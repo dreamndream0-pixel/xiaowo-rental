@@ -8,7 +8,8 @@ export default function HeroSlideshow() {
 
   useEffect(() => {
     fetch('/api/admin/hero').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setSlides(data.filter(s => s && s.url))
+      const slideList = Array.isArray(data) ? data : (data.slides || [])
+      setSlides(slideList.filter(s => s && s.url))
     }).catch(() => {})
   }, [])
 
