@@ -1,31 +1,12 @@
 'use client'
 // src/components/landlord/LandlordSite.js
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import PropertyCard from '@/components/property/PropertyCard'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
+import SearchBar from '@/components/search/SearchBar'
 
 export default function LandlordSite({ landlord, properties, recommendations, searchParams }) {
-  const router = useRouter()
   const siteName = landlord.siteName || `${landlord.name} 的租屋`
-  const [kw, setKw] = useState(searchParams.keyword || '')
-  const [city, setCity] = useState(searchParams.city || '')
-  const [maxPrice, setMaxPrice] = useState(searchParams.maxPrice || '')
-  const [selectedTags, setSelectedTags] = useState(
-    searchParams.tags ? searchParams.tags.split(',') : []
-  )
-  const [allTags, setAllTags] = useState([])
-
-  useEffect(() => {
-    fetch('/api/tags').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setAllTags(data)
-    }).catch(() => {})
-  }, [])
-
-  const toggleTag = name => {
-    setSelectedTags(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name])
-  }
 
   function toCard(p) {
     return {
@@ -34,20 +15,6 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       coverUrl: p.images?.[0]?.url || null,
       tags: p.tags?.map(t => t.name) ?? [],
     }
-  }
-
-  function doSearch() {
-    const params = new URLSearchParams()
-    if (kw) params.set('keyword', kw)
-    if (city) params.set('city', city)
-    if (maxPrice) params.set('maxPrice', maxPrice)
-    if (selectedTags.length > 0) params.set('tags', selectedTags.join(','))
-    router.push(`/site/${landlord.id}?${params.toString()}`)
-  }
-
-  function resetSearch() {
-    setKw(''); setCity(''); setMaxPrice(''); setSelectedTags([])
-    router.push(`/site/${landlord.id}`)
   }
 
   return (
@@ -62,44 +29,8 @@ export default function LandlordSite({ landlord, properties, recommendations, se
           </h1>
           <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
 
-          {/* 搜尋列 */}
-          <div style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input value={kw} onChange={e => setKw(e.target.value)} placeholder="關鍵字（如：採光、近捷運）"
-                onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
-                style={{ flex: 2, minWidth: 160, padding: '10px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, outline: 'none' }} />
-              <input value={city} onChange={e => setCity(e.target.value)} placeholder="城市"
-                onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
-                style={{ flex: 1, minWidth: 90, padding: '10px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, outline: 'none' }} />
-              <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="租金上限" type="number"
-                onKeyDown={e => e.key === 'Enter' && !e.nativeEvent?.isComposing && doSearch()}
-                style={{ flex: 1, minWidth: 90, padding: '10px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, outline: 'none' }} />
-              <button onClick={doSearch} style={{ padding: '10px 24px', background: 'var(--sage)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>搜尋</button>
-              {(searchParams.keyword || searchParams.city || searchParams.maxPrice || searchParams.tags) && (
-                <button onClick={resetSearch} style={{ padding: '10px 16px', background: 'none', color: 'var(--gray-mid)', border: '1.5px solid var(--oat-mid)', borderRadius: 10, fontSize: 14, cursor: 'pointer' }}>清除</button>
-              )}
-            </div>
-            {allTags.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--oat-mid)' }}>
-                <span style={{ fontSize: 9, fontFamily: 'Montserrat,sans-serif', letterSpacing: '1.5px', color: 'var(--gray-light)', fontWeight: 700, textTransform: 'uppercase', flexShrink: 0 }}>標籤篩選</span>
-                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
-                  {allTags.map(tag => {
-                    const selected = selectedTags.includes(tag.name)
-                    return (
-                      <button key={tag.name} onClick={() => toggleTag(tag.name)} style={{
-                        flexShrink: 0, padding: '4px 12px', borderRadius: 99, fontSize: 12,
-                        fontFamily: 'inherit', cursor: 'pointer', fontWeight: selected ? 700 : 400,
-                        background: selected ? 'var(--sage-bg)' : 'white',
-                        color: selected ? 'var(--sage-dark)' : 'var(--gray-mid)',
-                        border: `1.5px solid ${selected ? 'var(--sage)' : 'var(--oat-mid)'}`,
-                        transition: 'all 0.15s',
-                      }}>{tag.name}</button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
+          <SearchBar searchBase={`/site/${landlord.id}`} />
         </div>
       </section>
 

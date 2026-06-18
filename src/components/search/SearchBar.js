@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ALL_CITIES, getDistricts } from '@/lib/districts'
 
-export default function SearchBar() {
+export default function SearchBar({ searchBase = '/listings' }) {
   const router = useRouter()
   const [keyword,  setKeyword]  = useState('')
   const [city,     setCity]     = useState('')
@@ -84,7 +84,7 @@ export default function SearchBar() {
     if (rentMax < 50000)  params.set('maxPrice', rentMax)
     const selectedTags = [...tags]
     if (selectedTags.length > 0) params.set('tags', selectedTags.join(','))
-    router.push(`/listings?${params.toString()}`)
+    router.push(`${searchBase}?${params.toString()}`)
   }
 
   const selStyle = { border: 'none', outline: 'none', background: 'none', fontSize: 13, color: 'var(--charcoal)', fontFamily: 'inherit', fontWeight: 600, cursor: 'pointer', width: '100%' }
