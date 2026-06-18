@@ -41,11 +41,24 @@ export default function Navbar() {
         display: 'flex', alignItems: 'center', gap: 28,
       }}>
         {/* Logo */}
-        {logoUrl && (
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          {logoUrl ? (
             <img src={logoUrl} alt="logo" style={{ height: 40, maxWidth: 180, objectFit: 'contain' }} />
-          </Link>
-        )}
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'linear-gradient(135deg, var(--sage), var(--sage-dark))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, flexShrink: 0,
+              }}>🐌</div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 1, color: 'var(--charcoal)', lineHeight: 1.1 }}>小蝸出租</div>
+                <div style={{ fontFamily: 'Montserrat,sans-serif', fontSize: 8, letterSpacing: 3, color: 'var(--sage)', fontWeight: 500 }}>SNAIL RENTAL</div>
+              </div>
+            </div>
+          )}
+        </Link>
 
         {/* Right side */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>

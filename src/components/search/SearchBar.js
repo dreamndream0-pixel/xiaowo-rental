@@ -15,15 +15,15 @@ const TYPES = [
 
 const TAG_INLINE = 8
 
-export default function SearchBar({ searchBase = '/listings' }) {
+export default function SearchBar({ searchBase = '/listings', initialParams = {} }) {
   const router = useRouter()
-  const [keyword,  setKeyword]  = useState('')
-  const [city,     setCity]     = useState('')
-  const [district, setDistrict] = useState('')
-  const [type,     setType]     = useState('')
-  const [rentMin,  setRentMin]  = useState(0)
-  const [rentMax,  setRentMax]  = useState(50000)
-  const [tags,     setTags]     = useState([])
+  const [keyword,  setKeyword]  = useState(initialParams.keyword  || '')
+  const [city,     setCity]     = useState(initialParams.city     || '')
+  const [district, setDistrict] = useState(initialParams.district || '')
+  const [type,     setType]     = useState(initialParams.type     || '')
+  const [rentMin,  setRentMin]  = useState(Number(initialParams.minPrice) || 0)
+  const [rentMax,  setRentMax]  = useState(Number(initialParams.maxPrice) || 50000)
+  const [tags,     setTags]     = useState(initialParams.tags ? initialParams.tags.split(',') : [])
   const [allTags,  setAllTags]  = useState([])
   const [tagExpanded, setTagExpanded] = useState(false)
 

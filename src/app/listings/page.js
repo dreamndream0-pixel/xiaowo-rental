@@ -2,7 +2,7 @@
 import Navbar from '@/components/layout/Navbar'
 import PropertyGrid from '@/components/property/PropertyGrid'
 import FilterBar from '@/components/search/FilterBar'
-import ListingsSearchBar from '@/components/search/ListingsSearchBar'
+import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
 
 export const metadata = { title: '全部房源' }
@@ -82,7 +82,7 @@ export default async function ListingsPage({ searchParams }) {
           </div>
         </div>
 
-        <ListingsSearchBar initialParams={searchParams} />
+        <SearchBar initialParams={searchParams} />
         <FilterBar />
         <PropertyGrid properties={properties} />
 
