@@ -2,6 +2,18 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS })
+}
+
 async function ensureTable() {
   await db.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS site_settings (
@@ -27,14 +39,14 @@ async function readSlides() {
 
 export async function GET() {
   const slides = await readSlides()
-  return NextResponse.json(slides)
+  return NextResponse.json(slides, { headers: CORS })
 }
 
 export async function POST(request) {
   try {
     const body = await request.json()
     if (!Array.isArray(body.slides)) {
-      return NextResponse.json({ error: 'slides must be an array' }, { status: 400 })
+      return NextResponse.json({ error: 'slides must be an array' }, { status: 400, headers: CORS })
     }
     const slides = body.slides
       .filter(s => s && typeof s.url === 'string' && s.url.trim())
@@ -46,9 +58,9 @@ export async function POST(request) {
        ON CONFLICT (key) DO UPDATE SET value = $1, "updatedAt" = NOW()`,
       JSON.stringify(slides)
     )
-    return NextResponse.json({ ok: true, count: slides.length })
+    return NextResponse.json({ ok: true, count: slides.length }, { headers: CORS })
   } catch (e) {
     console.error('hero POST error:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ error: e.message }, { status: 500, headers: CORS })
   }
 }
