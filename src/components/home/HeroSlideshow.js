@@ -7,10 +7,25 @@ export default function HeroSlideshow() {
   const [fading, setFading] = useState(false)
 
   useEffect(() => {
-    fetch('/api/admin/hero').then(r => r.json()).then(data => {
-      const slideList = Array.isArray(data) ? data : (data.slides || [])
-      setSlides(slideList.filter(s => s && s.url))
-    }).catch(() => {})
+    // 先用快取立即顯示，避免 cold-start 時空白
+    try {
+      const cached = localStorage.getItem('hero_slides_cache')
+      if (cached) {
+        const arr = JSON.parse(cached)
+        if (arr.length) setSlides(arr)
+      }
+    } catch {}
+    // 再從 API 更新
+    fetch('/api/admin/hero', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        const slideList = Array.isArray(data) ? data : (data.slides || [])
+        const filtered = slideList.filter(s => s && s.url)
+        if (filtered.length) {
+          setSlides(filtered)
+          try { localStorage.setItem('hero_slides_cache', JSON.stringify(filtered)) } catch {}
+        }
+      }).catch(() => {})
   }, [])
 
   const goTo = useCallback((idx) => {

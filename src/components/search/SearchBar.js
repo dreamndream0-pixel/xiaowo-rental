@@ -16,8 +16,7 @@ export default function SearchBar() {
   const [popOpen,  setPopOpen]  = useState(false)
   const [tags,       setTags]       = useState([])   // selected tag names
   const [allTags,    setAllTags]    = useState([])   // all tags from API
-  const [tagPopOpen, setTagPopOpen] = useState(false) // more-tags popup
-  const [tempTags,   setTempTags]   = useState([])   // temp selection in popup
+  const [tagPopOpen, setTagPopOpen] = useState(false) // expand/collapse tags
   const TAG_INLINE = 8 // how many chips to show inline before "更多"
   const popRef = useRef(null)
   const triggerRef = useRef(null)
@@ -214,10 +213,10 @@ export default function SearchBar() {
 
       {/* Tag chips row */}
       {allTags.length > 0 && (
-        <div style={{ borderTop: '1px solid var(--oat-mid)', padding: '10px 18px', position: 'relative' }}>
+        <div style={{ borderTop: '1px solid var(--oat-mid)', padding: '10px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 9, fontFamily: 'Montserrat,sans-serif', letterSpacing: '1.5px', color: 'var(--gray-light)', fontWeight: 700, textTransform: 'uppercase', flexShrink: 0, lineHeight: '26px' }}>標籤篩選</span>
-            {allTags.slice(0, TAG_INLINE).map(tag => {
+            {(tagPopOpen ? allTags : allTags.slice(0, TAG_INLINE)).map(tag => {
               const selected = tags.includes(tag)
               return (
                 <button key={tag} onClick={() => toggleTag(tag)} style={{
@@ -231,57 +230,14 @@ export default function SearchBar() {
               )
             })}
             {allTags.length > TAG_INLINE && (
-              <button className="search-tag-more-btn" onClick={() => { setTempTags([...tags]); setTagPopOpen(o => !o) }} style={{
+              <button onClick={() => setTagPopOpen(o => !o)} style={{
                 padding: '4px 12px', borderRadius: 99, fontSize: 12,
                 fontFamily: 'inherit', cursor: 'pointer', fontWeight: 600,
-                background: tagPopOpen ? 'var(--sage)' : 'var(--oat-light)',
-                color: tagPopOpen ? 'white' : 'var(--sage-dark)',
+                background: 'none', color: 'var(--sage-dark)',
                 border: '1.5px solid var(--sage-light)', transition: 'all 0.15s',
-              }}>
-                ＋ 更多選擇 {tags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length > 0 ? `(${tags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length})` : ''}
-              </button>
+              }}>{tagPopOpen ? '收合 ▲' : `展開 ▼ ${tags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length > 0 ? `(${tags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length})` : ''}`}</button>
             )}
           </div>
-
-          {/* More tags popup */}
-          {tagPopOpen && (
-            <div className="search-tag-popup" onClick={e => e.stopPropagation()} style={{
-              position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 400,
-              background: 'white', borderRadius: 'var(--radius-lg)',
-              boxShadow: 'var(--shadow-lg)', border: '1px solid var(--oat-mid)',
-              padding: '18px 20px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-mid)' }}>選擇標籤（可多選）</div>
-                <button onClick={() => setTagPopOpen(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-mid)', padding: '0 4px' }}>×</button>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-                {allTags.map(tag => {
-                  const selected = tempTags.includes(tag)
-                  return (
-                    <button key={tag} onClick={() => setTempTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])} style={{
-                      padding: '5px 14px', borderRadius: 99, fontSize: 13,
-                      fontFamily: 'inherit', cursor: 'pointer', fontWeight: selected ? 700 : 400,
-                      background: selected ? 'var(--sage-bg)' : 'white',
-                      color: selected ? 'var(--sage-dark)' : 'var(--gray-mid)',
-                      border: `1.5px solid ${selected ? 'var(--sage)' : 'var(--oat-mid)'}`,
-                      transition: 'all 0.15s',
-                    }}>{tag}</button>
-                  )
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setTempTags([]); }} style={{
-                  padding: '8px 16px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
-                  background: 'none', border: '1.5px solid var(--oat-mid)', color: 'var(--gray-mid)', fontFamily: 'inherit',
-                }}>清除</button>
-                <button onClick={() => { setTags(tempTags); setTagPopOpen(false) }} style={{
-                  padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  background: 'var(--sage)', border: 'none', color: 'white', fontFamily: 'inherit',
-                }}>確認</button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
