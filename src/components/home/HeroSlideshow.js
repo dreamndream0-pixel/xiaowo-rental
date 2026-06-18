@@ -55,10 +55,12 @@ export default function HeroSlideshow() {
         role="img"
         aria-label={slide.alt}
       />
-      {/* Dark overlay for text legibility */}
+      {/* Glass overlay for text legibility */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.5) 100%)',
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.45) 100%)',
+        backdropFilter: 'blur(2px)',
+        WebkitBackdropFilter: 'blur(2px)',
       }} />
 
       {/* Prev / Next arrows */}

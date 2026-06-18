@@ -212,16 +212,16 @@ export default function SearchBar() {
             <span style={{ fontSize: 9, fontFamily: 'Montserrat,sans-serif', letterSpacing: '1.5px', color: 'var(--gray-light)', fontWeight: 700, textTransform: 'uppercase', flexShrink: 0 }}>標籤篩選</span>
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
               {allTags.map(tag => {
-                const selected = tags.includes(tag.name)
+                const selected = tags.includes(tag)
                 return (
-                  <button key={tag.name} onClick={() => toggleTag(tag.name)} style={{
+                  <button key={tag} onClick={() => toggleTag(tag)} style={{
                     flexShrink: 0, padding: '4px 12px', borderRadius: 99, fontSize: 12,
                     fontFamily: 'inherit', cursor: 'pointer', fontWeight: selected ? 700 : 400,
                     background: selected ? 'var(--sage-bg)' : 'white',
                     color: selected ? 'var(--sage-dark)' : 'var(--gray-mid)',
                     border: `1.5px solid ${selected ? 'var(--sage)' : 'var(--oat-mid)'}`,
                     transition: 'all 0.15s',
-                  }}>{tag.name}</button>
+                  }}>{tag}</button>
                 )
               })}
             </div>
