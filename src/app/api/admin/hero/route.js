@@ -14,26 +14,31 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS })
 }
 
-async function ensureTable() {
-  await db.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS site_settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL,
-      "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `)
+async function getSetting(key) {
+  try {
+    const row = await db.siteSetting.findUnique({ where: { key } })
+    return row?.value ?? null
+  } catch {
+    return null
+  }
+}
+
+async function setSetting(key, value) {
+  await db.siteSetting.upsert({
+    where: { key },
+    update: { value },
+    create: { key, value },
+  })
 }
 
 async function readSettings() {
   try {
-    await ensureTable()
-    const rows = await db.$queryRawUnsafe(
-      `SELECT key, value FROM site_settings WHERE key IN ('hero_slides', 'site_logo')`
-    )
-    const map = Object.fromEntries(rows.map(r => [r.key, r.value]))
-    const slides = map.hero_slides ? JSON.parse(map.hero_slides).filter(s => s && s.url) : []
-    const logoUrl = map.site_logo || ''
-    return { slides, logoUrl }
+    const [slidesRaw, logoUrl] = await Promise.all([
+      getSetting('hero_slides'),
+      getSetting('site_logo'),
+    ])
+    const slides = slidesRaw ? JSON.parse(slidesRaw).filter(s => s && s.url) : []
+    return { slides, logoUrl: logoUrl || '' }
   } catch {
     return { slides: [], logoUrl: '' }
   }
@@ -54,19 +59,12 @@ export async function POST(request) {
       .filter(s => s && typeof s.url === 'string' && s.url.trim())
       .map(s => ({ url: s.url.trim(), alt: s.alt || '小蝸出租房源' }))
 
-    await ensureTable()
-    await db.$executeRawUnsafe(
-      `INSERT INTO site_settings (key, value, "updatedAt") VALUES ('hero_slides', $1, NOW())
-       ON CONFLICT (key) DO UPDATE SET value = $1, "updatedAt" = NOW()`,
-      JSON.stringify(slides)
-    )
+    await setSetting('hero_slides', JSON.stringify(slides))
+
     if (typeof body.logoUrl === 'string') {
-      await db.$executeRawUnsafe(
-        `INSERT INTO site_settings (key, value, "updatedAt") VALUES ('site_logo', $1, NOW())
-         ON CONFLICT (key) DO UPDATE SET value = $1, "updatedAt" = NOW()`,
-        body.logoUrl
-      )
+      await setSetting('site_logo', body.logoUrl)
     }
+
     return NextResponse.json({ ok: true, count: slides.length }, { headers: CORS })
   } catch (e) {
     console.error('hero POST error:', e)

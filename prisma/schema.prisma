@@ -449,3 +449,12 @@ model Review {
   @@index([propertyId])
   @@map("reviews")
 }
+
+// 網站全域設定（LOGO、輪播圖等）
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
