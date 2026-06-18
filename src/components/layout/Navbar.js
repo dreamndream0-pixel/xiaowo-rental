@@ -12,8 +12,21 @@ export default function Navbar() {
   const [logoUrl, setLogoUrl] = useState('')
 
   useEffect(() => {
+    // 先用快取立即顯示，避免閃爍
+    try {
+      const cached = localStorage.getItem('site_logo_cache')
+      if (cached) setLogoUrl(cached)
+    } catch {}
+    // 再從 API 更新
     fetch('/api/admin/hero').then(r => r.json()).then(data => {
-      if (data && data.logoUrl) setLogoUrl(data.logoUrl)
+      if (data && data.logoUrl) {
+        setLogoUrl(data.logoUrl)
+        try { localStorage.setItem('site_logo_cache', data.logoUrl) } catch {}
+      } else {
+        // 後台已清除 logo，清掉快取
+        try { localStorage.removeItem('site_logo_cache') } catch {}
+        setLogoUrl('')
+      }
     }).catch(() => {})
   }, [])
 
