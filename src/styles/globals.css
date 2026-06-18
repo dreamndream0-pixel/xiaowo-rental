@@ -117,7 +117,17 @@ a { color: inherit; }
   background:
     radial-gradient(ellipse 900px 500px at 85% -10%, rgba(168,197,171,0.28), transparent 60%),
     linear-gradient(175deg, var(--oat-light) 0%, var(--oat) 100%);
+  overflow: visible; /* 允許 SearchBar 展開時往下延伸 */
+}
+
+/* 固定高度背景層：輪播圖只在這裡，高度不受 SearchBar 影響 */
+.hero-bg-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 680px;
   overflow: hidden;
+  z-index: 0;
+  /* pointer-events 讓輪播箭頭可點擊 */
 }
 
 .hero-inner {
@@ -126,6 +136,7 @@ a { color: inherit; }
   padding: 88px 32px 72px;
   position: relative;
   z-index: 1;
+  /* 確保 SearchBar 卡片有背景，不透明 */
 }
 
 .hero-eyebrow {
@@ -177,7 +188,7 @@ a { color: inherit; }
   line-height: 1.9;
 }
 
-/* 蝸牛殼螺旋裝飾 */
+/* 蝸牛殼螺旋裝飾（在背景層內）*/
 .hero-spiral {
   position: absolute;
   right: -60px;
@@ -188,6 +199,7 @@ a { color: inherit; }
   opacity: 0.5;
   pointer-events: none;
   color: var(--sage-light);
+  z-index: 1;
 }
 @media (max-width: 900px) {
   .hero-spiral { width: 280px; right: -100px; opacity: 0.3; }
