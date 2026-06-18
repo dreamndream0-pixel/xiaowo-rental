@@ -82,7 +82,9 @@ export default async function ListingsPage({ searchParams }) {
           </div>
         </div>
 
-        <SearchBar initialParams={searchParams} />
+        <div style={{ marginBottom: 20 }}>
+          <SearchBar initialParams={searchParams} />
+        </div>
         <FilterBar />
         <PropertyGrid properties={properties} />
 

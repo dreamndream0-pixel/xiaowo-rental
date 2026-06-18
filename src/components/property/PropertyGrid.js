@@ -20,7 +20,7 @@ export default function PropertyGrid({ properties = [] }) {
     }}>
       {properties.map(p => (
         <PropertyCard key={p.id}
-          detailHref={p.owner?.id ? `/property/${p.id}?site=${p.owner.id}` : `/property/${p.id}`}
+          detailHref={`/property/${p.id}`}
           property={{
             ...p,
             coverUrl: p.images?.[0]?.url ?? null,
