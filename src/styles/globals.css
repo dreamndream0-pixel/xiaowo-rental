@@ -36,6 +36,54 @@
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
+
+/* ── 全域按鈕特效 ─────────────────────────────────── */
+button, a[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 按下縮放回饋 */
+button:active:not(:disabled),
+a[role="button"]:active {
+  transform: scale(0.95);
+  transition: transform 0.08s ease !important;
+}
+
+/* Ripple 波紋 */
+.ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+@keyframes xiaowo-ripple {
+  from { transform: scale(0); opacity: 0.5; }
+  to   { transform: scale(4); opacity: 0; }
+}
+.xiaowo-ripple-el {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  pointer-events: none;
+  animation: xiaowo-ripple 0.5s ease-out forwards;
+}
+
+/* Loading 旋轉 */
+@keyframes xiaowo-spin { to { transform: rotate(360deg); } }
+.btn-loading {
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+  cursor: wait !important;
+}
+.btn-loading::after {
+  content: '';
+  display: inline-block;
+  width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: xiaowo-spin 0.7s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
