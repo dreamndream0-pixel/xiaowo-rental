@@ -55,12 +55,18 @@ export default function HeroSlideshow() {
         role="img"
         aria-label={slide.alt}
       />
-      {/* Glass overlay for text legibility */}
+      {/* Left-to-right frosted glass overlay */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.45) 100%)',
-        backdropFilter: 'blur(2px)',
-        WebkitBackdropFilter: 'blur(2px)',
+        background: 'linear-gradient(to right, rgba(245,242,236,0.92) 0%, rgba(245,242,236,0.75) 30%, rgba(245,242,236,0.3) 60%, rgba(245,242,236,0) 100%)',
+      }} />
+      {/* Subtle blur layer on left portion only via mask */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        maskImage: 'linear-gradient(to right, black 0%, black 30%, transparent 65%)',
+        WebkitMaskImage: 'linear-gradient(to right, black 0%, black 30%, transparent 65%)',
       }} />
 
       {/* Prev / Next arrows */}
