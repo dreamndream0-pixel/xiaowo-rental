@@ -25,12 +25,13 @@ export default function PropertyGrid({ properties = [] }) {
             ...p,
             coverUrl: p.images?.[0]?.url ?? null,
             tags: p.tags?.map(t => t.name) ?? [],
-            // owner = Landlord model（真實房東）；landlord = User model（登入帳號）
-            landlordName:     p.owner?.name     || p.landlord?.name,
+            // landlord = User model（本名，用 Google/Email 註冊的真實姓名）
+            // owner    = Landlord model（後台帳號，name 可能是店名/官網名）
+            landlordName:     p.landlord?.name   || p.owner?.name,
             landlordHandle:   p.landlord?.handle || null,
             landlordSiteId:   p.owner?.id        || null,
-            landlordAvatar:   p.owner?.avatar    || p.landlord?.avatar,
-            landlordVerified: p.owner != null    || p.landlord?.verified,
+            landlordAvatar:   p.landlord?.avatar || p.owner?.avatar,
+            landlordVerified: p.landlord?.verified || false,
           }} />
       ))}
     </div>
