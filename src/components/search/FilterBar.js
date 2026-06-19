@@ -54,6 +54,12 @@ export default function FilterBar() {
   }
 
   const extraSelected = currentTags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length
+  const hasFilter = currentType !== 'all' || currentTags.length > 0
+
+  const labelStyle = {
+    fontSize: 10, fontWeight: 700, color: 'var(--gray-light)',
+    letterSpacing: '0.8px', marginBottom: 7, display: 'block',
+  }
 
   return (
     <div style={{
@@ -61,38 +67,54 @@ export default function FilterBar() {
       padding: '14px 20px', marginBottom: 24,
       boxShadow: 'var(--shadow-sm)',
     }}>
-      {/* Row 1: type + sort */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        {types.map(({ value, label }) => {
-          const active = value === currentType || (value === 'all' && !params.get('type'))
-          return (
-            <button key={value} onClick={() => setFilter(value)} style={{
-              padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: active ? 700 : 500,
-              border: `1.5px solid ${active ? 'var(--sage)' : 'var(--oat-mid)'}`,
-              background: active ? 'var(--sage)' : 'none',
-              color: active ? 'white' : 'var(--gray-mid)',
-              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', whiteSpace: 'nowrap',
-            }}>{label}</button>
-          )
-        })}
-        <div style={{ width: 1, height: 24, background: 'var(--oat-mid)', flexShrink: 0 }} />
-        <select onChange={e => setSort(e.target.value)} defaultValue={params.get('sort') || 'newest'} style={{
-          padding: '6px 12px', borderRadius: 16,
-          border: '1.5px solid var(--oat-mid)', background: 'none',
-          fontSize: 12, color: 'var(--gray-mid)', cursor: 'pointer',
-          fontFamily: 'inherit', outline: 'none',
-        }}>
-          <option value="newest">最新刊登</option>
-          <option value="price-asc">價格低到高</option>
-          <option value="price-desc">價格高到低</option>
-        </select>
+      {/* ── 頂列：篩選房源標題 + 清除 ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ width: 3, height: 16, background: 'var(--sage)', borderRadius: 99, display: 'inline-block', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--charcoal)' }}>篩選房源</span>
+        {hasFilter && (
+          <button onClick={() => router.push('/listings')} style={{
+            marginLeft: 'auto', fontSize: 11, color: 'var(--gray-light)',
+            background: 'none', border: '1px solid var(--oat-mid)', cursor: 'pointer',
+            padding: '3px 10px', borderRadius: 8, fontFamily: 'inherit',
+          }}>✕ 清除篩選</button>
+        )}
       </div>
 
-      {/* Row 2: tag chips */}
+      {/* ── 房型篩選 ── */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={labelStyle}>房型</span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {types.map(({ value, label }) => {
+            const active = value === currentType || (value === 'all' && !params.get('type'))
+            return (
+              <button key={value} onClick={() => setFilter(value)} style={{
+                padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: active ? 700 : 500,
+                border: `1.5px solid ${active ? 'var(--sage)' : 'var(--oat-mid)'}`,
+                background: active ? 'var(--sage)' : 'none',
+                color: active ? 'white' : 'var(--gray-mid)',
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', whiteSpace: 'nowrap',
+              }}>{label}</button>
+            )
+          })}
+          <div style={{ width: 1, height: 22, background: 'var(--oat-mid)', flexShrink: 0, marginLeft: 2 }} />
+          <select onChange={e => setSort(e.target.value)} defaultValue={params.get('sort') || 'newest'} style={{
+            padding: '5px 12px', borderRadius: 14,
+            border: '1.5px solid var(--oat-mid)', background: 'none',
+            fontSize: 11, color: 'var(--gray-mid)', cursor: 'pointer',
+            fontFamily: 'inherit', outline: 'none',
+          }}>
+            <option value="newest">最新刊登</option>
+            <option value="price-asc">價格低到高</option>
+            <option value="price-desc">價格高到低</option>
+          </select>
+        </div>
+      </div>
+
+      {/* ── 標籤條件 ── */}
       {allTags.length > 0 && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--oat-mid)' }}>
+        <div style={{ paddingTop: 12, borderTop: '1px solid var(--oat-mid)' }}>
+          <span style={labelStyle}>標籤條件</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 10, color: 'var(--gray-light)', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', lineHeight: '26px' }}>標籤</span>
             {(tagExpanded ? allTags : allTags.slice(0, TAG_INLINE)).map(tag => {
               const active = currentTags.includes(tag)
               return (
