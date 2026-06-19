@@ -6,9 +6,11 @@ import { unstable_cache } from 'next/cache'
 
 const getCachedLogo = unstable_cache(
   async () => {
-    // 拋出錯誤讓 unstable_cache 不快取失敗結果
-    const row = await db.siteSetting.findUnique({ where: { key: 'site_logo' } })
-    return row?.value || ''
+    // raw SQL：不依賴 Prisma model，throw 時 unstable_cache 不快取
+    const rows = await db.$queryRawUnsafe(
+      `SELECT value FROM site_settings WHERE key = 'site_logo'`
+    )
+    return rows[0]?.value || ''
   },
   ['site-logo'],
   { revalidate: 60, tags: ['site-logo'] }

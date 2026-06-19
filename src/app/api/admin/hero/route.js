@@ -5,19 +5,22 @@ import { unstable_cache, revalidateTag } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
-// ⚠️ 錯誤時直接 throw，不 return 空值
-// → unstable_cache 不會快取失敗結果，下次請求自動重試
+// 用 raw SQL 讀取，不依賴 Prisma model 是否 generate 成功
+// 拋出錯誤讓 unstable_cache 不快取失敗結果
+async function readSettingsFromDB() {
+  const rows = await db.$queryRawUnsafe(
+    `SELECT key, value FROM site_settings WHERE key IN ('hero_slides','site_logo')`
+  )
+  const map = {}
+  rows.forEach(r => { map[r.key] = r.value })
+  const slides = map['hero_slides']
+    ? JSON.parse(map['hero_slides']).filter(s => s && s.url)
+    : []
+  return { slides, logoUrl: map['site_logo'] || '' }
+}
+
 const getCachedSettings = unstable_cache(
-  async () => {
-    const [slidesRow, logoRow] = await Promise.all([
-      db.siteSetting.findUnique({ where: { key: 'hero_slides' } }),
-      db.siteSetting.findUnique({ where: { key: 'site_logo' } }),
-    ])
-    const slides = slidesRow?.value
-      ? JSON.parse(slidesRow.value).filter(s => s && s.url)
-      : []
-    return { slides, logoUrl: logoRow?.value || '' }
-  },
+  readSettingsFromDB,   // throw 時不快取，下次自動重試
   ['hero-settings'],
   { revalidate: 30, tags: ['hero-settings', 'site-logo'] }
 )
@@ -40,9 +43,17 @@ export async function GET() {
     })
   } catch (e) {
     console.error('hero GET error:', e)
-    // 回傳空值但不快取（已在 getCachedSettings 層拋出）
     return NextResponse.json({ slides: [], logoUrl: '' }, { headers: CORS })
   }
+}
+
+async function upsertSetting(key, value) {
+  await db.$queryRawUnsafe(
+    `INSERT INTO site_settings (key, value, "updatedAt")
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (key) DO UPDATE SET value = $2, "updatedAt" = NOW()`,
+    key, value
+  )
 }
 
 export async function POST(request) {
@@ -55,21 +66,10 @@ export async function POST(request) {
       .filter(s => s && typeof s.url === 'string' && s.url.trim())
       .map(s => ({ url: s.url.trim(), alt: s.alt || '小蝸出租房源' }))
 
-    // 用 Prisma upsert 取代 raw SQL
-    await Promise.all([
-      db.siteSetting.upsert({
-        where: { key: 'hero_slides' },
-        create: { key: 'hero_slides', value: JSON.stringify(slides) },
-        update: { value: JSON.stringify(slides) },
-      }),
-      ...(typeof body.logoUrl === 'string' ? [
-        db.siteSetting.upsert({
-          where: { key: 'site_logo' },
-          create: { key: 'site_logo', value: body.logoUrl },
-          update: { value: body.logoUrl },
-        }),
-      ] : []),
-    ])
+    await upsertSetting('hero_slides', JSON.stringify(slides))
+    if (typeof body.logoUrl === 'string') {
+      await upsertSetting('site_logo', body.logoUrl)
+    }
 
     revalidateTag('hero-settings')
     revalidateTag('site-logo')
