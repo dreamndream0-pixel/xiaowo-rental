@@ -23,5 +23,9 @@ export async function ensureMigrations() {
   } catch(_) {}
   try { await db.$queryRawUnsafe(`ALTER TABLE communities ALTER COLUMN "ownerId" DROP NOT NULL`) } catch(_) {}
   try { await db.$queryRawUnsafe(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS "communityId" TEXT`) } catch(_) {}
+  // 新增房型 enum 值
+  for (const v of ['STUDIO','STORE','OFFICE','LIVE_OFFICE','FACTORY','PARKING','LAND','OTHER']) {
+    try { await db.$queryRawUnsafe(`ALTER TYPE "PropertyType" ADD VALUE IF NOT EXISTS '${v}'`) } catch(_) {}
+  }
   _done = true
 }

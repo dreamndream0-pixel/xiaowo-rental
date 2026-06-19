@@ -39,7 +39,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
     deletedAt: null,
     ...(city && { city }),
     ...(district && { district }),
-    ...(type && { type }),
+    ...(type && { type: { in: type.split(',') } }),
     ...(keyword && {
       OR: [
         { title: { contains: keyword } },

@@ -6,11 +6,18 @@ import { useRouter } from 'next/navigation'
 import { ALL_CITIES, getDistricts } from '@/lib/districts'
 
 const TYPES = [
-  { value: '',             label: '不限' },
   { value: 'SUITE',        label: '套房' },
   { value: 'ROOM',         label: '雅房' },
   { value: 'WHOLE_FLOOR',  label: '整層住家' },
   { value: 'SHARED_SUITE', label: '分租套房' },
+  { value: 'STUDIO',       label: '獨立套房' },
+  { value: 'STORE',        label: '店面' },
+  { value: 'OFFICE',       label: '辦公' },
+  { value: 'LIVE_OFFICE',  label: '住辦' },
+  { value: 'FACTORY',      label: '廠房' },
+  { value: 'PARKING',      label: '車位' },
+  { value: 'LAND',         label: '土地' },
+  { value: 'OTHER',        label: '其他' },
 ]
 
 const TAG_INLINE = 8
@@ -20,7 +27,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
   const [keyword,  setKeyword]  = useState(initialParams.keyword  || '')
   const [city,     setCity]     = useState(initialParams.city     || '')
   const [district, setDistrict] = useState(initialParams.district || '')
-  const [type,     setType]     = useState(initialParams.type     || '')
+  const [types,    setTypes]    = useState(initialParams.type ? initialParams.type.split(',') : [])
   const [rentMin,  setRentMin]  = useState(Number(initialParams.minPrice) || 0)
   const [rentMax,  setRentMax]  = useState(Number(initialParams.maxPrice) || 50000)
   const [tags,     setTags]     = useState(initialParams.tags ? initialParams.tags.split(',') : [])
@@ -71,10 +78,10 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
 
   const doSearch = () => {
     const params = new URLSearchParams()
-    if (keyword)  params.set('keyword',  keyword)
-    if (city)     params.set('city',     city)
-    if (district) params.set('district', district)
-    if (type)     params.set('type',     type)
+    if (keyword)       params.set('keyword',  keyword)
+    if (city)          params.set('city',     city)
+    if (district)      params.set('district', district)
+    if (types.length)  params.set('type',     types.join(','))
     if (rentMin > 0)     params.set('minPrice', rentMin)
     if (rentMax < 50000) params.set('maxPrice', rentMax)
     if (tags.length > 0) params.set('tags', tags.join(','))
@@ -243,17 +250,27 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
           onMouseLeave={e => { if (activePopover !== 'type') e.currentTarget.style.background = '' }}
         >
           <span style={labelSt}>房型</span>
-          <span style={valueSt}>{TYPES.find(t => t.value === type)?.label || '不限'}</span>
+          <span style={valueSt}>
+            {types.length === 0 ? '不限' : types.length === 1 ? TYPES.find(t => t.value === types[0])?.label : `已選 ${types.length} 項`}
+          </span>
           {activePopover === 'type' && (
-            <div onClick={e => e.stopPropagation()} style={{ ...popoverSt, right: 0, left: 'auto', width: 220 }}>
-              <div style={popTitle}>選擇房型</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {TYPES.map(t => (
-                  <button key={t.value} style={{ ...optionBtn(type === t.value), textAlign: 'left' }}
-                    onClick={() => { setType(t.value); setActivePopover(null) }}>
-                    {t.label}
-                  </button>
-                ))}
+            <div onClick={e => e.stopPropagation()} style={{ ...popoverSt, right: 0, left: 'auto', width: 240 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={popTitle}>選擇房型（可複選）</span>
+                {types.length > 0 && (
+                  <button onClick={() => setTypes([])} style={{ fontSize: 11, color: 'var(--sage)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>清除</button>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {TYPES.map(t => {
+                  const active = types.includes(t.value)
+                  return (
+                    <button key={t.value} style={optionBtn(active)}
+                      onClick={() => setTypes(prev => active ? prev.filter(v => v !== t.value) : [...prev, t.value])}>
+                      {t.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}

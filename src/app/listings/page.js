@@ -23,7 +23,7 @@ async function getProperties(searchParams) {
     status:    'AVAILABLE',
     ...(city     && { city }),
     ...(district && { district }),
-    ...(type     && { type }),
+    ...(type     && { type: { in: type.split(',') } }),
     ...(landlord && { ownerId: landlord }),
     price: {
       gte: Number(minPrice),

@@ -8,11 +8,28 @@ export default function StatsRow({ listings = 0, landlords = 0, matches = 0 }) {
     { num: '4.8', label: '平均評分' },
   ]
   return (
-    <div style={{ display: 'flex', gap: 0, marginTop: 44, flexWrap: 'wrap', background: 'rgba(250,250,248,0.7)', backdropFilter: 'blur(8px)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--oat-mid)', overflow: 'hidden', maxWidth: 560 }}>
+    <div style={{
+      display: 'flex', gap: 0, marginTop: 44,
+      background: 'rgba(250,250,248,0.7)', backdropFilter: 'blur(8px)',
+      borderRadius: 'var(--radius-lg)', border: '1px solid var(--oat-mid)',
+      overflow: 'hidden', maxWidth: 560, width: '100%',
+    }}>
       {items.map(({ num, label }, i) => (
-        <div key={label} style={{ flex: 1, minWidth: 110, textAlign: 'center', padding: '20px 12px', borderLeft: i > 0 ? '1px solid var(--oat-mid)' : 'none' }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--sage-dark)', lineHeight: 1, fontFamily: 'Montserrat,sans-serif', letterSpacing: -0.5 }}>{num}</div>
-          <div style={{ fontSize: 11, color: 'var(--gray-mid)', letterSpacing: 3, marginTop: 7 }}>{label}</div>
+        <div key={label} style={{
+          flex: 1, minWidth: 0, textAlign: 'center',
+          padding: '18px 4px',
+          borderLeft: i > 0 ? '1px solid var(--oat-mid)' : 'none',
+        }}>
+          <div style={{
+            fontSize: 'clamp(16px, 4vw, 26px)',
+            fontWeight: 800, color: 'var(--sage-dark)',
+            lineHeight: 1, fontFamily: 'Montserrat,sans-serif', letterSpacing: -0.5,
+          }}>{num}</div>
+          <div style={{
+            fontSize: 'clamp(9px, 2.2vw, 11px)',
+            color: 'var(--gray-mid)', letterSpacing: 2, marginTop: 7,
+            whiteSpace: 'nowrap',
+          }}>{label}</div>
         </div>
       ))}
     </div>
