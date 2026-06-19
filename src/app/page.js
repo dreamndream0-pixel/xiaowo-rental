@@ -7,30 +7,35 @@ import PropertyGrid from '@/components/property/PropertyGrid'
 import StatsRow from '@/components/ui/StatsRow'
 import HeroSlideshow from '@/components/home/HeroSlideshow'
 
-// ISR：每 120 秒重新產生一次，不用每個 request 都打 DB
+// ISR：每 120 秒重新產生一次
 export const revalidate = 120
-
+// 不在 build time prerender（避免 build 時打 DB 連線超時）
+export const dynamic = 'force-dynamic'
 
 const getFeaturedProperties = unstable_cache(async () => {
-  return db.property.findMany({
-    where:   { featured: true, status: 'AVAILABLE', deletedAt: null },
-    include: {
-      landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
-      images:   { where: { isCover: true }, take: 1 },
-      amenities: { take: 4 },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 6,
-  })
+  try {
+    return await db.property.findMany({
+      where:   { featured: true, status: 'AVAILABLE', deletedAt: null },
+      include: {
+        landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
+        images:   { where: { isCover: true }, take: 1 },
+        amenities: { take: 4 },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+    })
+  } catch { return [] }
 }, ['featured-properties'], { revalidate: 120 })
 
 const getPlatformStats = unstable_cache(async () => {
-  const [listings, landlords, matches] = await Promise.all([
-    db.property.count({ where: { status: 'AVAILABLE', deletedAt: null } }),
-    db.user.count({ where: { role: 'LANDLORD', verified: true, deletedAt: null } }),
-    db.property.count({ where: { status: 'RENTED', deletedAt: null } }),
-  ])
-  return { listings, landlords, matches }
+  try {
+    const [listings, landlords, matches] = await Promise.all([
+      db.property.count({ where: { status: 'AVAILABLE', deletedAt: null } }),
+      db.user.count({ where: { role: 'LANDLORD', verified: true, deletedAt: null } }),
+      db.property.count({ where: { status: 'RENTED', deletedAt: null } }),
+    ])
+    return { listings, landlords, matches }
+  } catch { return { listings: 0, landlords: 0, matches: 0 } }
 }, ['platform-stats'], { revalidate: 300 })
 
 export default async function HomePage() {
