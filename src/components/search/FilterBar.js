@@ -35,6 +35,14 @@ export default function FilterBar() {
     { value: 'ROOM',         label: '雅房' },
     { value: 'WHOLE_FLOOR',  label: '整層住家' },
     { value: 'SHARED_SUITE', label: '分租套房' },
+    { value: 'STUDIO',       label: '獨立套房' },
+    { value: 'STORE',        label: '店面' },
+    { value: 'OFFICE',       label: '辦公' },
+    { value: 'LIVE_OFFICE',  label: '住辦' },
+    { value: 'FACTORY',      label: '廠房' },
+    { value: 'PARKING',      label: '車位' },
+    { value: 'LAND',         label: '土地' },
+    { value: 'OTHER',        label: '其他' },
   ]
 
   const toggleType = (value) => {

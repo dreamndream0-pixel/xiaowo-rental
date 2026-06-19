@@ -1,8 +1,8 @@
 // src/types/index.ts
 
 export type UserRole = 'TENANT' | 'LANDLORD' | 'ADMIN'
-export type PropertyType = 'SUITE' | 'ROOM' | 'WHOLE_FLOOR' | 'SHARED_SUITE'
-export type PropertyStatus = 'PENDING' | 'AVAILABLE' | 'RENTED' | 'PAUSED' | 'REJECTED'
+export type PropertyType = 'SUITE' | 'ROOM' | 'WHOLE_FLOOR' | 'SHARED_SUITE' | 'STUDIO' | 'STORE' | 'OFFICE' | 'LIVE_OFFICE' | 'FACTORY' | 'PARKING' | 'LAND' | 'OTHER'
+export type PropertyStatus = 'PENDING' | 'AVAILABLE' | 'RENTED' | 'PAUSED' | 'REJECTED' | 'COMING_SOON' | 'INACTIVE'
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED'
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
@@ -10,6 +10,14 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   ROOM:         '雅房',
   WHOLE_FLOOR:  '整層住家',
   SHARED_SUITE: '分租套房',
+  STUDIO:       '獨立套房',
+  STORE:        '店面',
+  OFFICE:       '辦公',
+  LIVE_OFFICE:  '住辦',
+  FACTORY:      '廠房',
+  PARKING:      '車位',
+  LAND:         '土地',
+  OTHER:        '其他',
 }
 
 export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
