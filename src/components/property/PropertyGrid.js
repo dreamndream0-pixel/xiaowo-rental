@@ -25,11 +25,12 @@ export default function PropertyGrid({ properties = [] }) {
             ...p,
             coverUrl: p.images?.[0]?.url ?? null,
             tags: p.tags?.map(t => t.name) ?? [],
-            landlordName: p.landlord?.name || p.owner?.siteName,
-            landlordHandle: p.landlord?.handle,
-            landlordSiteId: p.owner?.id,
-            landlordAvatar: p.landlord?.avatar,
-            landlordVerified: p.landlord?.verified,
+            // owner = Landlord model（真實房東）；landlord = User model（登入帳號）
+            landlordName:     p.owner?.name     || p.landlord?.name,
+            landlordHandle:   p.landlord?.handle || null,
+            landlordSiteId:   p.owner?.id        || null,
+            landlordAvatar:   p.owner?.avatar    || p.landlord?.avatar,
+            landlordVerified: p.owner != null    || p.landlord?.verified,
           }} />
       ))}
     </div>
