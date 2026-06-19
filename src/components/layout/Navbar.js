@@ -17,16 +17,13 @@ export default function Navbar() {
       const cached = localStorage.getItem('site_logo_cache')
       if (cached) setLogoUrl(cached)
     } catch {}
-    // 再從 API 更新
+    // 再從 API 更新（只有 API 明確回傳有效 URL 才更新，避免 API 暫時失敗清掉快取）
     fetch('/api/admin/hero').then(r => r.json()).then(data => {
       if (data && data.logoUrl) {
         setLogoUrl(data.logoUrl)
         try { localStorage.setItem('site_logo_cache', data.logoUrl) } catch {}
-      } else {
-        // 後台已清除 logo，清掉快取
-        try { localStorage.removeItem('site_logo_cache') } catch {}
-        setLogoUrl('')
       }
+      // API 回傳空時保留快取，不清除
     }).catch(() => {})
   }, [])
 

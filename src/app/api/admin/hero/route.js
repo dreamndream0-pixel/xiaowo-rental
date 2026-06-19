@@ -16,7 +16,7 @@ export async function OPTIONS() {
 
 // 確保資料表存在（首次自動建立）
 async function ensureTable() {
-  await db.$executeRawUnsafe(`
+  await db.$queryRawUnsafe(`
     CREATE TABLE IF NOT EXISTS site_settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,
@@ -34,7 +34,7 @@ async function getSetting(key) {
 }
 
 async function setSetting(key, value) {
-  await db.$executeRawUnsafe(
+  await db.$queryRawUnsafe(
     `INSERT INTO site_settings (key, value, "updatedAt") VALUES ($1, $2, NOW())
      ON CONFLICT (key) DO UPDATE SET value = $2, "updatedAt" = NOW()`,
     key,
