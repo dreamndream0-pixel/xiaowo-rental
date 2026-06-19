@@ -15,12 +15,12 @@ export const dynamic = 'force-dynamic'
 const getFeaturedProperties = unstable_cache(async () => {
   try {
     return await db.property.findMany({
-      where:   { featured: true, status: 'AVAILABLE', deletedAt: null },
+      where:   { featured: true, status: { in: ['AVAILABLE', 'COMING_SOON'] }, deletedAt: null },
       include: {
         landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
         owner:    { select: { id: true, name: true, siteName: true, avatar: true } },
         images:   { where: { isCover: true }, take: 1 },
-        amenities: { take: 4 },
+        tags:     true,
       },
       orderBy: { createdAt: 'desc' },
       take: 6,
