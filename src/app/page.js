@@ -81,8 +81,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <div className="snail-trail" aria-hidden="true">🐌</div>
-
         {/* 精選房源 */}
         <section className="section-wrap">
           <div className="section-header">
