@@ -82,13 +82,13 @@ export default async function CommunityPage({ params }) {
           </div>
         )}
 
-        {/* 地圖 */}
+        {/* 地圖（用地址生成 Google Maps embed，與房源詳情頁相同邏輯） */}
         {community.mapUrl && (
           <div style={{ marginBottom: 36 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, color: 'var(--charcoal)' }}>📍 社區位置</h2>
             <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--oat-mid)' }}>
               <iframe
-                src={community.mapUrl}
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(community.mapUrl)}&output=embed&hl=zh-TW&z=16`}
                 width="100%" height="380"
                 style={{ border: 0, display: 'block' }}
                 allowFullScreen loading="lazy"
