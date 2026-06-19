@@ -2,6 +2,8 @@ import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import { unstable_cache } from 'next/cache'
 
+export const dynamic = 'force-dynamic'
+
 // 標籤很少變動，快取 5 分鐘
 const getCachedTags = unstable_cache(
   async () => {
