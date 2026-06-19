@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PropertyPage({ params, searchParams }) {
-  await ensureMigrations()
+  await ensureMigrations().catch(()=>{})
   const property = await db.property.findFirst({
     where: { id: params.id, deletedAt: null },
     include: {

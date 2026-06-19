@@ -65,7 +65,7 @@ async function getProperties(searchParams) {
 }
 
 export default async function ListingsPage({ searchParams }) {
-  await ensureMigrations()
+  await ensureMigrations().catch(()=>{})
   const { properties, total, page, totalPages } = await getProperties(searchParams)
 
   const label = [searchParams.city, searchParams.district, searchParams.keyword]

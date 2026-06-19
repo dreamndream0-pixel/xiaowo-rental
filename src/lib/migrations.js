@@ -1,10 +1,12 @@
 // src/lib/migrations.js
-// 確保資料庫欄位存在
-// 模組載入時立即執行，用 $queryRawUnsafe（比 $executeRawUnsafe 對 DDL 更相容）
+// 確保 communities 資料表存在，每個 Lambda 執行一次
 
 import { db } from '@/lib/db'
 
-export const migrationReady = (async () => {
+let _done = false
+
+export async function ensureMigrations() {
+  if (_done) return
   try {
     await db.$queryRawUnsafe(`
       CREATE TABLE IF NOT EXISTS communities (
@@ -18,12 +20,8 @@ export const migrationReady = (async () => {
         "updatedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `)
-  } catch(e) { console.error('[migrations] create communities:', e.message) }
-
+  } catch(_) {}
   try { await db.$queryRawUnsafe(`ALTER TABLE communities ALTER COLUMN "ownerId" DROP NOT NULL`) } catch(_) {}
   try { await db.$queryRawUnsafe(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS "communityId" TEXT`) } catch(_) {}
-})()
-
-export async function ensureMigrations() {
-  return migrationReady
+  _done = true
 }

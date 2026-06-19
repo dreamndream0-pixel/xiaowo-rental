@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
 export async function GET(request) {
-  await ensureMigrations()
+  await ensureMigrations().catch(()=>{})
   const { searchParams } = new URL(request.url)
 
   const city     = searchParams.get('city')     || undefined

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function LandlordSitePage({ params, searchParams }) {
-  await ensureMigrations()
+  await ensureMigrations().catch(()=>{})
   const landlord = await db.landlord.findUnique({
     where: { id: params.id },
     select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true },

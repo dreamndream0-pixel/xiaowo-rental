@@ -34,7 +34,7 @@ async function getPlatformStats() {
 }
 
 export default async function HomePage() {
-  await ensureMigrations()
+  await ensureMigrations().catch(()=>{})
   const [featured, stats] = await Promise.all([
     getFeaturedProperties(),
     getPlatformStats(),
