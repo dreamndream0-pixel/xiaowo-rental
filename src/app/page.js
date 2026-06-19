@@ -1,5 +1,6 @@
 // src/app/page.js
 import { db } from '@/lib/db'
+import { ensureMigrations } from '@/lib/migrations'
 import Navbar from '@/components/layout/Navbar'
 import SearchBar from '@/components/search/SearchBar'
 import PropertyGrid from '@/components/property/PropertyGrid'
@@ -33,6 +34,7 @@ async function getPlatformStats() {
 }
 
 export default async function HomePage() {
+  await ensureMigrations()
   const [featured, stats] = await Promise.all([
     getFeaturedProperties(),
     getPlatformStats(),

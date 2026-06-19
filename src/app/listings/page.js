@@ -4,6 +4,7 @@ import PropertyGrid from '@/components/property/PropertyGrid'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
+import { ensureMigrations } from '@/lib/migrations'
 
 export const metadata = { title: '全部房源' }
 
@@ -64,6 +65,7 @@ async function getProperties(searchParams) {
 }
 
 export default async function ListingsPage({ searchParams }) {
+  await ensureMigrations()
   const { properties, total, page, totalPages } = await getProperties(searchParams)
 
   const label = [searchParams.city, searchParams.district, searchParams.keyword]
