@@ -6,17 +6,12 @@ import { unstable_cache } from 'next/cache'
 
 const getCachedLogo = unstable_cache(
   async () => {
-    try {
-      const rows = await db.$queryRawUnsafe(
-        `SELECT value FROM site_settings WHERE key = 'site_logo'`
-      )
-      return rows[0]?.value || ''
-    } catch {
-      return ''
-    }
+    // ⚠️ 不 catch：錯誤直接拋出，unstable_cache 不快取失敗結果
+    const row = await db.siteSetting.findUnique({ where: { key: 'site_logo' } })
+    return row?.value || ''
   },
   ['site-logo'],
-  { revalidate: 60, tags: ['site-logo'] }  // tags 對應 revalidateTag('site-logo')
+  { revalidate: 60, tags: ['site-logo'] }
 )
 
 export default async function NavbarWrapper() {

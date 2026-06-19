@@ -462,3 +462,14 @@ model Review {
 
 // Community model 透過 raw SQL 管理（見 src/lib/migrations.js）
 // 不在 Prisma schema 定義，避免 DB 不同步時崩潰
+
+// ─────────────────────────────────────────────
+// 網站全域設定（logo、輪播圖等）
+// ─────────────────────────────────────────────
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("site_settings")
+}
