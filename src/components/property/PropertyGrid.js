@@ -25,9 +25,8 @@ export default function PropertyGrid({ properties = [] }) {
             ...p,
             coverUrl: p.images?.[0]?.url ?? null,
             tags: p.tags?.map(t => t.name) ?? [],
-            // landlord = User model（本名，用 Google/Email 註冊的真實姓名）
-            // owner    = Landlord model（後台帳號，name 可能是店名/官網名）
-            landlordName:     p.landlord?.name   || p.owner?.name,
+            // owner.siteName = 房東個人官網名稱（例：小蝸沙鹿館）
+            landlordName:     p.owner?.siteName  || p.owner?.name || p.landlord?.name,
             landlordHandle:   p.landlord?.handle || null,
             landlordSiteId:   p.owner?.id        || null,
             landlordAvatar:   p.landlord?.avatar || p.owner?.avatar,
