@@ -4,10 +4,20 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/types'
 
 export default function PropertyCard({ property, detailHref }) {
   const [fav, setFav] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  function handleCardClick(e) {
+    // only trigger on main card area (not fav button)
+    if (e.defaultPrevented) return
+    setLoading(true)
+    router.push(propertyHref)
+  }
   const {
     id, title, type, status, city, district,
     size, price, coverUrl, tags = [],
@@ -26,13 +36,32 @@ export default function PropertyCard({ property, detailHref }) {
       background: 'white', borderRadius: 'var(--radius-lg)',
       overflow: 'hidden', boxShadow: 'var(--shadow-sm)',
       transition: 'var(--transition)', cursor: 'pointer',
-      border: '1px solid transparent',
+      border: '1px solid transparent', position: 'relative',
     }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--oat-mid)' }}
       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.borderColor = 'transparent' }}
+      onClick={handleCardClick}
     >
+      {/* Loading overlay */}
+      {loading && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 10,
+          background: 'rgba(255,255,255,0.75)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 'var(--radius-lg)',
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            border: '3px solid var(--oat-mid)',
+            borderTopColor: 'var(--sage)',
+            animation: 'spin 0.7s linear infinite',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
       {/* Image */}
-      <Link href={propertyHref} style={{ textDecoration: 'none' }}>
+      <Link href={propertyHref} style={{ textDecoration: 'none' }} onClick={e => e.preventDefault()}>
         <div style={{ height: 190, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
           {coverUrl ? (
             <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
@@ -55,7 +84,7 @@ export default function PropertyCard({ property, detailHref }) {
             </span>
           </div>
           {/* Fav button */}
-          <button onClick={e => { e.preventDefault(); setFav(f => !f) }} style={{
+          <button onClick={e => { e.preventDefault(); e.stopPropagation(); setFav(f => !f) }} style={{
             position: 'absolute', top: 12, right: 12,
             width: 32, height: 32, borderRadius: '50%',
             background: 'rgba(250,250,248,0.92)', border: 'none',
@@ -66,7 +95,7 @@ export default function PropertyCard({ property, detailHref }) {
       </Link>
 
       {/* Body */}
-      <Link href={propertyHref} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={propertyHref} style={{ textDecoration: 'none', color: 'inherit' }} onClick={e => e.preventDefault()}>
         <div style={{ padding: '16px 18px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--sage)', fontFamily: 'Montserrat,sans-serif' }}>NT$</span>
