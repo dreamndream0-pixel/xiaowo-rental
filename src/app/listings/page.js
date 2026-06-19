@@ -21,7 +21,7 @@ async function getProperties(searchParams) {
 
   const where = {
     deletedAt: null,
-    status:    'AVAILABLE',
+    status:    { in: ['AVAILABLE', 'COMING_SOON'] },
     ...(city     && { city }),
     ...(district && { district }),
     ...(type     && { type: { in: type.split(',') } }),

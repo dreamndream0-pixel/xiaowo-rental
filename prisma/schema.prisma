@@ -262,6 +262,8 @@ enum PropertyStatus {
   RENTED
   PAUSED
   REJECTED
+  COMING_SOON  // 即將釋出（上架但尚未可租）
+  INACTIVE     // 已下架
 }
 
 enum BoostPlan {
