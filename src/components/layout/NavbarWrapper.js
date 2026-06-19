@@ -16,7 +16,7 @@ const getCachedLogo = unstable_cache(
     }
   },
   ['site-logo'],
-  { revalidate: 60 }  // 60 秒快取，上傳新 logo 後最多 60 秒生效
+  { revalidate: 60, tags: ['site-logo'] }  // tags 對應 revalidateTag('site-logo')
 )
 
 export default async function NavbarWrapper() {

@@ -20,7 +20,7 @@ const getCachedSettings = unstable_cache(
     }
   },
   ['hero-settings'],
-  { revalidate: 30 }
+  { revalidate: 30, tags: ['hero-settings', 'site-logo'] }
 )
 
 const CORS = {

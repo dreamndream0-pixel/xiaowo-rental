@@ -4,24 +4,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/types'
+import { PROPERTY_TYPE_LABELS } from '@/types'
 
 export default function PropertyCard({ property, detailHref }) {
   const [fav, setFav] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
-  function handleCardClick(e) {
-    // only trigger on main card area (not fav button)
-    if (e.defaultPrevented) return
-    setLoading(true)
-    router.push(propertyHref)
-  }
   const {
     id, title, type, status, city, district,
     size, price, coverUrl, tags = [],
-    landlordId, landlordName, landlordHandle, landlordSiteId, landlordAvatar, landlordVerified,
+    landlordName, landlordHandle, landlordSiteId, landlordAvatar, landlordVerified,
   } = property
 
   const statusVariant = {
@@ -29,6 +21,7 @@ export default function PropertyCard({ property, detailHref }) {
     RENTED:    { label: '已租', color: 'white', bg: 'rgba(61,61,61,0.75)' },
     PENDING:   { label: '審核中', color: 'white', bg: 'var(--warn)' },
   }[status] ?? { label: status, color: 'white', bg: 'var(--gray-mid)' }
+
   const propertyHref = detailHref || `/property/${id}`
 
   return (
@@ -40,28 +33,28 @@ export default function PropertyCard({ property, detailHref }) {
     }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--oat-mid)' }}
       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.borderColor = 'transparent' }}
-      onClick={handleCardClick}
     >
       {/* Loading overlay */}
       {loading && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 10,
-          background: 'rgba(255,255,255,0.75)',
+          background: 'rgba(255,255,255,0.72)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRadius: 'var(--radius-lg)',
+          pointerEvents: 'none',
         }}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
             border: '3px solid var(--oat-mid)',
             borderTopColor: 'var(--sage)',
-            animation: 'spin 0.7s linear infinite',
+            animation: 'cardSpin 0.7s linear infinite',
           }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <style>{`@keyframes cardSpin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
       {/* Image */}
-      <Link href={propertyHref} style={{ textDecoration: 'none' }} onClick={e => e.preventDefault()}>
+      <Link href={propertyHref} style={{ textDecoration: 'none' }} onClick={() => setLoading(true)}>
         <div style={{ height: 190, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
           {coverUrl ? (
             <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
@@ -95,7 +88,7 @@ export default function PropertyCard({ property, detailHref }) {
       </Link>
 
       {/* Body */}
-      <Link href={propertyHref} style={{ textDecoration: 'none', color: 'inherit' }} onClick={e => e.preventDefault()}>
+      <Link href={propertyHref} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setLoading(true)}>
         <div style={{ padding: '16px 18px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--sage)', fontFamily: 'Montserrat,sans-serif' }}>NT$</span>
@@ -114,10 +107,10 @@ export default function PropertyCard({ property, detailHref }) {
 
       {/* Footer */}
       <div style={{ padding: '0 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--oat-mid)', paddingTop: 12 }}>
-        <Link href={landlordSiteId ? `/site/${landlordSiteId}` : landlordHandle ? `/landlord/${landlordHandle}` : '#'} onClick={e => e.stopPropagation()} style={{
-          display: 'flex', alignItems: 'center', gap: 7,
-          fontSize: 11, color: 'var(--gray-mid)', textDecoration: 'none',
-        }}
+        <Link
+          href={landlordSiteId ? `/site/${landlordSiteId}` : landlordHandle ? `/landlord/${landlordHandle}` : '#'}
+          onClick={e => e.stopPropagation()}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: 'var(--gray-mid)', textDecoration: 'none' }}
           onMouseEnter={e => e.currentTarget.style.color = 'var(--sage-dark)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-mid)'}
         >
@@ -127,7 +120,9 @@ export default function PropertyCard({ property, detailHref }) {
             fontSize: 10, fontWeight: 700, color: 'var(--sage-dark)',
             overflow: 'hidden', flexShrink: 0,
           }}>
-            {landlordAvatar ? <Image src={landlordAvatar} alt={landlordName} width={22} height={22} style={{ objectFit: 'cover' }} /> : landlordName?.[0] ?? '?'}
+            {landlordAvatar
+              ? <Image src={landlordAvatar} alt={landlordName} width={22} height={22} style={{ objectFit: 'cover' }} />
+              : landlordName?.[0] ?? '?'}
           </div>
           {landlordName}
           {landlordVerified && <span style={{ color: 'var(--sage)', fontSize: 9, fontWeight: 700 }}>✓</span>}
