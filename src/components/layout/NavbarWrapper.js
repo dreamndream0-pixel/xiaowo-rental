@@ -6,7 +6,14 @@ import { unstable_cache } from 'next/cache'
 
 const getCachedLogo = unstable_cache(
   async () => {
-    // raw SQL：不依賴 Prisma model，throw 時 unstable_cache 不快取
+    // 確保資料表存在，再讀取
+    await db.$queryRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `)
     const rows = await db.$queryRawUnsafe(
       `SELECT value FROM site_settings WHERE key = 'site_logo'`
     )

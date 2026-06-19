@@ -5,9 +5,21 @@ import { unstable_cache, revalidateTag } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
+// 確保資料表存在（首次自動建立）
+async function ensureTable() {
+  await db.$queryRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+}
+
 // 用 raw SQL 讀取，不依賴 Prisma model 是否 generate 成功
 // 拋出錯誤讓 unstable_cache 不快取失敗結果
 async function readSettingsFromDB() {
+  await ensureTable()
   const rows = await db.$queryRawUnsafe(
     `SELECT key, value FROM site_settings WHERE key IN ('hero_slides','site_logo')`
   )
