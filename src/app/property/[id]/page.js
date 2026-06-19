@@ -10,42 +10,37 @@ import PropertyDetail from '@/components/property/PropertyDetail'
 
 // React.cache：同一 request 內 generateMetadata 和頁面只打一次 DB
 const getProperty = cache(async (id) => {
-  try {
-    const [property, communityRows] = await Promise.all([
-      db.property.findFirst({
-        where: { id, deletedAt: null },
-        include: {
-          landlord: {
-            select: {
-              id: true, name: true, handle: true, avatar: true,
-              verified: true, bio: true, avgRating: true,
-              reviewCount: true, yearsActive: true, totalListings: true,
-              lineOfficialId: true,
-            },
-          },
-          images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
-          amenities: true,
-          tags:      true,
-          owner: {
-            select: {
-              id: true, name: true, siteName: true, siteLogo: true,
-              isActive: true, lineChannelToken: true,
-            },
+  const [property, communityRows] = await Promise.all([
+    db.property.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        landlord: {
+          select: {
+            id: true, name: true, handle: true, avatar: true,
+            verified: true, bio: true, avgRating: true,
+            reviewCount: true, yearsActive: true, totalListings: true,
+            lineOfficialId: true,
           },
         },
-      }),
-      db.$queryRawUnsafe(
-        `SELECT p."communityId", c.name as "communityName"
-         FROM properties p
-         LEFT JOIN communities c ON c.id = p."communityId"
-         WHERE p.id = $1`, id
-      ).catch(() => []),
-    ])
-    return { property: property || null, communityRows: communityRows || [] }
-  } catch (e) {
-    console.error('getProperty error:', e)
-    return { property: null, communityRows: [] }
-  }
+        images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
+        amenities: true,
+        tags:      true,
+        owner: {
+          select: {
+            id: true, name: true, siteName: true, siteLogo: true,
+            isActive: true, lineChannelToken: true,
+          },
+        },
+      },
+    }),
+    db.$queryRawUnsafe(
+      `SELECT p."communityId", c.name as "communityName"
+       FROM properties p
+       LEFT JOIN communities c ON c.id = p."communityId"
+       WHERE p.id = $1`, id
+    ).catch(() => []),  // communities 表不存在時不影響主查詢
+  ])
+  return { property: property ?? null, communityRows: communityRows ?? [] }
 })
 
 export async function generateMetadata({ params }) {
