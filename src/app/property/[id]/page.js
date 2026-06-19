@@ -2,7 +2,6 @@
 export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
-import { ensureMigrations } from '@/lib/migrations'
 import Navbar from '@/components/layout/NavbarWrapper'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import PropertyDetail from '@/components/property/PropertyDetail'
@@ -21,7 +20,6 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PropertyPage({ params, searchParams }) {
-  await ensureMigrations().catch(()=>{})
   const property = await db.property.findFirst({
     where: { id: params.id, deletedAt: null },
     include: {

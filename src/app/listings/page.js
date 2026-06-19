@@ -4,9 +4,9 @@ import PropertyGrid from '@/components/property/PropertyGrid'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
-import { ensureMigrations } from '@/lib/migrations'
 
 export const metadata = { title: '全部房源' }
+export const dynamic = 'force-dynamic'  // 搜尋結果必須即時
 
 async function getProperties(searchParams) {
   const {
@@ -65,7 +65,6 @@ async function getProperties(searchParams) {
 }
 
 export default async function ListingsPage({ searchParams }) {
-  await ensureMigrations().catch(()=>{})
   const { properties, total, page, totalPages } = await getProperties(searchParams)
 
   const label = [searchParams.city, searchParams.district, searchParams.keyword]

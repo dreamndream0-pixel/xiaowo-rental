@@ -1,12 +1,10 @@
 // src/app/api/properties/route.js
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { ensureMigrations } from '@/lib/migrations'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
 export async function GET(request) {
-  await ensureMigrations().catch(()=>{})
   const { searchParams } = new URL(request.url)
 
   const city     = searchParams.get('city')     || undefined

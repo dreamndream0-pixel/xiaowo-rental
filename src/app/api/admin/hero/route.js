@@ -1,8 +1,27 @@
 // src/app/api/admin/hero/route.js
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { unstable_cache, revalidateTag } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
+
+const getCachedSettings = unstable_cache(
+  async () => {
+    try {
+      await ensureTable()
+      const [slidesRaw, logoUrl] = await Promise.all([
+        getSetting('hero_slides'),
+        getSetting('site_logo'),
+      ])
+      const slides = slidesRaw ? JSON.parse(slidesRaw).filter(s => s && s.url) : []
+      return { slides, logoUrl: logoUrl || '' }
+    } catch (e) {
+      return { slides: [], logoUrl: '' }
+    }
+  },
+  ['hero-settings'],
+  { revalidate: 30 }
+)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -58,8 +77,10 @@ async function readSettings() {
 }
 
 export async function GET() {
-  const settings = await readSettings()
-  return NextResponse.json(settings, { headers: CORS })
+  const settings = await getCachedSettings()
+  return NextResponse.json(settings, {
+    headers: { ...CORS, 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' }
+  })
 }
 
 export async function POST(request) {
@@ -79,6 +100,8 @@ export async function POST(request) {
       await setSetting('site_logo', body.logoUrl)
     }
 
+    revalidateTag('hero-settings')
+    revalidateTag('site-logo')
     return NextResponse.json({ ok: true, count: slides.length }, { headers: CORS })
   } catch (e) {
     console.error('hero POST error:', e)

@@ -1,17 +1,17 @@
 // src/app/page.js
 import { db } from '@/lib/db'
-import { ensureMigrations } from '@/lib/migrations'
+import { unstable_cache } from 'next/cache'
 import Navbar from '@/components/layout/NavbarWrapper'
 import SearchBar from '@/components/search/SearchBar'
 import PropertyGrid from '@/components/property/PropertyGrid'
 import StatsRow from '@/components/ui/StatsRow'
 import HeroSlideshow from '@/components/home/HeroSlideshow'
 
-// Server Component: 在伺服器端取得精選房源
-export const dynamic = 'force-dynamic'
+// ISR：每 120 秒重新產生一次，不用每個 request 都打 DB
+export const revalidate = 120
 
 
-async function getFeaturedProperties() {
+const getFeaturedProperties = unstable_cache(async () => {
   return db.property.findMany({
     where:   { featured: true, status: 'AVAILABLE', deletedAt: null },
     include: {
@@ -22,19 +22,18 @@ async function getFeaturedProperties() {
     orderBy: { createdAt: 'desc' },
     take: 6,
   })
-}
+}, ['featured-properties'], { revalidate: 120 })
 
-async function getPlatformStats() {
+const getPlatformStats = unstable_cache(async () => {
   const [listings, landlords, matches] = await Promise.all([
     db.property.count({ where: { status: 'AVAILABLE', deletedAt: null } }),
     db.user.count({ where: { role: 'LANDLORD', verified: true, deletedAt: null } }),
     db.property.count({ where: { status: 'RENTED', deletedAt: null } }),
   ])
   return { listings, landlords, matches }
-}
+}, ['platform-stats'], { revalidate: 300 })
 
 export default async function HomePage() {
-  await ensureMigrations().catch(()=>{})
   const [featured, stats] = await Promise.all([
     getFeaturedProperties(),
     getPlatformStats(),
