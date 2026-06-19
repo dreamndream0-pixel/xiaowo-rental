@@ -96,7 +96,6 @@ model Landlord {
   tenants       Tenant[]
   bookings      Booking[]
   repairs       Repair[]
-  communities   Community[]
 
   @@index([email])
   @@index([adminKey])
@@ -174,8 +173,7 @@ model Property {
   ownerId     String?                          // 多房東架構：歸屬的 Landlord
   owner       Landlord?      @relation(fields: [ownerId], references: [id])
 
-  communityId String?
-  community   Community?     @relation(fields: [communityId], references: [id])
+  // communityId 欄位透過 raw SQL 管理，不經 Prisma ORM（避免欄位不存在時崩潰）
 
   title       String
   type        PropertyType
@@ -454,17 +452,5 @@ model Review {
   @@map("reviews")
 }
 
-model Community {
-  id          String     @id @default(cuid())
-  ownerId     String
-  owner       Landlord   @relation(fields: [ownerId], references: [id])
-  name        String
-  description String     @db.Text @default("")
-  photos      String     @db.Text @default("[]")
-  mapUrl      String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  properties  Property[]
-
-  @@map("communities")
-}
+// Community model 透過 raw SQL 管理（見 src/lib/migrations.js）
+// 不在 Prisma schema 定義，避免 DB 不同步時崩潰

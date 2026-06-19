@@ -75,15 +75,21 @@ export default async function PropertyPage({ params, searchParams }) {
   const { owner, ...safeProperty } = property
   safeProperty.ownerSiteName = owner?.siteName || null
   safeProperty.ownerId = owner?.id || null
-  safeProperty.communityId = property.communityId || null
 
+  // communityId/communityName 透過 raw SQL 查詢（不在 Prisma schema）
+  let communityId = null
   let communityName = null
-  if (property.communityId) {
-    try {
-      const community = await db.community.findUnique({ where: { id: property.communityId }, select: { name: true } })
-      communityName = community?.name || null
-    } catch (_) {}
-  }
+  try {
+    const rows = await db.$queryRawUnsafe(
+      `SELECT p."communityId", c.name as "communityName"
+       FROM properties p
+       LEFT JOIN communities c ON c.id = p."communityId"
+       WHERE p.id = $1`, params.id
+    )
+    communityId = rows[0]?.communityId || null
+    communityName = rows[0]?.communityName || null
+  } catch (_) {}
+  safeProperty.communityId = communityId
   safeProperty.communityName = communityName
 
   // Increment view count
