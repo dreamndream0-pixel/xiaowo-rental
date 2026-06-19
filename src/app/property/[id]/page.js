@@ -15,20 +15,21 @@ const getProperty = cache(async (id) => {
       where: { id, deletedAt: null },
       include: {
         landlord: {
+          // landlord → User model（沒有 lineOfficialId，那在 Landlord/owner model）
           select: {
             id: true, name: true, handle: true, avatar: true,
             verified: true, bio: true, avgRating: true,
             reviewCount: true, yearsActive: true, totalListings: true,
-            lineOfficialId: true,
           },
         },
         images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
         amenities: true,
         tags:      true,
         owner: {
+          // owner → Landlord model（有 lineOfficialId、lineChannelToken）
           select: {
             id: true, name: true, siteName: true, siteLogo: true,
-            isActive: true, lineChannelToken: true,
+            isActive: true, lineChannelToken: true, lineOfficialId: true,
           },
         },
       },
@@ -56,8 +57,8 @@ export default async function PropertyPage({ params, searchParams }) {
   const { property, communityRows } = await getProperty(params.id)
   if (!property) notFound()
 
-  // LINE Official Account ID（優先讀已存 DB 的值）
-  let lineOfficialId = property.landlord?.lineOfficialId || null
+  // LINE Official Account ID 在 Landlord（owner）model，不在 User（landlord）model
+  let lineOfficialId = property.owner?.lineOfficialId || null
   if (!lineOfficialId && property.owner?.lineChannelToken) {
     try {
       const res = await fetch('https://api.line.me/v2/bot/info', {
@@ -67,9 +68,9 @@ export default async function PropertyPage({ params, searchParams }) {
       if (res.ok) {
         const info = await res.json()
         lineOfficialId = info.premiumId || info.basicId || null
-        if (lineOfficialId && property.landlord?.id) {
+        if (lineOfficialId && property.owner?.id) {
           db.landlord.update({
-            where: { id: property.landlord.id },
+            where: { id: property.owner.id },
             data: { lineOfficialId },
           }).catch(() => {})
         }
