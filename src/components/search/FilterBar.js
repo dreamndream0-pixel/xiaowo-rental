@@ -9,52 +9,76 @@ const TAG_INLINE = 8
 export default function FilterBar() {
   const router = useRouter()
   const params = useSearchParams()
-  const currentType = params.get('type') || 'all'
-  const currentTags = params.get('tags') ? params.get('tags').split(',') : []
+
+  // 從 URL 讀取當前已套用的篩選
+  const appliedTypes = params.get('type') ? params.get('type').split(',') : []
+  const appliedTags  = params.get('tags')  ? params.get('tags').split(',')  : []
+
+  // 本地暫存（未套用）
+  const [pendingTypes, setPendingTypes] = useState(appliedTypes)
+  const [pendingTags,  setPendingTags]  = useState(appliedTags)
   const [allTags, setAllTags] = useState([])
   const [tagExpanded, setTagExpanded] = useState(false)
+
+  // URL 變化時同步暫存（換頁/清除後重設）
+  useEffect(() => {
+    setPendingTypes(params.get('type') ? params.get('type').split(',') : [])
+    setPendingTags(params.get('tags')   ? params.get('tags').split(',')  : [])
+  }, [params.toString()])
 
   useEffect(() => {
     fetch('/api/tags').then(r => r.json()).then(setAllTags).catch(() => {})
   }, [])
 
   const types = [
-    { value: 'all',          label: '全部' },
     { value: 'SUITE',        label: '套房' },
     { value: 'ROOM',         label: '雅房' },
     { value: 'WHOLE_FLOOR',  label: '整層住家' },
     { value: 'SHARED_SUITE', label: '分租套房' },
   ]
 
-  const setFilter = (type) => {
+  const toggleType = (value) => {
+    setPendingTypes(prev =>
+      prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
+    )
+  }
+
+  const toggleTag = (tag) => {
+    setPendingTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    )
+  }
+
+  const applyFilter = () => {
     const p = new URLSearchParams(params.toString())
-    if (type === 'all') p.delete('type')
-    else p.set('type', type)
+    if (pendingTypes.length === 0) p.delete('type')
+    else p.set('type', pendingTypes.join(','))
+    if (pendingTags.length === 0) p.delete('tags')
+    else p.set('tags', pendingTags.join(','))
     p.delete('page')
     router.push(`/listings?${p.toString()}`)
   }
 
-  const applyTags = (selected) => {
-    const p = new URLSearchParams(params.toString())
-    if (selected.length === 0) p.delete('tags')
-    else p.set('tags', selected.join(','))
-    p.delete('page')
-    router.push(`/listings?${p.toString()}`)
-  }
-
-  const toggleTagDirect = (tag) => {
-    const next = currentTags.includes(tag) ? currentTags.filter(t => t !== tag) : [...currentTags, tag]
-    applyTags(next)
+  const clearAll = () => {
+    setPendingTypes([])
+    setPendingTags([])
+    router.push('/listings')
   }
 
   const setSort = (sort) => {
     const p = new URLSearchParams(params.toString())
-    p.set('sort', sort)
+    if (sort === 'newest') p.delete('sort')
+    else p.set('sort', sort)
     router.push(`/listings?${p.toString()}`)
   }
 
-  const extraSelected = currentTags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length
-  const hasFilter = currentType !== 'all' || currentTags.length > 0
+  const hasApplied  = appliedTypes.length > 0 || appliedTags.length > 0
+  const hasPending  = pendingTypes.length > 0  || pendingTags.length > 0
+  // 暫存與已套用不同 → 有未套用的變更
+  const isDirty = JSON.stringify([...pendingTypes].sort()) !== JSON.stringify([...appliedTypes].sort()) ||
+                  JSON.stringify([...pendingTags].sort())  !== JSON.stringify([...appliedTags].sort())
+
+  const extraSelected = pendingTags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length
 
   const labelStyle = {
     fontSize: 10, fontWeight: 700, color: 'var(--gray-light)',
@@ -67,36 +91,11 @@ export default function FilterBar() {
       padding: '14px 20px', marginBottom: 24,
       boxShadow: 'var(--shadow-sm)',
     }}>
-      {/* ── 頂列：篩選房源標題 + 清除 ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+      {/* ── 頂列：標題 + 排序 + 清除 ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <span style={{ width: 3, height: 16, background: 'var(--sage)', borderRadius: 99, display: 'inline-block', flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--charcoal)' }}>篩選房源</span>
-        {hasFilter && (
-          <button onClick={() => router.push('/listings')} style={{
-            marginLeft: 'auto', fontSize: 11, color: 'var(--gray-light)',
-            background: 'none', border: '1px solid var(--oat-mid)', cursor: 'pointer',
-            padding: '3px 10px', borderRadius: 8, fontFamily: 'inherit',
-          }}>✕ 清除篩選</button>
-        )}
-      </div>
-
-      {/* ── 房型篩選 ── */}
-      <div style={{ marginBottom: 12 }}>
-        <span style={labelStyle}>房型</span>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {types.map(({ value, label }) => {
-            const active = value === currentType || (value === 'all' && !params.get('type'))
-            return (
-              <button key={value} onClick={() => setFilter(value)} style={{
-                padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: active ? 700 : 500,
-                border: `1.5px solid ${active ? 'var(--sage)' : 'var(--oat-mid)'}`,
-                background: active ? 'var(--sage)' : 'none',
-                color: active ? 'white' : 'var(--gray-mid)',
-                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', whiteSpace: 'nowrap',
-              }}>{label}</button>
-            )
-          })}
-          <div style={{ width: 1, height: 22, background: 'var(--oat-mid)', flexShrink: 0, marginLeft: 2 }} />
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           <select onChange={e => setSort(e.target.value)} defaultValue={params.get('sort') || 'newest'} style={{
             padding: '5px 12px', borderRadius: 14,
             border: '1.5px solid var(--oat-mid)', background: 'none',
@@ -107,18 +106,44 @@ export default function FilterBar() {
             <option value="price-asc">價格低到高</option>
             <option value="price-desc">價格高到低</option>
           </select>
+          {hasApplied && (
+            <button onClick={clearAll} style={{
+              fontSize: 11, color: 'var(--gray-light)',
+              background: 'none', border: '1px solid var(--oat-mid)', cursor: 'pointer',
+              padding: '4px 10px', borderRadius: 8, fontFamily: 'inherit', whiteSpace: 'nowrap',
+            }}>✕ 清除</button>
+          )}
         </div>
       </div>
 
-      {/* ── 標籤條件 ── */}
+      {/* ── 房型（多選）── */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={labelStyle}>房型（可多選）</span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {types.map(({ value, label }) => {
+            const active = pendingTypes.includes(value)
+            return (
+              <button key={value} onClick={() => toggleType(value)} style={{
+                padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: active ? 700 : 500,
+                border: `1.5px solid ${active ? 'var(--sage)' : 'var(--oat-mid)'}`,
+                background: active ? 'var(--sage)' : 'none',
+                color: active ? 'white' : 'var(--gray-mid)',
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', whiteSpace: 'nowrap',
+              }}>{label}</button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── 標籤條件（多選）── */}
       {allTags.length > 0 && (
-        <div style={{ paddingTop: 12, borderTop: '1px solid var(--oat-mid)' }}>
-          <span style={labelStyle}>標籤條件</span>
+        <div style={{ paddingTop: 12, marginBottom: 14, borderTop: '1px solid var(--oat-mid)' }}>
+          <span style={labelStyle}>標籤條件（可多選）</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             {(tagExpanded ? allTags : allTags.slice(0, TAG_INLINE)).map(tag => {
-              const active = currentTags.includes(tag)
+              const active = pendingTags.includes(tag)
               return (
-                <button key={tag} onClick={() => toggleTagDirect(tag)} style={{
+                <button key={tag} onClick={() => toggleTag(tag)} style={{
                   padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: active ? 700 : 400,
                   border: `1.5px solid ${active ? 'var(--sage)' : 'var(--oat-mid)'}`,
                   background: active ? 'var(--sage-bg)' : 'none',
@@ -137,6 +162,29 @@ export default function FilterBar() {
           </div>
         </div>
       )}
+
+      {/* ── 套用篩選按鈕 ── */}
+      <div style={{ borderTop: '1px solid var(--oat-mid)', paddingTop: 12 }}>
+        <button
+          onClick={applyFilter}
+          disabled={!isDirty && !hasPending}
+          style={{
+            width: '100%', padding: '11px', borderRadius: 12,
+            border: 'none', cursor: isDirty || hasPending ? 'pointer' : 'default',
+            background: isDirty ? 'var(--sage)' : 'var(--oat-mid)',
+            color: isDirty ? 'white' : 'var(--gray-light)',
+            fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+            transition: 'all 0.2s',
+          }}
+        >
+          🔍 套用篩選
+          {(pendingTypes.length > 0 || pendingTags.length > 0) && (
+            <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.85 }}>
+              ({pendingTypes.length + pendingTags.length} 項)
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   )
 }
