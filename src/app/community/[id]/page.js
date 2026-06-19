@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/layout/NavbarWrapper'
 import Link from 'next/link'
 
 async function ensureTable() {

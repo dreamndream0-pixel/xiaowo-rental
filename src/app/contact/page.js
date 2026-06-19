@@ -1,7 +1,7 @@
 'use client'
 // src/app/contact/page.js
 import { useState } from 'react'
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/layout/NavbarWrapper'
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', phone: '', message: '' })

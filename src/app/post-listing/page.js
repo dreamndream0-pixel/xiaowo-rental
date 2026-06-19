@@ -4,7 +4,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/layout/NavbarWrapper'
 import Button from '@/components/ui/Button'
 import { ALL_CITIES, getDistricts } from '@/lib/districts'
 

@@ -3,27 +3,19 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 
-export default function Navbar() {
+export default function Navbar({ initialLogoUrl = '' }) {
   const { data: session } = useSession()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [logoUrl, setLogoUrl] = useState('')
+  const [logoUrl, setLogoUrl] = useState(initialLogoUrl)
 
   useEffect(() => {
-    // 先用快取立即顯示，避免閃爍
-    try {
-      const cached = localStorage.getItem('site_logo_cache')
-      if (cached) setLogoUrl(cached)
-    } catch {}
-    // 再從 API 更新（只有 API 明確回傳有效 URL 才更新，避免 API 暫時失敗清掉快取）
+    // 從 API 更新（上傳新 logo 後即時反映，不需重新整理）
     fetch('/api/admin/hero').then(r => r.json()).then(data => {
       if (data && data.logoUrl) {
         setLogoUrl(data.logoUrl)
-        try { localStorage.setItem('site_logo_cache', data.logoUrl) } catch {}
       }
-      // API 回傳空時保留快取，不清除
     }).catch(() => {})
   }, [])
 
@@ -35,25 +27,12 @@ export default function Navbar() {
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--oat-mid)',
         padding: '0 32px', height: 62,
-        display: 'flex', alignItems: 'center', gap: 28,
+        display: 'flex', alignItems: 'center',
       }}>
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          {logoUrl ? (
+          {logoUrl && (
             <img src={logoUrl} alt="logo" style={{ height: 40, maxWidth: 180, objectFit: 'contain' }} />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'linear-gradient(135deg, var(--sage), var(--sage-dark))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, flexShrink: 0,
-              }}>🐌</div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 1, color: 'var(--charcoal)', lineHeight: 1.1 }}>小蝸出租</div>
-                <div style={{ fontFamily: 'Montserrat,sans-serif', fontSize: 8, letterSpacing: 3, color: 'var(--sage)', fontWeight: 500 }}>SNAIL RENTAL</div>
-              </div>
-            </div>
           )}
         </Link>
 
@@ -104,38 +83,24 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       {mobileOpen && (
         <div style={{
-          position: 'fixed', top: 62, left: 0, right: 0, bottom: 0,
-          background: 'rgba(61,61,61,0.4)', zIndex: 199,
-        }} onClick={() => setMobileOpen(false)}>
-          <div style={{ background: 'var(--white)', padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}
-            onClick={e => e.stopPropagation()}>
-            {[
-              { href: '/', label: '🏡 首頁' },
-            ].map(({ href, label }) => (
-              <Link key={href} href={href} onClick={() => setMobileOpen(false)} style={{
-                padding: '12px 16px', borderRadius: 12, fontSize: 14,
-                color: 'var(--gray-mid)', textDecoration: 'none', display: 'block',
-              }}>{label}</Link>
-            ))}
-            <div style={{ height: 1, background: 'var(--oat-mid)', margin: '6px 0' }} />
-            {session ? (
-              <button onClick={() => { signOut(); setMobileOpen(false) }} style={{
-                padding: '12px 16px', textAlign: 'left', background: 'none',
-                border: 'none', fontSize: 14, color: 'var(--gray-mid)', cursor: 'pointer',
-              }}>👤 登出</button>
-            ) : (
-              <Link href="/register" onClick={() => setMobileOpen(false)} style={{
-                padding: '12px 16px', fontSize: 14, color: 'var(--gray-mid)', textDecoration: 'none', display: 'block',
-              }}>👤 租客註冊會員</Link>
-            )}
-            <Link href="/contact" onClick={() => setMobileOpen(false)} style={{
-              margin: 8, padding: '12px', borderRadius: 12, background: 'var(--sage)',
-              color: 'white', fontWeight: 700, fontSize: 14, textAlign: 'center', textDecoration: 'none',
-            }}>成為房東</Link>
-          </div>
+          position: 'fixed', top: 62, left: 0, right: 0, zIndex: 199,
+          background: 'rgba(250,250,248,0.98)', backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--oat-mid)',
+          padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          <Link href="/listings" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>瀏覽房源</Link>
+          <Link href="/contact" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--sage-dark)', textDecoration: 'none' }}>成為房東</Link>
+          {session ? (
+            <>
+              {session.user.role !== 'TENANT' && <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>後台管理</Link>}
+              <button onClick={() => { signOut(); setMobileOpen(false) }} style={{ background: 'none', border: 'none', textAlign: 'left', fontWeight: 600, color: 'var(--gray-mid)', cursor: 'pointer', padding: 0 }}>登出</button>
+            </>
+          ) : (
+            <Link href="/register" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>租客註冊</Link>
+          )}
         </div>
       )}
     </>

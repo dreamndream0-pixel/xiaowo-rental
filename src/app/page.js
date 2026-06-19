@@ -1,7 +1,7 @@
 // src/app/page.js
 import { db } from '@/lib/db'
 import { ensureMigrations } from '@/lib/migrations'
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/layout/NavbarWrapper'
 import SearchBar from '@/components/search/SearchBar'
 import PropertyGrid from '@/components/property/PropertyGrid'
 import StatsRow from '@/components/ui/StatsRow'

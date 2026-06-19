@@ -1,5 +1,5 @@
 // src/app/listings/page.js
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/layout/NavbarWrapper'
 import PropertyGrid from '@/components/property/PropertyGrid'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
