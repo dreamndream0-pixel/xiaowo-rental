@@ -78,6 +78,7 @@ export async function POST(request) {
       .filter(s => s && typeof s.url === 'string' && s.url.trim())
       .map(s => ({ url: s.url.trim(), alt: s.alt || '小蝸出租房源' }))
 
+    await ensureTable()   // ← 儲存前確保資料表存在
     await upsertSetting('hero_slides', JSON.stringify(slides))
     if (typeof body.logoUrl === 'string') {
       await upsertSetting('site_logo', body.logoUrl)
