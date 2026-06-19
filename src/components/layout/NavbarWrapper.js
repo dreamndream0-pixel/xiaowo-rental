@@ -6,7 +6,7 @@ import { unstable_cache } from 'next/cache'
 
 const getCachedLogo = unstable_cache(
   async () => {
-    // ⚠️ 不 catch：錯誤直接拋出，unstable_cache 不快取失敗結果
+    // 拋出錯誤讓 unstable_cache 不快取失敗結果
     const row = await db.siteSetting.findUnique({ where: { key: 'site_logo' } })
     return row?.value || ''
   },
@@ -15,6 +15,10 @@ const getCachedLogo = unstable_cache(
 )
 
 export default async function NavbarWrapper() {
-  const logoUrl = await getCachedLogo()
+  // 在元件層 catch：DB 失敗時 Navbar 仍能正常渲染（只是沒有 logo）
+  let logoUrl = ''
+  try {
+    logoUrl = await getCachedLogo()
+  } catch {}
   return <Navbar initialLogoUrl={logoUrl} />
 }
