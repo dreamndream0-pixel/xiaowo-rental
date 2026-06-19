@@ -9,6 +9,7 @@ import { PROPERTY_TYPE_LABELS } from '@/types'
 export default function PropertyCard({ property, detailHref }) {
   const [fav, setFav] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [tagsExpanded, setTagsExpanded] = useState(false)
 
   const {
     id, title, type, status, city, district,
@@ -97,11 +98,32 @@ export default function PropertyCard({ property, detailHref }) {
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, margin: '8px 0 4px', color: 'var(--charcoal)', letterSpacing: 0.3, lineHeight: 1.5 }}>{title}</div>
           <div style={{ fontSize: 12, color: 'var(--gray-mid)' }}>📍 {city}{district}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
-            {tags.slice(0, 5).map(t => (
-              <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
-            ))}
-          </div>
+          {tags.length > 0 && (() => {
+            const SHOW = 3
+            const visible = tagsExpanded ? tags : tags.slice(0, SHOW)
+            const extra = tags.length - SHOW
+            return (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                  {visible.map(t => (
+                    <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
+                  ))}
+                  {!tagsExpanded && extra > 0 && (
+                    <button
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsExpanded(true) }}
+                      style={{ background: 'var(--oat-mid)', color: 'var(--gray-mid)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                    >+{extra}</button>
+                  )}
+                  {tagsExpanded && tags.length > SHOW && (
+                    <button
+                      onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsExpanded(false) }}
+                      style={{ background: 'var(--oat-mid)', color: 'var(--gray-mid)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                    >收起</button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </Link>
 
