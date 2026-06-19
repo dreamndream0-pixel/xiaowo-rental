@@ -96,6 +96,7 @@ model Landlord {
   tenants       Tenant[]
   bookings      Booking[]
   repairs       Repair[]
+  communities   Community[]
 
   @@index([email])
   @@index([adminKey])
@@ -172,6 +173,9 @@ model Property {
 
   ownerId     String?                          // 多房東架構：歸屬的 Landlord
   owner       Landlord?      @relation(fields: [ownerId], references: [id])
+
+  communityId String?
+  community   Community?     @relation(fields: [communityId], references: [id])
 
   title       String
   type        PropertyType
@@ -448,4 +452,19 @@ model Review {
   @@unique([propertyId, userId])
   @@index([propertyId])
   @@map("reviews")
+}
+
+model Community {
+  id          String     @id @default(cuid())
+  ownerId     String
+  owner       Landlord   @relation(fields: [ownerId], references: [id])
+  name        String
+  description String     @db.Text @default("")
+  photos      String     @db.Text @default("[]")
+  mapUrl      String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  properties  Property[]
+
+  @@map("communities")
 }

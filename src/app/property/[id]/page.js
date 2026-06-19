@@ -73,6 +73,16 @@ export default async function PropertyPage({ params, searchParams }) {
   const { owner, ...safeProperty } = property
   safeProperty.ownerSiteName = owner?.siteName || null
   safeProperty.ownerId = owner?.id || null
+  safeProperty.communityId = property.communityId || null
+
+  let communityName = null
+  if (property.communityId) {
+    try {
+      const community = await db.community.findUnique({ where: { id: property.communityId }, select: { name: true } })
+      communityName = community?.name || null
+    } catch (_) {}
+  }
+  safeProperty.communityName = communityName
 
   // Increment view count
   db.property.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } }).catch(() => {})

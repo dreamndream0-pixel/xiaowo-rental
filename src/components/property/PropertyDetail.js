@@ -450,23 +450,23 @@ export default function PropertyDetail({ property }) {
               ))}
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
-
-            <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>入住條件</h2>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                [property.allowPets,      '🐾 可養寵物',  '不可養寵物'],
-                [property.allowCook,      '🍳 可開伙',    '不可開伙'],
-                [property.allowShortTerm, '📅 可短租',    '不可短租'],
-                [property.welcomeStudent, '🎓 歡迎學生',  null],
-              ].filter(([,, no]) => no !== null || true).map(([ok, yes, no]) => no !== null ? (
-                <span key={yes} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, opacity: ok ? 1 : 0.4 }}>
-                  {ok ? yes : no}
-                </span>
-              ) : ok ? (
-                <span key={yes} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600 }}>{yes}</span>
-              ) : null)}
-            </div>
+            {property.communityId && (
+              <>
+                <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
+                <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>🏘️ 社區環境</h2>
+                <a href={`/community/${property.communityId}`} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px',
+                  background: 'var(--sage-bg)', borderRadius: 12, textDecoration: 'none', color: 'var(--charcoal)',
+                }}>
+                  <span style={{ fontSize: 22 }}>🏘️</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--sage-dark)' }}>{property.communityName || '查看社區環境'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--gray-mid)', marginTop: 2 }}>社區介紹・照片・地圖</div>
+                  </div>
+                  <span style={{ marginLeft: 'auto', color: 'var(--sage)', fontSize: 18 }}>›</span>
+                </a>
+              </>
+            )}
 
             <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
 
