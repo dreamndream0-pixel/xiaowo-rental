@@ -21,11 +21,13 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
 }
 
 export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
-  PENDING:   '審核中',
-  AVAILABLE: '可租',
-  RENTED:    '已租',
-  PAUSED:    '暫停刊登',
-  REJECTED:  '審核未通過',
+  PENDING:     '審核中',
+  AVAILABLE:   '可承租',
+  RENTED:      '已出租',
+  PAUSED:      '已下架',
+  REJECTED:    '審核未通過',
+  COMING_SOON: '即將釋出',
+  INACTIVE:    '已下架',
 }
 
 // ── API Response types ────────────────────────
