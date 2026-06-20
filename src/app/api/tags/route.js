@@ -17,7 +17,7 @@ const getAllTags = unstable_cache(
     return tags.map(t => t.name)
   },
   ['all-tags'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ['all-tags'] }
 )
 
 // 有過濾條件：動態查詢符合房源的標籤
