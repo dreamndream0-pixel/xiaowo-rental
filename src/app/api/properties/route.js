@@ -14,9 +14,24 @@ export async function GET(request) {
   const minPrice = parseInt(searchParams.get('minPrice') || '0')
   const maxPrice = parseInt(searchParams.get('maxPrice') || '999999')
   const landlord = searchParams.get('landlord') || undefined
+  const ids      = searchParams.get('ids')      || undefined
   const page     = parseInt(searchParams.get('page')  || '1')
   const limit    = parseInt(searchParams.get('limit') || '20')
   const offset   = (page - 1) * limit
+
+  // 瀏覽記錄：直接用 id 陣列查詢
+  if (ids) {
+    const idList = ids.split(',').filter(Boolean).slice(0, 30)
+    try {
+      const props = await db.property.findMany({
+        where: { id: { in: idList }, deletedAt: null },
+        include: { images: { where: { isCover: true }, take: 1 } },
+      })
+      return NextResponse.json(props)
+    } catch (e) {
+      return NextResponse.json([], { status: 200 })
+    }
+  }
 
   try {
     // Build filters
