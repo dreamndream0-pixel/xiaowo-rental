@@ -5,12 +5,14 @@ import { unstable_cache } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
-// 無過濾條件：快取所有標籤 5 分鐘
+// 無過濾條件：依使用次數排序，取前 20 個熱門標籤，快取 5 分鐘
 const getAllTags = unstable_cache(
   async () => {
     const tags = await db.propertyTag.groupBy({
       by: ['name'],
-      orderBy: { name: 'asc' },
+      _count: { name: true },
+      orderBy: { _count: { name: 'desc' } },
+      take: 20,
     })
     return tags.map(t => t.name)
   },
