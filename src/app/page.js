@@ -31,7 +31,7 @@ const getFeaturedProperties = unstable_cache(
 const getPlatformStats = unstable_cache(
   async () => {
     const [listings, landlords, matches] = await Promise.all([
-      db.property.count({ where: { status: { in: ['AVAILABLE', 'COMING_SOON'] }, deletedAt: null } }),
+      db.property.count({ where: { deletedAt: null } }),
       db.user.count({ where: { role: 'LANDLORD', verified: true, deletedAt: null } }),
       db.property.count({ where: { status: 'RENTED', deletedAt: null } }),
     ])
