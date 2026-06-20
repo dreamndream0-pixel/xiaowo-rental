@@ -40,11 +40,18 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
 
   const districts = city ? getDistricts(city) : []
 
+  // 帶目前條件 fetch 標籤（initialParams 有值時為篩選後標籤）
   useEffect(() => {
-    fetch('/api/tags').then(r => r.json()).then(data => {
+    const p = new URLSearchParams()
+    if (initialParams.city)     p.set('city',     initialParams.city)
+    if (initialParams.district) p.set('district', initialParams.district)
+    if (initialParams.keyword)  p.set('keyword',  initialParams.keyword)
+    if (initialParams.type)     p.set('type',     initialParams.type)
+    if (initialParams.landlord) p.set('landlord', initialParams.landlord)
+    fetch('/api/tags?' + p.toString()).then(r => r.json()).then(data => {
       if (Array.isArray(data)) setAllTags(data)
     }).catch(() => {})
-  }, [])
+  }, [JSON.stringify(initialParams)])
 
   // Close all popovers on outside click
   useEffect(() => {

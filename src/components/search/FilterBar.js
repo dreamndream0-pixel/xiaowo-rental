@@ -26,9 +26,18 @@ export default function FilterBar() {
     setPendingTags(params.get('tags')   ? params.get('tags').split(',')  : [])
   }, [params.toString()])
 
+  // 帶目前的篩選條件去抓標籤（排除 tags 本身，避免互相鎖死）
   useEffect(() => {
-    fetch('/api/tags').then(r => r.json()).then(setAllTags).catch(() => {})
-  }, [])
+    const p = new URLSearchParams()
+    if (params.get('city'))     p.set('city',     params.get('city'))
+    if (params.get('district')) p.set('district', params.get('district'))
+    if (params.get('keyword'))  p.set('keyword',  params.get('keyword'))
+    if (params.get('type'))     p.set('type',     params.get('type'))
+    if (params.get('landlord')) p.set('landlord', params.get('landlord'))
+    fetch('/api/tags?' + p.toString()).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setAllTags(data)
+    }).catch(() => {})
+  }, [params.toString()])
 
   const types = [
     { value: 'SUITE',        label: '套房' },

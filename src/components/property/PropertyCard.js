@@ -6,9 +6,12 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 
+const TAG_LIMIT = 6
+
 export default function PropertyCard({ property, detailHref }) {
   const [fav, setFav] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(false)
 
   const {
     id, title, type, status, city, district,
@@ -98,10 +101,24 @@ export default function PropertyCard({ property, detailHref }) {
           <div style={{ fontSize: 15, fontWeight: 700, margin: '8px 0 4px', color: 'var(--charcoal)', letterSpacing: 0.3, lineHeight: 1.5 }}>{title}</div>
           <div style={{ fontSize: 12, color: 'var(--gray-mid)' }}>📍 {city}{district}</div>
           {tags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
-              {tags.map(t => (
-                <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
-              ))}
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {(tagsOpen ? tags : tags.slice(0, TAG_LIMIT)).map(t => (
+                  <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
+                ))}
+                {!tagsOpen && tags.length > TAG_LIMIT && (
+                  <button onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsOpen(true) }}
+                    style={{ background: 'var(--oat-mid)', color: 'var(--gray-mid)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
+                    +{tags.length - TAG_LIMIT}
+                  </button>
+                )}
+                {tagsOpen && tags.length > TAG_LIMIT && (
+                  <button onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsOpen(false) }}
+                    style={{ background: 'var(--oat-mid)', color: 'var(--gray-mid)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
+                    收起
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

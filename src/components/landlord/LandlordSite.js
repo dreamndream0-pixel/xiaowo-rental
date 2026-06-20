@@ -30,7 +30,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
           <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
 
           {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
-          <SearchBar searchBase={`/site/${landlord.id}`} />
+          <SearchBar searchBase={`/site/${landlord.id}`} initialParams={{ landlord: landlord.id }} />
         </div>
       </section>
 
