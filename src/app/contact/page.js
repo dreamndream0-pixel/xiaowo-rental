@@ -6,17 +6,24 @@ import Navbar from '@/components/layout/NavbarWrapper'
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', phone: '', message: '' })
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
   const update = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.name || !form.phone) {
       alert('請填寫姓名和電話')
       return
     }
-    // 用 mailto 寄出（不需後端），也可改成 LINE
-    const body = `姓名：${form.name}%0D%0A電話：${form.phone}%0D%0A想成為房東的需求：%0D%0A${form.message}`
-    window.location.href = `mailto:dreamndream0@gmail.com?subject=成為房東諮詢&body=${body}`
+    setLoading(true)
+    try {
+      await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+    } catch (_) {}
     setSent(true)
+    setLoading(false)
   }
 
   return (
@@ -33,16 +40,16 @@ export default function ContactPage() {
 
           {/* 聯絡方式卡片 */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            <a href="https://line.me/R/ti/p/@your-line-id" target="_blank" rel="noreferrer"
+            <a href="https://lin.ee/5qLEcxX" target="_blank" rel="noreferrer"
               style={contactCard}>
               <div style={{ fontSize: 28 }}>💬</div>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--charcoal)' }}>LINE 諮詢</div>
               <div style={{ fontSize: 12, color: 'var(--gray-light)' }}>加官方帳號</div>
             </a>
-            <a href="tel:0900000000" style={contactCard}>
+            <a href="tel:0800899969" style={contactCard}>
               <div style={{ fontSize: 28 }}>📞</div>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--charcoal)' }}>電話聯絡</div>
-              <div style={{ fontSize: 12, color: 'var(--gray-light)' }}>0900-000-000</div>
+              <div style={{ fontSize: 12, color: 'var(--gray-light)' }}>0800-899-969</div>
             </a>
           </div>
 
@@ -50,26 +57,30 @@ export default function ContactPage() {
           <div style={{ background: 'white', borderRadius: 22, padding: 32, boxShadow: 'var(--shadow-md)' }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--charcoal)' }}>或填寫表單，我們主動聯繫您</h2>
 
-            {sent && (
-              <div style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 16 }}>
-                ✅ 已開啟郵件，送出後我們會盡快回覆您！
+            {sent ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--charcoal)', marginBottom: 8 }}>已收到您的諮詢！</p>
+                <p style={{ fontSize: 14, color: 'var(--gray-mid)', lineHeight: 1.8 }}>我們會盡快透過電話或 LINE 與您聯繫。</p>
               </div>
+            ) : (
+              <>
+                <label style={labelStyle}>姓名 *</label>
+                <input value={form.name} onChange={update('name')} placeholder="您的稱呼" style={inputStyle} />
+
+                <label style={{ ...labelStyle, marginTop: 14 }}>聯絡電話 *</label>
+                <input value={form.phone} onChange={update('phone')} placeholder="0900-000-000" style={inputStyle} />
+
+                <label style={{ ...labelStyle, marginTop: 14 }}>需求說明</label>
+                <textarea value={form.message} onChange={update('message')} rows={4} placeholder="例如：我在台中有 3 間套房想出租..."
+                  style={{ ...inputStyle, resize: 'vertical' }} />
+
+                <button onClick={handleSubmit} disabled={loading}
+                  style={{ width: '100%', marginTop: 24, padding: 14, borderRadius: 12, border: 'none', background: 'var(--sage)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
+                  {loading ? '送出中...' : '送出諮詢'}
+                </button>
+              </>
             )}
-
-            <label style={labelStyle}>姓名 *</label>
-            <input value={form.name} onChange={update('name')} placeholder="您的稱呼" style={inputStyle} />
-
-            <label style={{ ...labelStyle, marginTop: 14 }}>聯絡電話 *</label>
-            <input value={form.phone} onChange={update('phone')} placeholder="0900-000-000" style={inputStyle} />
-
-            <label style={{ ...labelStyle, marginTop: 14 }}>需求說明</label>
-            <textarea value={form.message} onChange={update('message')} rows={4} placeholder="例如：我在台中有 3 間套房想出租..."
-              style={{ ...inputStyle, resize: 'vertical' }} />
-
-            <button onClick={handleSubmit}
-              style={{ width: '100%', marginTop: 24, padding: 14, borderRadius: 12, border: 'none', background: 'var(--sage)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-              送出諮詢
-            </button>
           </div>
         </div>
       </main>

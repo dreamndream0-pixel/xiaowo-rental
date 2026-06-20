@@ -30,7 +30,19 @@ export default function LandlordSite({ landlord, properties, recommendations, se
           <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
 
           {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
-          <SearchBar searchBase={`/site/${landlord.id}`} initialParams={{ landlord: landlord.id }} />
+          <SearchBar
+            searchBase={`/site/${landlord.id}`}
+            initialParams={{
+              landlord: landlord.id,
+              keyword:  searchParams.keyword  || '',
+              city:     searchParams.city     || '',
+              district: searchParams.district || '',
+              type:     searchParams.type     || '',
+              minPrice: searchParams.minPrice || '',
+              maxPrice: searchParams.maxPrice || '',
+              tags:     searchParams.tags     || '',
+            }}
+          />
         </div>
       </section>
 

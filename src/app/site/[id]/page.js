@@ -20,17 +20,23 @@ export async function generateMetadata({ params }) {
 export default async function LandlordSitePage({ params, searchParams }) {
   const landlord = await db.landlord.findUnique({
     where: { id: params.id },
-    select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true, features: true },
+    select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true },
   })
 
   if (!landlord || !landlord.isActive) notFound()
 
-  // 檢查「個人官網」功能是否被停用
+  // 檢查「個人官網」功能是否被停用（用 raw SQL 避免 Prisma client 未重新生成的問題）
   let siteEnabled = true
   try {
-    const features = landlord.features ? JSON.parse(landlord.features) : {}
+    const featRows = await db.$queryRawUnsafe(`SELECT features FROM landlords WHERE id = $1`, params.id)
+    const rawFeatures = featRows[0]?.features
+    console.log('[site page] landlordId:', params.id, 'raw features:', rawFeatures)
+    const features = rawFeatures ? JSON.parse(rawFeatures) : {}
+    console.log('[site page] parsed features.site:', features.site)
     if (features.site === false) siteEnabled = false
-  } catch {}
+  } catch (e) {
+    console.log('[site page] features read error:', e.message)
+  }
 
   if (!siteEnabled) {
     return (
