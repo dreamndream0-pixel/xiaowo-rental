@@ -284,11 +284,25 @@ export default function PropertyDetail({ property }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [bookingOpen, setBookingOpen] = useState(false)
   const [imagesReady, setImagesReady] = useState(false)
+  const [communityModal, setCommunityModal] = useState(false)
+  const [communityData, setCommunityData] = useState(null)
+  const [communityLoading, setCommunityLoading] = useState(false)
   const images = property.images ?? []
   const amenities = property.amenities?.map(a => a.name) ?? []
   const lineInquiryUrl = property.lineUrl || null
 
   const isAvailable = property.status === 'AVAILABLE'
+
+  async function openCommunityModal() {
+    setCommunityModal(true)
+    if (communityData) return
+    setCommunityLoading(true)
+    try {
+      const res = await fetch(`/api/community/${property.communityId}`)
+      if (res.ok) setCommunityData(await res.json())
+    } catch (_) {}
+    setCommunityLoading(false)
+  }
 
   useEffect(() => {
     // 頁面加載後稍微延遲顯示圖片，讓骨架屏有動畫感
@@ -454,18 +468,125 @@ export default function PropertyDetail({ property }) {
               <>
                 <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
                 <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>🏘️ 社區環境</h2>
-                <a href={`/community/${property.communityId}`} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px',
-                  background: 'var(--sage-bg)', borderRadius: 12, textDecoration: 'none', color: 'var(--charcoal)',
-                }}>
+                <button onClick={openCommunityModal} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', width: '100%',
+                  background: 'var(--sage-bg)', borderRadius: 12, border: 'none', cursor: 'pointer',
+                  color: 'var(--charcoal)', textAlign: 'left', transition: 'background 0.15s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#deeae0'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'var(--sage-bg)'}
+                >
                   <span style={{ fontSize: 22 }}>🏘️</span>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--sage-dark)' }}>{property.communityName || '查看社區環境'}</div>
                     <div style={{ fontSize: 12, color: 'var(--gray-mid)', marginTop: 2 }}>社區介紹・照片・地圖</div>
                   </div>
                   <span style={{ marginLeft: 'auto', color: 'var(--sage)', fontSize: 18 }}>›</span>
-                </a>
+                </button>
               </>
+            )}
+
+            {/* ── 社區懸浮視窗 ── */}
+            {communityModal && (
+              <div
+                onClick={e => { if (e.target === e.currentTarget) setCommunityModal(false) }}
+                style={{
+                  position: 'fixed', inset: 0, zIndex: 1000,
+                  background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '20px 16px',
+                }}
+              >
+                <div style={{
+                  background: 'white', borderRadius: 20, width: '100%', maxWidth: 640,
+                  maxHeight: '88vh', overflowY: 'auto', position: 'relative',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+                }}>
+                  {/* 關閉按鈕 */}
+                  <button onClick={() => setCommunityModal(false)} style={{
+                    position: 'sticky', top: 12, float: 'right', margin: '12px 12px 0 0',
+                    zIndex: 10, width: 34, height: 34, borderRadius: '50%',
+                    background: 'rgba(240,237,230,0.95)', border: 'none',
+                    fontSize: 18, cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', color: 'var(--charcoal)',
+                  }}>✕</button>
+
+                  <div style={{ padding: '28px 28px 32px', clear: 'both' }}>
+                    {communityLoading ? (
+                      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray-mid)', fontSize: 14 }}>
+                        載入中...
+                      </div>
+                    ) : communityData ? (
+                      <>
+                        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 900, marginBottom: 12 }}>
+                          🏘️ {communityData.name}
+                        </h2>
+                        {communityData.description && (
+                          <p style={{ fontSize: 14, color: 'var(--gray-mid)', lineHeight: 1.9, marginBottom: 20, whiteSpace: 'pre-wrap' }}>
+                            {communityData.description}
+                          </p>
+                        )}
+
+                        {/* 社區照片 */}
+                        {communityData.photos?.length > 0 && (
+                          <div style={{ marginBottom: 24 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--charcoal)' }}>📸 社區照片</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+                              {communityData.photos.map((url, i) => (
+                                <img key={i} src={url} alt={`社區照片 ${i + 1}`}
+                                  style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: 10 }} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 地圖 */}
+                        {communityData.mapUrl && (
+                          <div style={{ marginBottom: 24 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--charcoal)' }}>📍 社區位置</div>
+                            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--oat-mid)' }}>
+                              <iframe
+                                src={`https://maps.google.com/maps?q=${encodeURIComponent(communityData.mapUrl)}&output=embed&hl=zh-TW&z=16`}
+                                width="100%" height="280" style={{ border: 0, display: 'block' }}
+                                allowFullScreen loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 此社區其他房源 */}
+                        {communityData.properties?.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--charcoal)' }}>🏠 此社區可租房源</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {communityData.properties.map(p => (
+                                <a key={p.id}
+                                  href={`/property/${p.id}${p.ownerId ? '?site=' + p.ownerId : ''}`}
+                                  style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    background: 'var(--oat-light)', borderRadius: 10,
+                                    padding: '12px 16px', textDecoration: 'none', color: 'var(--charcoal)',
+                                    border: '1px solid var(--oat-mid)',
+                                  }}>
+                                  <span style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</span>
+                                  <span style={{ fontSize: 13, color: 'var(--sage-dark)', fontWeight: 700 }}>
+                                    NT${Number(p.price).toLocaleString()}/月 ›
+                                  </span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray-mid)', fontSize: 14 }}>
+                        無法載入社區資料
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
 
             <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
