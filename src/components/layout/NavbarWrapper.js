@@ -1,33 +1,28 @@
 // src/components/layout/NavbarWrapper.js
-// Server Component：從 DB 讀 logo，快取 60 秒
+// Server Component：每次 request 直接從 DB 讀 logo（頁面已是 force-dynamic，無需額外快取）
 import Navbar from './Navbar'
 import { db } from '@/lib/db'
-import { unstable_cache } from 'next/cache'
 
-const getCachedLogo = unstable_cache(
-  async () => {
-    // 確保資料表存在，再讀取
-    await db.$queryRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS site_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `)
-    const rows = await db.$queryRawUnsafe(
-      `SELECT value FROM site_settings WHERE key = 'site_logo'`
+async function fetchLogoFromDB() {
+  await db.$queryRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-    return rows[0]?.value || ''
-  },
-  ['site-logo'],
-  { revalidate: 60, tags: ['site-logo'] }
-)
+  `)
+  const rows = await db.$queryRawUnsafe(
+    `SELECT value FROM site_settings WHERE key = 'site_logo'`
+  )
+  return rows[0]?.value || ''
+}
 
 export default async function NavbarWrapper() {
-  // 在元件層 catch：DB 失敗時 Navbar 仍能正常渲染（只是沒有 logo）
   let logoUrl = ''
   try {
-    logoUrl = await getCachedLogo()
-  } catch {}
+    logoUrl = await fetchLogoFromDB()
+  } catch (e) {
+    console.error('NavbarWrapper: 讀取 logo 失敗', e.message)
+  }
   return <Navbar initialLogoUrl={logoUrl} />
 }

@@ -12,7 +12,7 @@ export default function Navbar({ initialLogoUrl = '' }) {
 
   useEffect(() => {
     // 從 API 更新（上傳新 logo 後即時反映，不需重新整理）
-    fetch('/api/admin/hero').then(r => r.json()).then(data => {
+    fetch('/api/admin/hero', { cache: 'no-store' }).then(r => r.json()).then(data => {
       if (data && data.logoUrl) {
         setLogoUrl(data.logoUrl)
       }

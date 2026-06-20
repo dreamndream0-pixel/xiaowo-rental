@@ -51,7 +51,7 @@ export async function GET() {
   try {
     const settings = await getCachedSettings()
     return NextResponse.json(settings, {
-      headers: { ...CORS, 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' }
+      headers: { ...CORS, 'Cache-Control': 'no-store' }
     })
   } catch (e) {
     console.error('hero GET error:', e)
