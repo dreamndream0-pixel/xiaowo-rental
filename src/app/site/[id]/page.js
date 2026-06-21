@@ -97,9 +97,12 @@ export default async function LandlordSitePage({ params, searchParams }) {
     take: 6,
   })
 
+  // 用 raw SQL 讀取 siteSlides（避免 Prisma client 未重新生成的問題）
   let siteSlides = []
   try {
-    const feats = landlord.features ? JSON.parse(landlord.features) : {}
+    const slideRows = await db.$queryRawUnsafe(`SELECT features FROM landlords WHERE id = $1`, params.id)
+    const rawFeats = slideRows[0]?.features
+    const feats = rawFeats ? JSON.parse(rawFeats) : {}
     siteSlides = Array.isArray(feats.siteSlides) ? feats.siteSlides : []
   } catch (_) {}
 
