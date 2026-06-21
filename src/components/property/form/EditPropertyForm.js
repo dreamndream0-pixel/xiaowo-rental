@@ -138,9 +138,10 @@ export default function EditPropertyForm({ property }) {
     }
     setLoading(true)
     try {
-      // 1. PATCH scalar fields + amenities + tags
+      // 1. PATCH scalar fields + amenities + tags (status excluded — API forces PENDING)
+      const { status: _ignored, ...formFields } = form
       const payload = {
-        ...form,
+        ...formFields,
         price:       Number(form.price),
         mgmtFee:     Number(form.mgmtFee) || 0,
         cleaningFee: Number(form.cleaningFee) || 0,
@@ -197,8 +198,19 @@ export default function EditPropertyForm({ property }) {
         {/* Header */}
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 900, color: '#3d3d3d', marginBottom: 4 }}>✏️ 編輯房源</h1>
-          <p style={{ fontSize: 13, color: '#aaa' }}>修改後點擊「儲存變更」即可更新房源資訊</p>
         </div>
+
+        {/* Re-review notice */}
+        <div style={{ background: '#FFF9EC', border: '1.5px solid #F5E0A0', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#7A5C1E' }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+          <div>
+            <strong>儲存後將重新送審</strong>：編輯內容後，房源狀態會自動改為「審核中」，待管理員審核通過後才會重新上架。
+            <br />若只需要更改狀態（如標記已租出），請使用下方「快速更改狀態」。
+          </div>
+        </div>
+
+        {/* Quick status change (no re-review) */}
+        <QuickStatusBar propertyId={property.id} currentStatus={property.status} />
 
         {/* ── Section: 基本資訊 ── */}
         <Section title="基本資訊">
@@ -220,13 +232,6 @@ export default function EditPropertyForm({ property }) {
           </div>
           <Field label="押金">
             <input value={form.deposit} onChange={up('deposit')} placeholder="兩個月" style={inputSt} />
-          </Field>
-          <Field label="刊登狀態">
-            <select value={form.status} onChange={up('status')} style={inputSt}>
-              <option value="AVAILABLE">刊登中（可租）</option>
-              <option value="RENTED">已租出</option>
-              <option value="PAUSED">暫停刊登</option>
-            </select>
           </Field>
         </Section>
 
@@ -426,6 +431,50 @@ const Field = ({ label, children }) => (
     {children}
   </div>
 )
+
+// ── Quick status change (no re-review) ─────────────────────────
+function QuickStatusBar({ propertyId, currentStatus }) {
+  const [status, setStatus] = useState(currentStatus)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const STATUS_OPTS = [
+    { value: 'AVAILABLE', label: '✅ 上架中', color: '#22C55E' },
+    { value: 'RENTED',    label: '🔵 已租出', color: '#3B82F6' },
+    { value: 'PAUSED',    label: '⏸ 暫停刊登', color: '#9CA3AF' },
+  ]
+
+  async function save(newStatus) {
+    setSaving(true); setMsg('')
+    const res = await fetch(`/api/properties/${propertyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statusOnly: true, status: newStatus }),
+    })
+    if (res.ok) { setStatus(newStatus); setMsg('已更新') }
+    else { setMsg('更新失敗') }
+    setSaving(false)
+    setTimeout(() => setMsg(''), 2000)
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: 14, padding: '14px 18px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#3d3d3d', marginBottom: 10 }}>⚡ 快速更改狀態（不需重新審核）</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {STATUS_OPTS.map(opt => (
+          <button key={opt.value} onClick={() => save(opt.value)} disabled={saving || status === opt.value}
+            style={{ padding: '7px 16px', borderRadius: 99, border: `1.5px solid ${status === opt.value ? opt.color : '#ddd'}`,
+              background: status === opt.value ? opt.color + '18' : 'white', color: status === opt.value ? opt.color : '#888',
+              fontSize: 13, fontWeight: status === opt.value ? 700 : 400, cursor: status === opt.value ? 'default' : 'pointer',
+              fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
+            {opt.label}
+          </button>
+        ))}
+        {msg && <span style={{ fontSize: 12, color: '#4E7153', marginLeft: 4 }}>{msg}</span>}
+      </div>
+    </div>
+  )
+}
 
 const inputSt = { width: '100%', padding: '11px 14px', border: '1.5px solid #E5DFD5', borderRadius: 10, fontSize: 14, outline: 'none', fontFamily: 'inherit', background: 'white', color: '#3d3d3d', boxSizing: 'border-box' }
 const primaryBtn = { padding: '14px 0', borderRadius: 12, border: 'none', background: '#4E7153', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }

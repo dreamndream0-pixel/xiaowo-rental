@@ -60,12 +60,23 @@ export async function PATCH(request, { params }) {
 
     // Build scalar update data
     const data = {}
-    const allowed = ['title','type','city','district','address','price','deposit','mgmtFee','cleaningFee','size','electricType','description','status']
+    const allowed = ['title','type','city','district','address','price','deposit','mgmtFee','cleaningFee','size','electricType','description']
     for (const key of allowed) {
       if (key in fields) {
         const numFields = ['price','mgmtFee','cleaningFee','size']
         data[key] = numFields.includes(key) ? (Number(fields[key]) || 0) : fields[key]
       }
+    }
+
+    // Allow admin-only direct status change; regular edit always re-queues for review
+    if (fields.statusOnly === true && fields.status) {
+      // Only allow: RENTED, PAUSED (user-controlled state changes without review)
+      if (['RENTED','PAUSED','AVAILABLE'].includes(fields.status)) {
+        data.status = fields.status
+      }
+    } else {
+      // Content was edited — reset to PENDING for re-review
+      data.status = 'PENDING'
     }
 
     const updated = await db.$transaction(async tx => {
