@@ -307,6 +307,14 @@ export default function PropertyDetail({ property }) {
   useEffect(() => {
     // 頁面加載後稍微延遲顯示圖片，讓骨架屏有動畫感
     const t = setTimeout(() => setImagesReady(true), 100)
+
+    // 寫入瀏覽記錄（localStorage）
+    try {
+      const key = 'viewHistory'
+      const prev = JSON.parse(localStorage.getItem(key) || '[]').filter(id => id !== property.id)
+      localStorage.setItem(key, JSON.stringify([property.id, ...prev].slice(0, 30)))
+    } catch (_) {}
+
     return () => clearTimeout(t)
   }, [])
 

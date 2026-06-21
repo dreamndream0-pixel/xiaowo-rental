@@ -109,34 +109,44 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  // 刊登新房源（需驗證登入 + 房東角色）
+  // 刊登新房源（需登入，任何用戶皆可刊登）
   const session = await getServerSession(authOptions)
-  if (!session || session.user.role === 'TENANT') {
-    return NextResponse.json({ error: '請先登入房東帳號' }, { status: 401 })
-  }
+  if (!session) return NextResponse.json({ error: '請先登入' }, { status: 401 })
 
   try {
     const body = await request.json()
+    if (!body.title || !body.city || !body.district || !body.address || !body.price || !body.size) {
+      return NextResponse.json({ error: '請填寫必填欄位' }, { status: 400 })
+    }
+
     const property = await db.property.create({
       data: {
-        landlordId:  session.user.id,
-        title:       body.title,
-        type:        body.type,
-        description: body.description,
-        city:        body.city,
-        district:    body.district,
-        address:     body.address,
-        size:        parseFloat(body.size),
-        floor:       body.floor,
-        price:       parseInt(body.price),
-        deposit:     body.deposit,
-        mgmtFee:     parseInt(body.mgmtFee || 0),
-        inclWifi:    !!body.inclWifi,
-        inclWater:   !!body.inclWater,
-        inclCable:   !!body.inclCable,
-        allowPets:   !!body.allowPets,
-        allowCook:   !!body.allowCook,
-        status:      'PENDING',  // 需審核
+        landlordId:      session.user.id,
+        title:           body.title,
+        type:            body.type || 'SUITE',
+        description:     body.description || '',
+        city:            body.city,
+        district:        body.district,
+        address:         body.address,
+        size:            parseFloat(body.size),
+        floor:           body.floor || null,
+        totalFloors:     body.totalFloors ? parseInt(body.totalFloors) : null,
+        price:           parseInt(body.price),
+        deposit:         body.deposit || '兩個月',
+        mgmtFee:         parseInt(body.mgmtFee || 0),
+        inclWifi:        !!body.inclWifi,
+        inclWater:       !!body.inclWater,
+        inclCable:       !!body.inclCable,
+        allowPets:       !!body.allowPets,
+        allowCook:       !!body.allowCook,
+        allowShortTerm:  !!body.allowShortTerm,
+        welcomeStudent:  body.welcomeStudent !== false,
+        electricType:    body.electricType || null,
+        electricRate:    body.electricRate ? parseFloat(body.electricRate) : null,
+        electricFlat:    body.electricFlat ? parseInt(body.electricFlat) : null,
+        status:          'PENDING',
+        // 建立標籤
+        tags: body.tags?.length ? { create: body.tags.map(name => ({ name })) } : undefined,
       },
     })
     return NextResponse.json({ id: property.id }, { status: 201 })
