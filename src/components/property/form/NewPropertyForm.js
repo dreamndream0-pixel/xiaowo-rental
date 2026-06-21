@@ -228,16 +228,22 @@ export default function NewPropertyForm() {
                 {landlord.email && <span style={{ marginLeft: 8 }}>✉️ {landlord.email}</span>}
               </div>
             </div>
-            <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-              完善資料
-            </button>
+            {landlord.isLinkedLandlord ? (
+              <div style={{ fontSize: 11, color: '#4E7153', background: '#EBF2EC', border: '1px solid #C8DCC9', borderRadius: 8, padding: '5px 12px', fontWeight: 700 }}>
+                ✅ 已加入房東管理
+              </div>
+            ) : (
+              <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                完善資料
+              </button>
+            )}
           </div>
         ) : session && (
           <div style={{ background: 'white', borderRadius: 16, padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ fontSize: 22 }}>🏠</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#3d3d3d' }}>{session.user.name || '我的帳號'}</div>
-              <div style={{ fontSize: 12, color: '#bbb' }}>尚未設定房東資料</div>
+              <div style={{ fontSize: 12, color: '#bbb' }}>請填寫房東資料以加入管理後台</div>
             </div>
             <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
               完善資料

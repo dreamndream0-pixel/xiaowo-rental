@@ -64,12 +64,24 @@ export async function GET() {
 
   if (!user) return NextResponse.json(null)
 
+  const realEmail = user.email?.endsWith('@xiaowo.local') ? null : user.email
+
+  // Check if this user is already in the linebot landlord management table
+  let isLinkedLandlord = false
+  if (realEmail) {
+    try {
+      const linked = await db.landlord.findUnique({ where: { email: realEmail }, select: { id: true } })
+      isLinkedLandlord = !!linked
+    } catch {}
+  }
+
   return NextResponse.json({
     id: user.id,
     name: user.name,
-    email: user.email?.endsWith('@xiaowo.local') ? null : user.email,
+    email: realEmail,
     phone: user.phone,
     avatar: user.image,
     isSuper: false, // future: user.role === 'SUPER_LANDLORD'
+    isLinkedLandlord,
   })
 }
