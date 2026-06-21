@@ -62,9 +62,12 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       {/* Hero + 搜尋 */}
       <section style={{ background: 'var(--oat-light)', padding: '40px 20px 32px' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 900, color: 'var(--charcoal)', marginBottom: 8 }}>
-            {siteName}
-          </h1>
+          {/* logo 已含品牌名，避免重複；沒設 logo 才顯示站名標題 */}
+          {!landlord.siteLogo && (
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 900, color: 'var(--charcoal)', marginBottom: 8 }}>
+              {siteName}
+            </h1>
+          )}
           <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
 
           {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
