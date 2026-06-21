@@ -15,7 +15,7 @@ export default async function AccountPage({ searchParams }) {
   const [user, favCount, propCount] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, name: true, email: true, phone: true, image: true, createdAt: true },
+      select: { id: true, name: true, email: true, phone: true, avatar: true, createdAt: true },
     }),
     db.favorite.count({ where: { userId: session.user.id } }),
     db.property.count({ where: { landlordId: session.user.id, deletedAt: null } }),
@@ -38,7 +38,7 @@ export default async function AccountPage({ searchParams }) {
     <>
       <Navbar />
       <UserDashboard
-        user={{ ...user, avatar: user?.image }}
+        user={user}
         favCount={favCount}
         propCount={propCount}
         initTab={searchParams?.tab || null}
