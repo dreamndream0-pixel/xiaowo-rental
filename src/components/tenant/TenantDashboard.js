@@ -22,9 +22,9 @@ export default function TenantDashboard({ user, favCount }) {
   const [favsLoading, setFL]    = useState(false)
   const [history, setHistory]   = useState([])
   const [histLoading, setHistL] = useState(false)
-  const [lineIdInput, setLI]    = useState('')
-  const [linking, setLinking]   = useState(false)
-  const [linkMsg, setLinkMsg]   = useState('')
+  const [phoneInput, setPhoneInput] = useState(user.phone || '')
+  const [phoneSaving, setPhoneSaving] = useState(false)
+  const [phoneMsg, setPhoneMsg]   = useState('')
 
   // 載入租客專區
   useEffect(() => {
@@ -57,25 +57,25 @@ export default function TenantDashboard({ user, favCount }) {
     }
   }, [tab])
 
-  async function linkLine() {
-    if (!lineIdInput.trim()) return
-    setLinking(true); setLinkMsg('')
+  async function savePhone() {
+    if (!phoneInput.trim()) return
+    setPhoneSaving(true); setPhoneMsg('')
     try {
-      const res = await fetch('/api/user/link-line', {
+      const res = await fetch('/api/tenant/zone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lineId: lineIdInput.trim() }),
+        body: JSON.stringify({ phone: phoneInput.trim() }),
       })
       const data = await res.json()
       if (res.ok) {
-        setLinkMsg('✅ 連結成功！')
-        setZone(null) // 重新載入
+        setPhoneMsg('✅ 電話已儲存，正在比對租客資料...')
+        setZone(null)
         setTimeout(() => { setZL(true); fetch('/api/tenant/zone').then(r => r.json()).then(d => { setZone(d); setZL(false) }) }, 800)
       } else {
-        setLinkMsg('❌ ' + (data.error || '連結失敗'))
+        setPhoneMsg('❌ ' + (data.error || '儲存失敗'))
       }
-    } catch { setLinkMsg('❌ 連結失敗，請稍後再試') }
-    setLinking(false)
+    } catch { setPhoneMsg('❌ 儲存失敗，請稍後再試') }
+    setPhoneSaving(false)
   }
 
   async function removeFav(propertyId) {
@@ -136,19 +136,23 @@ export default function TenantDashboard({ user, favCount }) {
             {tab === 'zone' && (
               zoneLoading ? <Loading /> :
               !zone ? null :
-              !zone.linked ? (
-                <LinkLineSection lineIdInput={lineIdInput} setLI={setLI} linking={linking} linkLine={linkLine} linkMsg={linkMsg} />
-              ) : !zone.tenant ? (
+              zone.status === 'no_phone' ? (
+                <PhoneSection phoneInput={phoneInput} setPhoneInput={setPhoneInput} saving={phoneSaving} onSave={savePhone} msg={phoneMsg} />
+              ) : zone.status === 'not_found' ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🐌</div>
-                  <p style={{ fontSize: 15, color: 'var(--gray-mid)', lineHeight: 1.8 }}>
-                    LINE 已連結，但尚未有租客記錄<br />
-                    <span style={{ fontSize: 13 }}>如果您已入住，請聯絡房東確認</span>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+                  <p style={{ fontSize: 15, color: 'var(--charcoal)', fontWeight: 700, marginBottom: 8 }}>找不到租客資料</p>
+                  <p style={{ fontSize: 14, color: 'var(--gray-mid)', lineHeight: 1.8, marginBottom: 24 }}>
+                    電話 <strong>{zone.user?.phone}</strong> 未找到對應的租客記錄<br />請確認電話是否與房東登記的一致
                   </p>
+                  <button onClick={() => { setZone({ status: 'no_phone', user: zone.user }) }}
+                    style={{ padding: '10px 24px', borderRadius: 99, border: '1.5px solid var(--sage)', background: 'none', color: 'var(--sage-dark)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                    修改電話號碼
+                  </button>
                 </div>
-              ) : (
+              ) : zone.status === 'found' ? (
                 <TenantZoneContent tenant={zone.tenant} />
-              )
+              ) : null
             )}
 
             {/* ── 收藏 ── */}
@@ -325,30 +329,31 @@ function TenantZoneContent({ tenant }) {
   )
 }
 
-function LinkLineSection({ lineIdInput, setLI, linking, linkLine, linkMsg }) {
+function PhoneSection({ phoneInput, setPhoneInput, saving, onSave, msg }) {
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center', padding: '20px 0' }}>
-      <div style={{ fontSize: 56, marginBottom: 16 }}>🔗</div>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--charcoal)', marginBottom: 8 }}>連結 LINE 帳號</h2>
+      <div style={{ fontSize: 56, marginBottom: 16 }}>📱</div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--charcoal)', marginBottom: 8 }}>查詢租客資料</h2>
       <p style={{ fontSize: 14, color: 'var(--gray-mid)', lineHeight: 1.8, marginBottom: 24 }}>
-        連結 LINE 後，可以查看承租房源、維修記錄、水電費資訊等租客專屬資料。
+        輸入您與房東登記的電話號碼，即可查看承租房源、維修記錄、水電費等資訊。
       </p>
       <div style={{ textAlign: 'left', marginBottom: 12 }}>
-        <label style={{ fontSize: 12, color: 'var(--gray-mid)', display: 'block', marginBottom: 4 }}>您的 LINE User ID</label>
-        <input value={lineIdInput} onChange={e => setLI(e.target.value)} placeholder="U1234567890abcdef..."
-          style={{ width: '100%', padding: '12px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
+        <label style={{ fontSize: 12, color: 'var(--gray-mid)', display: 'block', marginBottom: 4 }}>聯絡電話</label>
+        <input value={phoneInput} onChange={e => setPhoneInput(e.target.value)} placeholder="0912-345-678"
+          style={{ width: '100%', padding: '12px 14px', border: '1.5px solid var(--oat-mid)', borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+          onKeyDown={e => e.key === 'Enter' && onSave()} />
         <p style={{ fontSize: 11, color: 'var(--gray-light)', marginTop: 6 }}>
-          在小蝸出租 LINE Bot 輸入「我的ID」即可取得
+          請填寫您給房東的聯絡電話，系統將自動比對租客記錄
         </p>
       </div>
-      {linkMsg && <div style={{ fontSize: 13, marginBottom: 12, color: linkMsg.startsWith('✅') ? 'var(--sage-dark)' : 'var(--danger)' }}>{linkMsg}</div>}
-      <button onClick={linkLine} disabled={linking}
-        style={{ width: '100%', padding: 14, borderRadius: 12, border: 'none', background: 'var(--sage)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: linking ? 0.6 : 1 }}>
-        {linking ? '連結中...' : '連結 LINE 帳號'}
+      {msg && <div style={{ fontSize: 13, marginBottom: 12, color: msg.startsWith('✅') ? 'var(--sage-dark)' : 'var(--danger)' }}>{msg}</div>}
+      <button onClick={onSave} disabled={saving}
+        style={{ width: '100%', padding: 14, borderRadius: 12, border: 'none', background: 'var(--sage)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+        {saving ? '查詢中...' : '查詢租客資料'}
       </button>
       <div style={{ marginTop: 20, padding: 14, borderRadius: 12, background: 'var(--oat-light)', fontSize: 13, color: 'var(--gray-mid)', textAlign: 'left' }}>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>如何取得 LINE User ID？</div>
-        <div>1. 加入小蝸出租 LINE 官方帳號<br />2. 傳送「我的ID」<br />3. 複製回傳的 User ID 貼到此處</div>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>找不到資料？</div>
+        <div>確認電話是否與房東登記的一致，或聯絡房東請其在後台建立您的租客資料。</div>
       </div>
     </div>
   )

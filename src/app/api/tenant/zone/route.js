@@ -1,5 +1,5 @@
 // src/app/api/tenant/zone/route.js
-// 租客專區資料：連動 LINE Bot 租客資料
+// 租客專區資料：用電話號碼比對租客記錄（不依賴 LINE）
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -10,19 +10,18 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   try {
-    // 找用戶的 lineId
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { lineId: true, name: true, email: true, phone: true },
+      select: { phone: true, name: true, email: true },
     })
 
-    if (!user?.lineId) {
-      return NextResponse.json({ linked: false, user })
+    if (!user?.phone) {
+      return NextResponse.json({ status: 'no_phone', user })
     }
 
-    // 用 lineId 找 LINE Bot 租客記錄（多個 source 取最新有 propertyId 的那筆）
+    // 用電話號碼比對 Tenant 記錄（房東後台建立的，或 LINE Bot 用戶填過電話）
     const tenants = await db.tenant.findMany({
-      where: { lineUserId: user.lineId },
+      where: { phone: user.phone, isActive: true },
       include: {
         property: {
           include: {
@@ -30,25 +29,40 @@ export async function GET() {
             owner: { select: { name: true, phone: true, lineOfficialId: true } },
           },
         },
-        landlord: { select: { name: true, phone: true, lineOfficialId: true, notifyLineUserId: true } },
-        repairs: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
+        landlord: { select: { name: true, phone: true, lineOfficialId: true } },
+        repairs: { orderBy: { createdAt: 'desc' }, take: 10 },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    const activeTenant = tenants.find(t => t.propertyId && t.isActive) || tenants[0] || null
+    if (!tenants.length) {
+      return NextResponse.json({ status: 'not_found', user })
+    }
 
-    return NextResponse.json({
-      linked: true,
-      user,
-      tenant: activeTenant,
-      allTenants: tenants,
-    })
+    const active = tenants.find(t => t.propertyId) || tenants[0]
+    return NextResponse.json({ status: 'found', user, tenant: active, allTenants: tenants })
   } catch (e) {
     console.error('tenant zone error:', e)
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}
+
+// 更新電話號碼
+export async function POST(request) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const { phone } = await request.json()
+  if (!phone) return NextResponse.json({ error: '請填寫電話' }, { status: 400 })
+
+  // 標準化電話（移除空格/符號）
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '')
+
+  try {
+    await db.user.update({ where: { id: session.user.id }, data: { phone: cleanPhone } })
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    if (e.code === 'P2002') return NextResponse.json({ error: '此電話已被其他帳號使用' }, { status: 400 })
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }

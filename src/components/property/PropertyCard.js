@@ -8,8 +8,9 @@ import { PROPERTY_TYPE_LABELS } from '@/types'
 
 const TAG_LIMIT = 6
 
-export default function PropertyCard({ property, detailHref }) {
-  const [fav, setFav] = useState(false)
+export default function PropertyCard({ property, detailHref, initialFaved = false }) {
+  const [fav, setFav] = useState(initialFaved)
+  const [favLoading, setFavLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
 
@@ -80,12 +81,28 @@ export default function PropertyCard({ property, detailHref }) {
             </span>
           </div>
           {/* Fav button */}
-          <button onClick={e => { e.preventDefault(); e.stopPropagation(); setFav(f => !f) }} style={{
+          <button onClick={async e => {
+            e.preventDefault(); e.stopPropagation()
+            if (favLoading) return
+            setFavLoading(true)
+            try {
+              const method = fav ? 'DELETE' : 'POST'
+              const res = await fetch('/api/favorites', {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ propertyId: id }),
+              })
+              if (res.status === 401) { window.location.href = '/login?callbackUrl=' + encodeURIComponent(window.location.pathname); return }
+              if (res.ok) setFav(f => !f)
+            } catch (_) {}
+            setFavLoading(false)
+          }} style={{
             position: 'absolute', top: 12, right: 12,
             width: 32, height: 32, borderRadius: '50%',
             background: 'rgba(250,250,248,0.92)', border: 'none',
             fontSize: 15, cursor: 'pointer', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
+            opacity: favLoading ? 0.5 : 1,
           }}>{fav ? '❤️' : '🤍'}</button>
         </div>
       </Link>

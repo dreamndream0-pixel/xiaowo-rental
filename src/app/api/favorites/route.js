@@ -21,11 +21,27 @@ export async function GET() {
   return NextResponse.json(favorites)
 }
 
+export async function POST(request) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const { propertyId } = await request.json()
+  if (!propertyId) return NextResponse.json({ error: 'missing propertyId' }, { status: 400 })
+
+  // upsert — 已存在就跳過
+  await db.favorite.upsert({
+    where: { userId_propertyId: { userId: session.user.id, propertyId } },
+    create: { userId: session.user.id, propertyId },
+    update: {},
+  })
+  return NextResponse.json({ ok: true, faved: true })
+}
+
 export async function DELETE(request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const { propertyId } = await request.json()
   await db.favorite.deleteMany({ where: { userId: session.user.id, propertyId } })
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, faved: false })
 }
