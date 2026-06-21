@@ -38,8 +38,9 @@ export async function PUT(request) {
   if (realEmail) {
     try {
       const existing = await db.landlord.findUnique({ where: { email: realEmail } })
+      let landlord
       if (existing) {
-        await db.landlord.update({
+        landlord = await db.landlord.update({
           where: { email: realEmail },
           data: {
             name: user.name || existing.name,
@@ -50,7 +51,7 @@ export async function PUT(request) {
         const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
         const passwordHash = crypto.createHash('sha256')
           .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
-        await db.landlord.create({
+        landlord = await db.landlord.create({
           data: {
             name: user.name || realEmail,
             email: realEmail,
@@ -60,6 +61,11 @@ export async function PUT(request) {
           },
         })
       }
+      // Link user's properties to this landlord record
+      await db.property.updateMany({
+        where: { landlordId: session.user.id, ownerId: null },
+        data: { ownerId: landlord.id },
+      })
     } catch (e) {
       console.error('sync landlord failed:', e.message, e.code)
       syncError = e.message
@@ -88,8 +94,11 @@ export async function GET() {
   let isLinkedLandlord = false
   if (realEmail) {
     try {
-      const linked = await db.landlord.findUnique({ where: { email: realEmail }, select: { id: true } })
-      isLinkedLandlord = !!linked
+      const rows = await db.$queryRawUnsafe(
+        `SELECT id FROM "Landlord" WHERE email = $1 LIMIT 1`,
+        realEmail
+      )
+      isLinkedLandlord = rows.length > 0
     } catch (e) {
       console.error('landlord check failed:', e.message)
     }
