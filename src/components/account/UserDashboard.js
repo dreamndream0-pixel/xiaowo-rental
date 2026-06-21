@@ -22,6 +22,13 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
   const [direction, setDir]     = useState(1)
   const [superModal, setSuper]  = useState(!!initSuper)
 
+  // 完善資料 modal
+  const [profileModal, setProfileModal]   = useState(false)
+  const [isLinkedLandlord, setIsLinked]   = useState(true) // default true to avoid flash
+  const [profileForm, setProfileForm]     = useState({ name: user.name || '', phone: user.phone || '', email: '' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileError, setProfileError]   = useState('')
+
   // tenant state
   const [tenantTab, setTenantTab]     = useState(initTab || 'home')
   const [zone, setZone]               = useState(null)
@@ -37,6 +44,35 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
   const [properties, setProperties]   = useState(null)
   const [propsLoading, setPropsLoading] = useState(false)
   const [propTab, setPropTab]         = useState('all')
+
+  // ── Load landlord linked status ─────────────────
+  useEffect(() => {
+    fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) {
+        setIsLinked(!!d.isLinkedLandlord)
+        setProfileForm({ name: d.name || user.name || '', phone: d.phone || user.phone || '', email: d.email || '' })
+      }
+    }).catch(() => {})
+  }, [])
+
+  async function handleSaveProfile() {
+    setProfileError('')
+    setProfileSaving(true)
+    try {
+      const res = await fetch('/api/landlord/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileForm),
+      })
+      if (!res.ok) { const d = await res.json(); setProfileError(d.error || '儲存失敗'); setProfileSaving(false); return }
+      // Re-check linked status
+      fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
+        if (d) setIsLinked(!!d.isLinkedLandlord)
+      })
+      setProfileModal(false)
+    } catch { setProfileError('儲存失敗，請稍後再試') }
+    setProfileSaving(false)
+  }
 
   // ── Mode switch ────────────────────────────────
   function switchMode(next) {
@@ -130,17 +166,27 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
             </div>
           </div>
 
-          {/* Mode switch */}
-          <div style={{ display: 'flex', gap: 0, marginTop: 28, background: 'rgba(0,0,0,0.2)', borderRadius: 14, padding: 4, alignSelf: 'flex-start', width: 'fit-content' }}>
-            {[['tenant', '🏠 租客模式'], ['landlord', '🏢 房東模式']].map(([m, label]) => (
-              <button key={m} onClick={() => switchMode(m)} style={{
-                padding: '9px 24px', borderRadius: 11, border: 'none', fontFamily: 'inherit',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.22s',
-                background: mode === m ? 'white' : 'transparent',
-                color: mode === m ? '#3A5740' : 'rgba(255,255,255,0.75)',
-                boxShadow: mode === m ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-              }}>{label}</button>
-            ))}
+          {/* Mode switch + 完善資料 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 0, background: 'rgba(0,0,0,0.2)', borderRadius: 14, padding: 4 }}>
+              {[['tenant', '🏠 租客模式'], ['landlord', '🏢 房東模式']].map(([m, label]) => (
+                <button key={m} onClick={() => switchMode(m)} style={{
+                  padding: '9px 24px', borderRadius: 11, border: 'none', fontFamily: 'inherit',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.22s',
+                  background: mode === m ? 'white' : 'transparent',
+                  color: mode === m ? '#3A5740' : 'rgba(255,255,255,0.75)',
+                  boxShadow: mode === m ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                }}>{label}</button>
+              ))}
+            </div>
+            {!isLinkedLandlord && (
+              <button onClick={() => setProfileModal(true)} style={{
+                padding: '9px 18px', borderRadius: 11, border: '1.5px solid rgba(255,255,255,0.55)',
+                background: 'rgba(255,255,255,0.15)', color: 'white',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                backdropFilter: 'blur(4px)',
+              }}>📋 完善房東資料</button>
+            )}
           </div>
         </div>
       </div>
@@ -265,6 +311,35 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
 
       {/* ── 超級房東 Modal ── */}
       {superModal && <SuperModal onClose={() => setSuper(false)} />}
+
+      {/* ── 完善房東資料 Modal ── */}
+      {profileModal && (
+        <div onClick={e => { if (e.target === e.currentTarget) setProfileModal(false) }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
+            <button onClick={() => setProfileModal(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#aaa' }}>✕</button>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#3d3d3d', marginBottom: 6 }}>📋 完善房東資料</h2>
+            <p style={{ fontSize: 12, color: '#aaa', marginBottom: 20 }}>填寫後即加入後台房東管理，可使用刊登、管理等功能</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[['姓名 *', 'name', 'text', '請輸入真實姓名'], ['手機', 'phone', 'tel', '例：0912345678'], ['Email *', 'email', 'email', '用於後台登入帳號']].map(([label, key, type, placeholder]) => (
+                <div key={key}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 5 }}>{label}</div>
+                  <input type={type} value={profileForm[key]} onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #E5DFD5', borderRadius: 10, fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            {profileError && <div style={{ marginTop: 12, padding: '10px 14px', background: '#FAEAEA', color: '#e53935', borderRadius: 8, fontSize: 13 }}>{profileError}</div>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button onClick={() => setProfileModal(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1.5px solid #E5DFD5', background: 'white', color: '#888', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>取消</button>
+              <button onClick={handleSaveProfile} disabled={profileSaving} style={{ flex: 2, padding: '12px 0', borderRadius: 12, border: 'none', background: '#4E7153', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: profileSaving ? 0.6 : 1 }}>
+                {profileSaving ? '儲存中...' : '儲存並加入管理'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

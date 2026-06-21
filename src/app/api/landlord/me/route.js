@@ -30,24 +30,37 @@ export async function PUT(request) {
     select: { id: true, name: true, email: true, phone: true },
   })
 
-  // Determine email to send to linebot (skip @xiaowo.local phantom emails)
-  const userEmail = user.email?.endsWith('@xiaowo.local') ? null : user.email
+  const realEmail = user.email?.endsWith('@xiaowo.local') ? null : user.email
 
-  // Sync to linebot-rental
-  const LINEBOT_URL = process.env.LINEBOT_URL
-  const INTERNAL_SECRET = process.env.INTERNAL_SECRET
-  if (LINEBOT_URL && INTERNAL_SECRET && userEmail) {
-    await fetch(`${LINEBOT_URL}/api/internal/create-landlord`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret: INTERNAL_SECRET,
-        name: user.name,
-        email: userEmail,
-        phone: user.phone,
-        userId: session.user.id,
-      }),
-    }).catch(() => {})
+  // Sync directly to shared Landlord table (same Supabase DB)
+  if (realEmail) {
+    try {
+      const existing = await db.landlord.findUnique({ where: { email: realEmail } })
+      if (existing) {
+        // Update name/phone if already exists
+        await db.landlord.update({
+          where: { email: realEmail },
+          data: { name: user.name || existing.name, phone: user.phone || existing.phone },
+        })
+      } else {
+        // Create new landlord record
+        const crypto = (await import('crypto')).default
+        const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
+        const passwordHash = crypto.createHash('sha256')
+          .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
+        await db.landlord.create({
+          data: {
+            name: user.name || realEmail,
+            email: realEmail,
+            phone: user.phone || null,
+            adminKey,
+            passwordHash,
+          },
+        })
+      }
+    } catch (e) {
+      console.error('sync landlord failed:', e.message)
+    }
   }
 
   return NextResponse.json({ ok: true })
