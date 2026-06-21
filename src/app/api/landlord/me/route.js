@@ -33,48 +33,52 @@ export async function PUT(request) {
 
   const realEmail = user.email?.endsWith('@xiaowo.local') ? null : user.email
 
-  // Sync directly to shared Landlord table (same Supabase DB)
-  let syncError = null
-  if (realEmail) {
-    try {
-      const existing = await db.landlord.findUnique({ where: { email: realEmail } })
-      let landlord
-      if (existing) {
-        landlord = await db.landlord.update({
-          where: { email: realEmail },
-          data: {
-            name: user.name || existing.name,
-            phone: user.phone || existing.phone || null,
-          },
-        })
-      } else {
-        const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
-        const passwordHash = crypto.createHash('sha256')
-          .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
-        landlord = await db.landlord.create({
-          data: {
-            name: user.name || realEmail,
-            email: realEmail,
-            phone: user.phone || null,
-            adminKey,
-            passwordHash,
-          },
-        })
-      }
-      // Link user's properties to this landlord record
-      await db.property.updateMany({
-        where: { landlordId: session.user.id, ownerId: null },
-        data: { ownerId: landlord.id },
-      })
-    } catch (e) {
-      console.error('sync landlord failed:', e.message, e.code)
-      syncError = e.message
-    }
-  } else {
-    syncError = 'no_email' // phone-only user needs to add email first
+  // Must have a real email to sync to Landlord table
+  if (!realEmail) {
+    return NextResponse.json({ ok: true, isLinkedLandlord: false, syncError: 'no_email' })
   }
 
-  return NextResponse.json({ ok: true, syncError })
+  // ── Step 1: create / update Landlord record ──────────────────────
+  let landlord = null
+  let syncError = null
+  try {
+    const existing = await db.landlord.findUnique({ where: { email: realEmail } })
+    if (existing) {
+      landlord = await db.landlord.update({
+        where: { email: realEmail },
+        data: {
+          name: user.name || existing.name,
+          phone: user.phone || existing.phone || null,
+        },
+      })
+    } else {
+      const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
+      const passwordHash = crypto.createHash('sha256')
+        .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
+      landlord = await db.landlord.create({
+        data: {
+          name: user.name || realEmail,
+          email: realEmail,
+          phone: user.phone || null,
+          adminKey,
+          passwordHash,
+        },
+      })
+    }
+  } catch (e) {
+    console.error('sync landlord failed:', e.message, e.code)
+    syncError = e.message
+  }
+
+  // ── Step 2: link properties (non-blocking, won't fail the response) ──
+  if (landlord) {
+    db.property.updateMany({
+      where: { landlordId: session.user.id, ownerId: null },
+      data: { ownerId: landlord.id },
+    }).catch(e => console.error('link properties failed:', e.message))
+  }
+
+  return NextResponse.json({ ok: true, isLinkedLandlord: !!landlord, syncError })
 }
 
 export async function GET() {

@@ -70,13 +70,18 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
         setProfileError('請填寫 Email，才能加入房東管理後台')
         setProfileSaving(false); return
       }
-      if (d.syncError) {
+      // Use server's authoritative isLinkedLandlord value
+      if (d.isLinkedLandlord) {
+        setIsLinked(true)
+        setProfileModal(false)
+      } else if (d.syncError) {
         setProfileError('後台同步失敗：' + d.syncError)
         setProfileSaving(false); return
+      } else {
+        // Shouldn't happen, but close anyway
+        setIsLinked(false)
+        setProfileModal(false)
       }
-      // PUT succeeded and no syncError → landlord record created in backend
-      setIsLinked(true)
-      setProfileModal(false)
     } catch { setProfileError('儲存失敗，請稍後再試') }
     setProfileSaving(false)
   }
