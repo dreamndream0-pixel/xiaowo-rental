@@ -1,6 +1,6 @@
 'use client'
 // src/components/property/form/NewPropertyForm.js
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ALL_CITIES, getDistricts } from '@/lib/districts'
@@ -42,14 +42,36 @@ export default function NewPropertyForm() {
   const [error, setError]     = useState('')
   const [landlord, setLandlord] = useState(null)
 
+  // Modal states
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [superModalOpen, setSuperModalOpen] = useState(false)
+
+  // Profile modal form
+  const [profileForm, setProfileForm] = useState({ name: '', phone: '' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileError, setProfileError] = useState('')
+
+  // Photos state
+  const [photos, setPhotos] = useState([]) // { url, cloudinaryId, uploading, error }
+  const fileInputRefs = useRef([])
+
   const up = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
   const districts = getDistricts(form.city)
+  const isSuper = landlord?.isSuper
+  const MAX_PHOTOS = isSuper ? 9 : 5
+
+  function fetchLandlord() {
+    fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) {
+        setLandlord(d)
+        setProfileForm({ name: d.name || '', phone: d.phone || '' })
+      }
+    }).catch(() => {})
+  }
 
   // Load landlord profile
   useEffect(() => {
-    fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (d) setLandlord(d)
-    }).catch(() => {})
+    fetchLandlord()
   }, [])
 
   function toggleAmenity(name) {
@@ -69,6 +91,65 @@ export default function NewPropertyForm() {
     setCustomTag('')
   }
 
+  // ── Profile Modal ──────────────────────────────────────────────
+  async function handleSaveProfile() {
+    setProfileError('')
+    setProfileSaving(true)
+    try {
+      const res = await fetch('/api/landlord/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: profileForm.name, phone: profileForm.phone }),
+      })
+      if (!res.ok) { setProfileError('儲存失敗，請稍後再試'); setProfileSaving(false); return }
+      fetchLandlord()
+      setProfileModalOpen(false)
+    } catch {
+      setProfileError('儲存失敗，請稍後再試')
+    }
+    setProfileSaving(false)
+  }
+
+  // ── Photo Upload ───────────────────────────────────────────────
+  async function handleFileSelect(e, slotIndex) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Add placeholder
+    setPhotos(prev => {
+      const next = [...prev]
+      next[slotIndex] = { url: null, cloudinaryId: null, uploading: true, error: null }
+      return next
+    })
+
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '上傳失敗')
+      setPhotos(prev => {
+        const next = [...prev]
+        next[slotIndex] = { url: data.url, cloudinaryId: data.cloudinaryId || null, uploading: false, error: null }
+        return next
+      })
+    } catch (err) {
+      setPhotos(prev => {
+        const next = [...prev]
+        next[slotIndex] = { url: null, cloudinaryId: null, uploading: false, error: err.message }
+        return next
+      })
+    }
+
+    // Reset file input so same file can be re-selected
+    if (fileInputRefs.current[slotIndex]) fileInputRefs.current[slotIndex].value = ''
+  }
+
+  function removePhoto(index) {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────
   async function handleSubmit() {
     setError('')
     if (!form.title || !form.city || !form.district || !form.address || !form.price || !form.size) {
@@ -93,6 +174,22 @@ export default function NewPropertyForm() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || '建立失敗'); setLoading(false); return }
+
+      // Upload photos if any
+      const validPhotos = photos.filter(p => p.url && !p.uploading)
+      if (validPhotos.length > 0) {
+        await fetch(`/api/properties/${data.id}/images`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(validPhotos.map((p, i) => ({
+            url: p.url,
+            cloudinaryId: p.cloudinaryId,
+            isCover: i === 0,
+            order: i,
+          }))),
+        }).catch(() => {})
+      }
+
       router.push('/account?mode=landlord')
     } catch {
       setError('建立失敗，請稍後再試')
@@ -100,7 +197,10 @@ export default function NewPropertyForm() {
     }
   }
 
-  const isSuper = landlord?.isSuper
+  // ── Photo slots ────────────────────────────────────────────────
+  const filledSlots = photos.filter(p => p.url || p.uploading || p.error)
+  const showSlots = Math.min(filledSlots.length + 1, MAX_PHOTOS)
+  const photoSlots = Array.from({ length: showSlots }, (_, i) => photos[i] || null)
 
   return (
     <main style={{ minHeight: 'calc(100vh - 62px)', background: '#F5F3EF', padding: '32px 16px 80px' }}>
@@ -128,8 +228,8 @@ export default function NewPropertyForm() {
                 {landlord.email && <span style={{ marginLeft: 8 }}>✉️ {landlord.email}</span>}
               </div>
             </div>
-            <button onClick={() => router.push('/account?mode=landlord')} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-              編輯資料
+            <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+              完善資料
             </button>
           </div>
         ) : session && (
@@ -139,7 +239,7 @@ export default function NewPropertyForm() {
               <div style={{ fontWeight: 700, fontSize: 14, color: '#3d3d3d' }}>{session.user.name || '我的帳號'}</div>
               <div style={{ fontSize: 12, color: '#bbb' }}>尚未設定房東資料</div>
             </div>
-            <button onClick={() => router.push('/account?mode=landlord')} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
               完善資料
             </button>
           </div>
@@ -153,7 +253,7 @@ export default function NewPropertyForm() {
               <div style={{ fontWeight: 700, fontSize: 13, color: '#B8860B' }}>升級超級房東，解鎖更多功能</div>
               <div style={{ fontSize: 12, color: '#C9A227', marginTop: 2 }}>獲得 LINE Bot 推播通知、置頂曝光、專屬標章...</div>
             </div>
-            <button onClick={() => router.push('/account?super=1')} style={{ fontSize: 12, fontWeight: 700, color: '#B8860B', background: 'white', border: '1.5px solid #F5E9C6', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+            <button onClick={() => setSuperModalOpen(true)} style={{ fontSize: 12, fontWeight: 700, color: '#B8860B', background: 'white', border: '1.5px solid #F5E9C6', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
               了解更多
             </button>
           </div>
@@ -287,6 +387,68 @@ export default function NewPropertyForm() {
             style={{ ...inputSt, resize: 'vertical', lineHeight: 1.7 }} />
         </Section>
 
+        {/* ── Section: 房源照片 ── */}
+        <Section title="房源照片">
+          <div style={{ fontSize: 12, color: '#aaa', marginBottom: 12 }}>
+            一般房東最多 5 張｜超級房東最多 9 張（目前上限：{MAX_PHOTOS} 張）
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {photoSlots.map((slot, i) => (
+              <div key={i} style={{ position: 'relative', aspectRatio: '4/3' }}>
+                {slot?.url ? (
+                  <>
+                    <img src={slot.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, border: '1.5px solid #E5DFD5' }} />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                    >✕</button>
+                    {i === 0 && (
+                      <div style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 10, background: '#4E7153', color: 'white', borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>封面</div>
+                    )}
+                  </>
+                ) : slot?.uploading ? (
+                  <div style={{ width: '100%', height: '100%', borderRadius: 10, border: '1.5px dashed #ccc', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ fontSize: 18, animation: 'spin 1s linear infinite' }}>⏳</div>
+                    <div style={{ fontSize: 11, color: '#aaa' }}>上傳中...</div>
+                  </div>
+                ) : slot?.error ? (
+                  <div
+                    onClick={() => { if (fileInputRefs.current[i]) fileInputRefs.current[i].click() }}
+                    style={{ width: '100%', height: '100%', borderRadius: 10, border: '1.5px dashed #e53935', background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, cursor: 'pointer' }}
+                  >
+                    <div style={{ fontSize: 18 }}>❌</div>
+                    <div style={{ fontSize: 10, color: '#e53935', textAlign: 'center', padding: '0 4px' }}>{slot.error}</div>
+                    <div style={{ fontSize: 10, color: '#aaa' }}>點擊重試</div>
+                    <input
+                      ref={el => fileInputRefs.current[i] = el}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={e => handleFileSelect(e, i)}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => { if (fileInputRefs.current[i]) fileInputRefs.current[i].click() }}
+                    style={{ width: '100%', height: '100%', borderRadius: 10, border: '1.5px dashed #ccc', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, cursor: 'pointer' }}
+                  >
+                    <div style={{ fontSize: 24, color: '#ccc' }}>＋</div>
+                    <div style={{ fontSize: 11, color: '#bbb' }}>新增照片</div>
+                    <input
+                      ref={el => fileInputRefs.current[i] = el}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={e => handleFileSelect(e, i)}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Section>
+
         {/* Error */}
         {error && <div style={{ padding: '12px 16px', background: '#FAEAEA', color: '#e53935', borderRadius: 10, fontSize: 13 }}>{error}</div>}
 
@@ -302,6 +464,113 @@ export default function NewPropertyForm() {
           💡 刊登後可在「我的帳號 → 房東模式」管理房源、上傳照片。
         </div>
       </div>
+
+      {/* ── Profile Modal ── */}
+      {profileModalOpen && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setProfileModalOpen(false) }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+        >
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
+            <button
+              onClick={() => setProfileModalOpen(false)}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}
+            >✕</button>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#3d3d3d', marginBottom: 20 }}>完善房東資料</h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <Field label="姓名">
+                <input
+                  value={profileForm.name}
+                  onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="請輸入姓名"
+                  style={inputSt}
+                />
+              </Field>
+              <Field label="手機">
+                <input
+                  value={profileForm.phone}
+                  onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="例：0912345678"
+                  style={inputSt}
+                />
+              </Field>
+              <Field label="Email（無法更改）">
+                <input
+                  value={landlord?.email || session?.user?.email || ''}
+                  disabled
+                  style={{ ...inputSt, background: '#F5F5F5', color: '#aaa', cursor: 'not-allowed' }}
+                />
+              </Field>
+            </div>
+
+            {profileError && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: '#FAEAEA', color: '#e53935', borderRadius: 8, fontSize: 13 }}>
+                {profileError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button
+                onClick={() => setProfileModalOpen(false)}
+                style={{ ...outlineBtn, flex: 1 }}
+              >取消</button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={profileSaving}
+                style={{ ...primaryBtn, flex: 2, opacity: profileSaving ? 0.6 : 1 }}
+              >{profileSaving ? '儲存中...' : '儲存'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Super Modal ── */}
+      {superModalOpen && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setSuperModalOpen(false) }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+        >
+          <div style={{ background: 'white', border: '2px solid #F5E9C6', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
+            <button
+              onClick={() => setSuperModalOpen(false)}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}
+            >✕</button>
+
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#B8860B', marginBottom: 4 }}>超級房東方案</h2>
+              <p style={{ fontSize: 13, color: '#C9A227' }}>解鎖專屬功能，讓出租更輕鬆！</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+              {[
+                'LINE Bot 推播通知（新預約、維修申請即時通知）',
+                '房源置頂曝光（優先排序在搜尋結果）',
+                '超級房東專屬標章（增加租客信任度）',
+                '上傳照片數：一般房東 5 張 → 超級房東 9 張',
+                '專屬客服支援',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#3d3d3d' }}>
+                  <span style={{ color: '#4E7153', flexShrink: 0 }}>✅</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: '#FFFBF0', border: '1px solid #F5E9C6', borderRadius: 12, padding: '14px 16px', fontSize: 13, color: '#8B6914' }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>📞 聯絡我們升級</div>
+              <div>LINE: <a href="https://lin.ee/5qLEcxX" target="_blank" rel="noopener noreferrer" style={{ color: '#4E7153', textDecoration: 'none', fontWeight: 600 }}>https://lin.ee/5qLEcxX</a></div>
+              <div style={{ marginTop: 4 }}>電話: <span style={{ fontWeight: 600 }}>0800-899-969</span></div>
+            </div>
+
+            <button
+              onClick={() => setSuperModalOpen(false)}
+              style={{ ...outlineBtn, width: '100%', marginTop: 16, textAlign: 'center' }}
+            >關閉</button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
