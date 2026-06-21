@@ -44,13 +44,13 @@ export default function Navbar({ initialLogoUrl = '' }) {
                 {session.user.name}
               </span>
               {session.user.role === 'TENANT' ? (
-                <Link href="/tenant" style={{
+                <Link href="/account" style={{
                   padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
                   color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
                   fontWeight: 600, textDecoration: 'none',
                 }}>租客後台</Link>
               ) : (
-                <Link href="/dashboard" style={{
+                <Link href="/account" style={{
                   padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
                   color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
                   fontWeight: 600, textDecoration: 'none',
@@ -102,8 +102,8 @@ export default function Navbar({ initialLogoUrl = '' }) {
           {session ? (
             <>
               {session.user.role === 'TENANT'
-                ? <Link href="/tenant" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--sage-dark)', textDecoration: 'none' }}>租客後台</Link>
-                : <Link href="/dashboard" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>後台管理</Link>
+                ? <Link href="/account" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--sage-dark)', textDecoration: 'none' }}>租客後台</Link>
+                : <Link href="/account" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>後台管理</Link>
               }
               <button onClick={() => { signOut(); setMobileOpen(false) }} style={{ background: 'none', border: 'none', textAlign: 'left', fontWeight: 600, color: 'var(--gray-mid)', cursor: 'pointer', padding: 0 }}>登出</button>
             </>
