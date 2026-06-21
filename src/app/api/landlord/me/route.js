@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import crypto from 'crypto'
 
 export async function PUT(request) {
   const session = await getServerSession(authOptions)
@@ -44,7 +45,6 @@ export async function PUT(request) {
         })
       } else {
         // Create new landlord record
-        const crypto = (await import('crypto')).default
         const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
         const passwordHash = crypto.createHash('sha256')
           .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
