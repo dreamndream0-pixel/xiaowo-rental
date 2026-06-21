@@ -18,23 +18,27 @@ export default function LandlordSiteHeader({ landlord }) {
           textDecoration: 'none', minWidth: 0,
         }}>
           {landlord.siteLogo ? (
+            // 有 logo：直接顯示整張圖（橫式、不套方框、不另加文字）
             <img src={landlord.siteLogo} alt={siteName} style={{
-              height: 40, width: 40, borderRadius: 10,
-              objectFit: 'cover', background: 'white', flexShrink: 0,
+              height: 44, maxWidth: 240, objectFit: 'contain',
+              display: 'block', flexShrink: 0,
             }} />
           ) : (
-            <div style={{
-              height: 40, width: 40, borderRadius: 10,
-              background: 'rgba(255,255,255,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, flexShrink: 0,
-            }}>🏠</div>
+            // 沒 logo：退回方框 emoji + 站名文字
+            <>
+              <div style={{
+                height: 40, width: 40, borderRadius: 10,
+                background: 'rgba(255,255,255,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 20, flexShrink: 0,
+              }}>🏠</div>
+              <span style={{
+                color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: 1,
+                fontFamily: 'var(--font-serif)', overflow: 'hidden',
+                textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{siteName}</span>
+            </>
           )}
-          <span style={{
-            color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: 1,
-            fontFamily: 'var(--font-serif)', overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{siteName}</span>
         </Link>
         <Link href={`/site/${landlord.id}`} style={{
           color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none',
