@@ -123,7 +123,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       {/* 頁尾 */}
       <footer style={{ background: 'var(--charcoal)', color: 'rgba(255,255,255,0.7)', padding: '28px 20px', textAlign: 'center', fontSize: 13 }}>
         <p style={{ margin: 0 }}>{siteName} · 由 🐌 小蝸出租 提供技術支援</p>
-        <Link href="/listings" style={{ color: 'var(--sage-light)', textDecoration: 'none', fontSize: 13 }}>瀏覽全部房源 →</Link>
+        <Link href="/" style={{ color: 'var(--sage-light)', textDecoration: 'none', fontSize: 13 }}>瀏覽全部房源 →</Link>
       </footer>
     </>
   )
