@@ -20,6 +20,8 @@ const getProperty = cache(async (id) => {
             id: true, name: true, handle: true, avatar: true,
             verified: true, bio: true, avgRating: true,
             reviewCount: true, yearsActive: true, totalListings: true,
+            // Real property count by this user
+            _count: { select: { properties: { where: { deletedAt: null } } } },
           },
         },
         images:    { orderBy: [{ isCover: 'desc' }, { order: 'asc' }] },
@@ -97,7 +99,8 @@ export default async function PropertyPage({ params, searchParams }) {
   const { owner, ...safeProperty } = property
   safeProperty.ownerSiteName   = owner?.siteName || null
   safeProperty.ownerId         = owner?.id       || null
-  safeProperty.ownerPropCount  = owner?._count?.properties ?? null
+  // Prefer Landlord count (ownerId linked), fallback to User count (landlordId), never show 0 if there's real data
+  safeProperty.ownerPropCount  = owner?._count?.properties ?? property.landlord?._count?.properties ?? 0
   safeProperty.communityId    = communityRows[0]?.communityId   || null
   safeProperty.communityName  = communityRows[0]?.communityName || null
 
