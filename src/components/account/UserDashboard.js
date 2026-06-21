@@ -16,16 +16,16 @@ const REPAIR_STATUS = { PENDING: '待處理', IN_PROGRESS: '處理中', DONE: '�
 const STATUS_COLOR  = { AVAILABLE: '#22C55E', INACTIVE: '#9CA3AF', RENTED: '#3B82F6', PENDING: '#F59E0B', PAUSED: '#F59E0B' }
 const STATUS_LABEL  = { AVAILABLE: '上架中', INACTIVE: '已下架', RENTED: '已成交', PENDING: '審核中', PAUSED: '暫停', REJECTED: '未通過' }
 
-export default function UserDashboard({ user, favCount, propCount, initTab, initSuper, initMode }) {
+export default function UserDashboard({ user, favCount, propCount, initTab, initSuper, initMode, initLinked }) {
   const [mode, setMode]         = useState(initMode || 'tenant')
   const [animating, setAnim]    = useState(false)
   const [direction, setDir]     = useState(1)
   const [superModal, setSuper]  = useState(!!initSuper)
 
-  // 完善資料 modal
+  // 完善資料 modal — initialised from server-side prop (no client-side fetch needed)
   const [profileModal, setProfileModal]   = useState(false)
-  const [isLinkedLandlord, setIsLinked]   = useState(false) // show button by default until confirmed linked
-  const [profileForm, setProfileForm]     = useState({ name: user.name || '', phone: user.phone || '', email: '' })
+  const [isLinkedLandlord, setIsLinked]   = useState(!!initLinked)
+  const [profileForm, setProfileForm]     = useState({ name: user.name || '', phone: user.phone || '', email: user.email?.endsWith('@xiaowo.local') ? '' : (user.email || '') })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileError, setProfileError]   = useState('')
 
@@ -44,16 +44,6 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
   const [properties, setProperties]   = useState(null)
   const [propsLoading, setPropsLoading] = useState(false)
   const [propTab, setPropTab]         = useState('all')
-
-  // ── Load landlord linked status ─────────────────
-  useEffect(() => {
-    fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (d) {
-        setIsLinked(!!d.isLinkedLandlord)
-        setProfileForm({ name: d.name || user.name || '', phone: d.phone || user.phone || '', email: d.email || '' })
-      }
-    }).catch(() => {})
-  }, [])
 
   async function handleSaveProfile() {
     setProfileError('')
