@@ -49,9 +49,8 @@ export default function RegisterForm() {
       <div style={{ background: 'white', borderRadius: 24, padding: '36px 32px', maxWidth: 420, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.10)' }}>
 
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🐌</div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#3d3d3d' }}>建立帳號</div>
-          <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>選擇您偏好的方式加入</div>
+          <img src="/logo.png" alt="小蝸出租" style={{ height: 100, objectFit: 'contain', marginBottom: 8 }} />
+          <div style={{ fontSize: 13, color: '#aaa' }}>選擇您偏好的方式加入</div>
         </div>
 
         {/* Tabs */}

@@ -43,10 +43,7 @@ export default function Navbar({ initialLogoUrl = '' }) {
     }}>
       {/* Logo */}
       <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-        {logoUrl
-          ? <img src={logoUrl} alt="logo" style={{ height: 38, maxWidth: 160, objectFit: 'contain' }} />
-          : <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--sage-dark)', fontFamily: 'var(--font-serif)' }}>🐌 小蝸出租</span>
-        }
+        <img src={logoUrl || '/logo.png'} alt="小蝸出租" style={{ height: 38, maxWidth: 160, objectFit: 'contain' }} />
       </Link>
 
       {/* Right */}

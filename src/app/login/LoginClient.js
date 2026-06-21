@@ -30,9 +30,8 @@ export default function LoginClient() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🐌</div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#3d3d3d' }}>小蝸出租</div>
-          <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>歡迎回來</div>
+          <img src="/logo.png" alt="小蝸出租" style={{ height: 120, objectFit: 'contain', marginBottom: 8 }} />
+          <div style={{ fontSize: 13, color: '#aaa' }}>歡迎回來</div>
         </div>
 
         {/* Tab: 手機 / Email */}
