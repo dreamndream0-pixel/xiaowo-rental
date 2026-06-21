@@ -16,14 +16,14 @@ const REPAIR_STATUS = { PENDING: '待處理', IN_PROGRESS: '處理中', DONE: '�
 const STATUS_COLOR  = { AVAILABLE: '#22C55E', INACTIVE: '#9CA3AF', RENTED: '#3B82F6', PENDING: '#F59E0B', PAUSED: '#F59E0B' }
 const STATUS_LABEL  = { AVAILABLE: '上架中', INACTIVE: '已下架', RENTED: '已成交', PENDING: '審核中', PAUSED: '暫停', REJECTED: '未通過' }
 
-export default function UserDashboard({ user, favCount, propCount }) {
-  const [mode, setMode]         = useState('tenant')   // 'tenant' | 'landlord'
+export default function UserDashboard({ user, favCount, propCount, initTab, initSuper, initMode }) {
+  const [mode, setMode]         = useState(initMode || 'tenant')
   const [animating, setAnim]    = useState(false)
-  const [direction, setDir]     = useState(1)           // 1=slide-right, -1=slide-left
-  const [superModal, setSuper]  = useState(false)
+  const [direction, setDir]     = useState(1)
+  const [superModal, setSuper]  = useState(!!initSuper)
 
   // tenant state
-  const [tenantTab, setTenantTab]     = useState('home')
+  const [tenantTab, setTenantTab]     = useState(initTab || 'home')
   const [zone, setZone]               = useState(null)
   const [zoneLoading, setZL]          = useState(false)
   const [phoneInput, setPhoneInput]   = useState(user.phone || '')

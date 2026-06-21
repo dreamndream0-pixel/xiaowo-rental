@@ -1,6 +1,7 @@
 // src/lib/auth.js
 import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
+import LineProvider from 'next-auth/providers/line'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
@@ -19,8 +20,13 @@ export const authOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
+        // 支援 email 或手機號碼登入
+        const isPhone = /^[0-9\+\-\s]{8,15}$/.test(credentials.email.trim())
+        const cleanId = credentials.email.replace(/[\s\-]/g, '')
+        const user = await db.user.findFirst({
+          where: isPhone
+            ? { phone: cleanId }
+            : { email: credentials.email },
         })
         if (!user || !user.passwordHash) return null
 
@@ -35,6 +41,12 @@ export const authOptions = {
     GoogleProvider({
       clientId:     process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
+
+    // LINE OAuth
+    LineProvider({
+      clientId:     process.env.LINE_CLIENT_ID     || '',
+      clientSecret: process.env.LINE_CLIENT_SECRET || '',
     }),
   ],
 

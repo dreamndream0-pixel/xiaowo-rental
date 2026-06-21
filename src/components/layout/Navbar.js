@@ -1,117 +1,143 @@
 'use client'
 // src/components/layout/Navbar.js
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 
+const MENU_ITEMS = [
+  { label: '我的帳號管理', href: '/account',           icon: '👤' },
+  { label: '我要刊登',     href: '/property/new',       icon: '🏠' },
+  { label: '我的收藏',     href: '/account?tab=favorites', icon: '❤️' },
+  { label: '瀏覽記錄',     href: '/account?tab=history',  icon: '👀' },
+  { label: '成為超級房東', href: '/account?super=1',    icon: '⭐', gold: true },
+]
+
 export default function Navbar({ initialLogoUrl = '' }) {
   const { data: session } = useSession()
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [logoUrl, setLogoUrl] = useState(initialLogoUrl)
+  const [logoUrl, setLogoUrl]   = useState(initialLogoUrl)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
 
   useEffect(() => {
-    // 從 API 更新（上傳新 logo 後即時反映，不需重新整理）
-    fetch('/api/admin/hero', { cache: 'no-store' }).then(r => r.json()).then(data => {
-      if (data && data.logoUrl) {
-        setLogoUrl(data.logoUrl)
-      }
+    fetch('/api/admin/hero', { cache: 'no-store' }).then(r => r.json()).then(d => {
+      if (d?.logoUrl) setLogoUrl(d.logoUrl)
     }).catch(() => {})
   }, [])
 
+  // 點外部關閉選單
+  useEffect(() => {
+    const handler = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   return (
-    <>
-      <nav className="main-navbar" style={{
-        position: 'sticky', top: 0, zIndex: 200,
-        background: 'rgba(250,250,248,0.95)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--oat-mid)',
-        padding: '0 32px', height: 62,
-        display: 'flex', alignItems: 'center',
-      }}>
-        {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          {logoUrl && (
-            <img src={logoUrl} alt="logo" style={{ height: 40, maxWidth: 180, objectFit: 'contain' }} />
-          )}
-        </Link>
+    <nav style={{
+      position: 'sticky', top: 0, zIndex: 200,
+      background: 'rgba(250,250,248,0.95)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid var(--oat-mid)',
+      padding: '0 24px', height: 62,
+      display: 'flex', alignItems: 'center',
+    }}>
+      {/* Logo */}
+      <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        {logoUrl
+          ? <img src={logoUrl} alt="logo" style={{ height: 38, maxWidth: 160, objectFit: 'contain' }} />
+          : <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--sage-dark)', fontFamily: 'var(--font-serif)' }}>🐌 小蝸出租</span>
+        }
+      </Link>
 
-        {/* Right side */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          {session ? (
-            <>
-              <span style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 12, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>
-                {session.user.name}
-              </span>
-              {session.user.role === 'TENANT' ? (
-                <Link href="/account" style={{
-                  padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
-                  color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
-                  fontWeight: 600, textDecoration: 'none',
-                }}>租客後台</Link>
-              ) : (
-                <Link href="/account" style={{
-                  padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
-                  color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
-                  fontWeight: 600, textDecoration: 'none',
-                }}>後台管理</Link>
+      {/* Right */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+
+        {!session ? (
+          /* ── 未登入：只顯示登入 ── */
+          <Link href="/login" style={{
+            padding: '8px 22px', borderRadius: 22,
+            background: 'var(--sage)', color: 'white',
+            fontSize: 14, fontWeight: 700, textDecoration: 'none',
+          }}>登入</Link>
+
+        ) : (
+          /* ── 已登入：「我的」+ 漢堡選單 ── */
+          <>
+            <Link href="/account" style={{
+              padding: '7px 18px', borderRadius: 22,
+              border: '1.5px solid var(--sage)',
+              color: 'var(--sage-dark)', background: 'none',
+              fontSize: 13, fontWeight: 700, textDecoration: 'none',
+            }}>
+              {session.user.name?.split(' ')[0] || '我的'}
+            </Link>
+
+            {/* 漢堡按鈕 + dropdown */}
+            <div ref={menuRef} style={{ position: 'relative' }}>
+              <button onClick={() => setMenuOpen(o => !o)} style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: menuOpen ? 'var(--sage-bg)' : 'none',
+                border: '1.5px solid var(--oat-mid)',
+                cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 4.5,
+                transition: 'background 0.15s',
+              }}>
+                {[0,1,2].map(i => (
+                  <span key={i} style={{
+                    display: 'block', width: 18, height: 2,
+                    background: menuOpen ? 'var(--sage-dark)' : 'var(--charcoal)',
+                    borderRadius: 2, transition: 'all 0.2s',
+                    transform: menuOpen && i === 0 ? 'rotate(45deg) translate(4.5px,4.5px)'
+                             : menuOpen && i === 2 ? 'rotate(-45deg) translate(4.5px,-4.5px)'
+                             : menuOpen && i === 1 ? 'scaleX(0)' : 'none',
+                  }} />
+                ))}
+              </button>
+
+              {menuOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                  background: 'white', borderRadius: 16,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+                  border: '1px solid var(--oat-mid)',
+                  minWidth: 200, overflow: 'hidden', zIndex: 300,
+                }}>
+                  {MENU_ITEMS.map(item => (
+                    <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '13px 18px', textDecoration: 'none',
+                      color: item.gold ? '#B8860B' : 'var(--charcoal)',
+                      fontSize: 14, fontWeight: item.gold ? 700 : 500,
+                      background: item.gold ? '#FFFBF0' : 'white',
+                      borderTop: item.gold ? '1px solid #F5E9C6' : 'none',
+                      transition: 'background 0.12s',
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.background = item.gold ? '#FEF3D0' : 'var(--oat-light)'}
+                      onMouseLeave={e => e.currentTarget.style.background = item.gold ? '#FFFBF0' : 'white'}
+                    >
+                      <span style={{ fontSize: 16 }}>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  ))}
+                  <div style={{ borderTop: '1px solid var(--oat-mid)' }}>
+                    <button onClick={() => { signOut(); setMenuOpen(false) }} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      width: '100%', padding: '13px 18px',
+                      background: 'none', border: 'none', textAlign: 'left',
+                      fontSize: 14, color: '#aaa', cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--oat-light)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <span style={{ fontSize: 16 }}>🚪</span> 登出
+                    </button>
+                  </div>
+                </div>
               )}
-              <button onClick={() => signOut()} style={{
-                padding: '7px 18px', borderRadius: 20, background: 'none',
-                border: '1.5px solid var(--oat-mid)', color: 'var(--gray-mid)',
-                fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
-              }}>登出</button>
-            </>
-          ) : (
-            <Link href="/register" className="navbar-register-link" style={{
-              padding: '7px 18px', borderRadius: 20, border: '1.5px solid var(--sage)',
-              color: 'var(--sage-dark)', background: 'none', fontSize: 12.5,
-              fontWeight: 600, textDecoration: 'none',
-            }}>租客註冊會員</Link>
-          )}
-          <Link href="/contact" className="navbar-landlord-link" style={{
-            padding: '8px 20px', borderRadius: 20, background: 'var(--sage)',
-            color: 'white', fontSize: 12.5, fontWeight: 700, textDecoration: 'none',
-          }}>
-            <span className="hidden sm:inline">成為房東</span>
-            <span className="sm:hidden">成為房東</span>
-          </Link>
-
-          {/* Hamburger */}
-          <button className="md:hidden" onClick={() => setMobileOpen(o => !o)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: 6, display: 'flex', flexDirection: 'column', gap: 5,
-          }}>
-            {[0,1,2].map(i => (
-              <span key={i} style={{ display: 'block', width: 22, height: 2, background: 'var(--charcoal)', borderRadius: 2 }} />
-            ))}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div style={{
-          position: 'fixed', top: 62, left: 0, right: 0, zIndex: 199,
-          background: 'rgba(250,250,248,0.98)', backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--oat-mid)',
-          padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12,
-        }}>
-          <Link href="/listings" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>瀏覽房源</Link>
-          <Link href="/contact" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--sage-dark)', textDecoration: 'none' }}>成為房東</Link>
-          {session ? (
-            <>
-              {session.user.role === 'TENANT'
-                ? <Link href="/account" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--sage-dark)', textDecoration: 'none' }}>租客後台</Link>
-                : <Link href="/account" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>後台管理</Link>
-              }
-              <button onClick={() => { signOut(); setMobileOpen(false) }} style={{ background: 'none', border: 'none', textAlign: 'left', fontWeight: 600, color: 'var(--gray-mid)', cursor: 'pointer', padding: 0 }}>登出</button>
-            </>
-          ) : (
-            <Link href="/register" onClick={() => setMobileOpen(false)} style={{ fontWeight: 600, color: 'var(--charcoal)', textDecoration: 'none' }}>租客註冊</Link>
-          )}
-        </div>
-      )}
-    </>
+            </div>
+          </>
+        )}
+      </div>
+    </nav>
   )
 }

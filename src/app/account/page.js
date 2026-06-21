@@ -8,7 +8,7 @@ import UserDashboard from '@/components/account/UserDashboard'
 
 export const metadata = { title: '我的帳號 | 小蝸出租' }
 
-export default async function AccountPage() {
+export default async function AccountPage({ searchParams }) {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login?callbackUrl=/account')
 
@@ -24,7 +24,14 @@ export default async function AccountPage() {
   return (
     <>
       <Navbar />
-      <UserDashboard user={user} favCount={favCount} propCount={propCount} />
+      <UserDashboard
+        user={user}
+        favCount={favCount}
+        propCount={propCount}
+        initTab={searchParams?.tab || null}
+        initSuper={searchParams?.super === '1'}
+        initMode={searchParams?.mode || null}
+      />
     </>
   )
 }
