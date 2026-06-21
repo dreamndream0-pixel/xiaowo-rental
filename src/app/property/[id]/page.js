@@ -50,9 +50,26 @@ const getProperty = cache(async (id) => {
 export async function generateMetadata({ params }) {
   const { property } = await getProperty(params.id)
   if (!property) return { title: '找不到房源' }
+  const coverUrl = property.images?.find(i => i.isCover)?.url ?? property.images?.[0]?.url ?? null
+  const title = property.title
+  const description = `${property.city}${property.district} | 月租 $${property.price?.toLocaleString()} | 小蝸出租`
   return {
-    title: property.title,
-    description: `${property.city}${property.district} | 月租 $${property.price?.toLocaleString()} | 小蝸出租`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://xiaowo-rental.vercel.app/property/${params.id}`,
+      siteName: '小蝸出租',
+      ...(coverUrl && { images: [{ url: coverUrl, width: 1200, height: 630, alt: title }] }),
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(coverUrl && { images: [coverUrl] }),
+    },
   }
 }
 

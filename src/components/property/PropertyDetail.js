@@ -287,6 +287,20 @@ export default function PropertyDetail({ property }) {
   const [communityModal, setCommunityModal] = useState(false)
   const [communityData, setCommunityData] = useState(null)
   const [communityLoading, setCommunityLoading] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  async function handleShare() {
+    const url = window.location.href
+    const title = property.title
+    const text = `${title}｜月租 $${property.price?.toLocaleString()} | 小蝸出租`
+    if (navigator.share) {
+      try { await navigator.share({ title, text, url }) } catch (_) {}
+    } else {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    }
+  }
   const images = property.images ?? []
   const amenities = property.amenities?.map(a => a.name) ?? []
   const lineInquiryUrl = property.lineUrl || null
@@ -695,6 +709,30 @@ export default function PropertyDetail({ property }) {
                   fontSize: 13, textAlign: 'center', boxSizing: 'border-box',
                 }}>房東尚未設定 LINE 官方帳號</div>
               )}
+
+              {/* 分享按鈕 */}
+              <button onClick={handleShare} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                width: '100%', padding: '11px 0', marginTop: 10,
+                borderRadius: 'var(--radius-md)', border: '1.5px solid var(--oat-mid)',
+                background: shareCopied ? '#F0F7F0' : 'white',
+                color: shareCopied ? 'var(--sage)' : 'var(--gray-mid)',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                transition: 'all .15s', boxSizing: 'border-box',
+              }}
+                onMouseEnter={e => { if (!shareCopied) e.currentTarget.style.background = 'var(--oat-light)' }}
+                onMouseLeave={e => { if (!shareCopied) e.currentTarget.style.background = 'white' }}
+              >
+                {shareCopied ? '✅ 連結已複製！' : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    分享此房源
+                  </>
+                )}
+              </button>
 
               <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '16px 0' }} />
               <div style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', lineHeight: 1.8 }}>
