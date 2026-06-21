@@ -643,7 +643,8 @@ export default function PropertyDetail({ property }) {
                       {property.landlord?.verified && <span style={{ fontSize: 10, color: 'var(--sage)', marginLeft: 4 }}>✓ 認證</span>}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--gray-mid)' }}>
-                      管理 {property.landlord?.totalListings ?? 0} 個房源 · {property.landlord?.yearsActive ?? 0} 年資歷
+                      管理 {property.ownerPropCount ?? property.landlord?.totalListings ?? 0} 個房源
+                      {(property.landlord?.yearsActive ?? 0) > 0 && ` · ${property.landlord.yearsActive} 年資歷`}
                     </div>
                   </div>
                   <span style={{ marginLeft: 'auto', color: 'var(--gray-light)', fontSize: 16 }}>›</span>

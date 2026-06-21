@@ -16,7 +16,7 @@ const REPAIR_STATUS = { PENDING: '待處理', IN_PROGRESS: '處理中', DONE: '�
 const STATUS_COLOR  = { AVAILABLE: '#22C55E', INACTIVE: '#9CA3AF', RENTED: '#3B82F6', PENDING: '#F59E0B', PAUSED: '#F59E0B' }
 const STATUS_LABEL  = { AVAILABLE: '上架中', INACTIVE: '已下架', RENTED: '已成交', PENDING: '審核中', PAUSED: '暫停', REJECTED: '未通過' }
 
-export default function UserDashboard({ user, favCount, propCount, initTab, initSuper, initMode, initLinked }) {
+export default function UserDashboard({ user, favCount, propCount, initTab, initSuper, initMode, initLinked, initSiteName }) {
   const [mode, setMode]         = useState(initMode || 'tenant')
   const [animating, setAnim]    = useState(false)
   const [direction, setDir]     = useState(1)
@@ -25,7 +25,12 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
   // 完善資料 modal — initialised from server-side prop (no client-side fetch needed)
   const [profileModal, setProfileModal]   = useState(false)
   const [isLinkedLandlord, setIsLinked]   = useState(!!initLinked)
-  const [profileForm, setProfileForm]     = useState({ name: user.name || '', phone: user.phone || '', email: user.email?.endsWith('@xiaowo.local') ? '' : (user.email || '') })
+  const [profileForm, setProfileForm]     = useState({
+    name:     user.name || '',
+    phone:    user.phone || '',
+    email:    user.email?.endsWith('@xiaowo.local') ? '' : (user.email || ''),
+    siteName: initSiteName || '',
+  })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileError, setProfileError]   = useState('')
 
@@ -56,6 +61,9 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
       })
       const d = await res.json()
       if (!res.ok) { setProfileError(d.error || '儲存失敗'); setProfileSaving(false); return }
+      if (!profileForm.siteName?.trim()) {
+        setProfileError('請填寫官網名稱'); setProfileSaving(false); return
+      }
       if (d.syncError === 'no_email') {
         setProfileError('請填寫 Email，才能加入房東管理後台')
         setProfileSaving(false); return
@@ -323,12 +331,20 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
             <h2 style={{ fontSize: 18, fontWeight: 800, color: '#3d3d3d', marginBottom: 6 }}>📋 完善房東資料</h2>
             <p style={{ fontSize: 12, color: '#aaa', marginBottom: 20 }}>填寫後即加入後台房東管理，可使用刊登、管理等功能</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {[['姓名 *', 'name', 'text', '請輸入真實姓名'], ['手機', 'phone', 'tel', '例：0912345678'], ['Email *', 'email', 'email', '用於後台登入帳號']].map(([label, key, type, placeholder]) => (
+              {[
+                ['姓名 *', 'name', 'text', '請輸入真實姓名'],
+                ['手機', 'phone', 'tel', '例：0912345678'],
+                ['Email *', 'email', 'email', '用於後台登入帳號'],
+                ['官網名稱 *', 'siteName', 'text', '例：小蝸沙鹿館（開通官網時直接使用）'],
+              ].map(([label, key, type, placeholder]) => (
                 <div key={key}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 5 }}>{label}</div>
                   <input type={type} value={profileForm[key]} onChange={e => setProfileForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
                     style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #E5DFD5', borderRadius: 10, fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  {key === 'siteName' && (
+                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>日後開通個人官網時即採用此名稱，請謹慎填寫</div>
+                  )}
                 </div>
               ))}
             </div>

@@ -30,6 +30,7 @@ const getProperty = cache(async (id) => {
           select: {
             id: true, name: true, siteName: true, siteLogo: true,
             isActive: true, lineChannelToken: true, lineOfficialId: true,
+            _count: { select: { properties: true } },
           },
         },
       },
@@ -94,8 +95,9 @@ export default async function PropertyPage({ params, searchParams }) {
     : null
 
   const { owner, ...safeProperty } = property
-  safeProperty.ownerSiteName  = owner?.siteName  || null
-  safeProperty.ownerId        = owner?.id         || null
+  safeProperty.ownerSiteName   = owner?.siteName || null
+  safeProperty.ownerId         = owner?.id       || null
+  safeProperty.ownerPropCount  = owner?._count?.properties ?? null
   safeProperty.communityId    = communityRows[0]?.communityId   || null
   safeProperty.communityName  = communityRows[0]?.communityName || null
 

@@ -39,6 +39,7 @@ export async function PUT(request) {
   }
 
   // ── Step 1: create / update Landlord record ──────────────────────
+  const siteName = body.siteName?.trim() || null
   let landlord = null
   let syncError = null
   try {
@@ -47,8 +48,9 @@ export async function PUT(request) {
       landlord = await db.landlord.update({
         where: { email: realEmail },
         data: {
-          name: user.name || existing.name,
-          phone: user.phone || existing.phone || null,
+          name:     user.name || existing.name,
+          phone:    user.phone || existing.phone || null,
+          siteName: siteName ?? existing.siteName,
         },
       })
     } else {
@@ -57,9 +59,10 @@ export async function PUT(request) {
         .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
       landlord = await db.landlord.create({
         data: {
-          name: user.name || realEmail,
-          email: realEmail,
-          phone: user.phone || null,
+          name:     user.name || realEmail,
+          email:    realEmail,
+          phone:    user.phone || null,
+          siteName: siteName,
           adminKey,
           passwordHash,
         },

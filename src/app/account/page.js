@@ -21,16 +21,18 @@ export default async function AccountPage({ searchParams }) {
     db.property.count({ where: { landlordId: session.user.id, deletedAt: null } }),
   ])
 
-  // Check landlord linked status server-side (avoid client-side flicker / 401)
+  // Check landlord linked status + fetch siteName server-side (avoid client flicker)
   const realEmail = user?.email?.endsWith('@xiaowo.local') ? null : user?.email
   let isLinkedLandlord = false
+  let landlordSiteName = ''
   if (realEmail) {
     try {
       const landlordRow = await db.landlord.findUnique({
         where: { email: realEmail },
-        select: { id: true },
+        select: { id: true, siteName: true },
       })
       isLinkedLandlord = !!landlordRow
+      landlordSiteName = landlordRow?.siteName || ''
     } catch {}
   }
 
@@ -45,6 +47,7 @@ export default async function AccountPage({ searchParams }) {
         initSuper={searchParams?.super === '1'}
         initMode={searchParams?.mode || null}
         initLinked={isLinkedLandlord}
+        initSiteName={landlordSiteName}
       />
     </>
   )
