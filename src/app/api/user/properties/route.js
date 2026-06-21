@@ -11,7 +11,7 @@ export async function GET() {
   const properties = await db.property.findMany({
     where: { landlordId: session.user.id, deletedAt: null },
     include: {
-      images: { where: { isCover: true }, take: 1 },
+      images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 },
       _count: { select: { favorites: true, bookings: true } },
     },
     orderBy: { createdAt: 'desc' },

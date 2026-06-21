@@ -167,14 +167,15 @@ export default function EditPropertyForm({ property }) {
       // 3. Upload new photos (those without an id)
       const newPhotos = photos.filter(p => !p.id && p.url && !p.uploading)
       if (newPhotos.length > 0) {
+        const existingCount = photos.filter(p => p.id && p.url).length
         await fetch(`/api/properties/${property.id}/images`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newPhotos.map((p, i) => ({
             url:         p.url,
             cloudinaryId:p.cloudinaryId,
-            isCover:     false,
-            order:       100 + i, // append after existing
+            isCover:     existingCount === 0 && i === 0, // first photo is cover if no existing photos
+            order:       existingCount + i,
           }))),
         }).catch(() => {})
       }

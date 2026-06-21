@@ -59,7 +59,7 @@ export async function GET(request) {
         where,
         include: {
           landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true, avgRating: true } },
-          images:   { where: { isCover: true }, take: 1 },
+          images:   { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 },
           amenities: { take: 5 },
         },
         orderBy: [
