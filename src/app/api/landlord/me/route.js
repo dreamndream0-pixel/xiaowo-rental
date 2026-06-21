@@ -94,11 +94,11 @@ export async function GET() {
   let isLinkedLandlord = false
   if (realEmail) {
     try {
-      const rows = await db.$queryRawUnsafe(
-        `SELECT id FROM "Landlord" WHERE email = $1 LIMIT 1`,
-        realEmail
-      )
-      isLinkedLandlord = rows.length > 0
+      const landlordRow = await db.landlord.findUnique({
+        where: { email: realEmail },
+        select: { id: true },
+      })
+      isLinkedLandlord = !!landlordRow
     } catch (e) {
       console.error('landlord check failed:', e.message)
     }

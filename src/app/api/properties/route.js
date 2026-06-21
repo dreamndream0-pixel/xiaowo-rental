@@ -25,7 +25,7 @@ export async function GET(request) {
     try {
       const props = await db.property.findMany({
         where: { id: { in: idList }, deletedAt: null },
-        include: { images: { where: { isCover: true }, take: 1 } },
+        include: { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 } },
       })
       return NextResponse.json(props)
     } catch (e) {
