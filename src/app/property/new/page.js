@@ -14,7 +14,7 @@ export default async function NewPropertyPage() {
   return (
     <>
       <Navbar />
-      <NewPropertyForm userId={session.user.id} userName={session.user.name} />
+      <NewPropertyForm />
     </>
   )
 }
