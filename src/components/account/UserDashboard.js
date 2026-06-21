@@ -443,6 +443,7 @@ function PropertyRow({ p }) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: sc, background: sc + '18', padding: '3px 10px', borderRadius: 99 }}>{sl}</span>
         <Link href={`/property/${p.id}`} style={{ fontSize: 12, color: '#4E7153', fontWeight: 600, textDecoration: 'none' }}>查看 ›</Link>
+        <Link href={`/property/${p.id}/edit`} style={{ fontSize: 12, color: '#888', fontWeight: 600, textDecoration: 'none', padding: '3px 10px', border: '1px solid #ddd', borderRadius: 8 }}>✏️ 編輯</Link>
       </div>
     </div>
   )
