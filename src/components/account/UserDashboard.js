@@ -74,10 +74,8 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
         setProfileError('後台同步失敗：' + d.syncError)
         setProfileSaving(false); return
       }
-      // Re-check linked status
-      fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(data => {
-        if (data) setIsLinked(!!data.isLinkedLandlord)
-      })
+      // PUT succeeded and no syncError → landlord record created in backend
+      setIsLinked(true)
       setProfileModal(false)
     } catch { setProfileError('儲存失敗，請稍後再試') }
     setProfileSaving(false)

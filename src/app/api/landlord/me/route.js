@@ -90,7 +90,9 @@ export async function GET() {
     try {
       const linked = await db.landlord.findUnique({ where: { email: realEmail }, select: { id: true } })
       isLinkedLandlord = !!linked
-    } catch {}
+    } catch (e) {
+      console.error('landlord check failed:', e.message)
+    }
   }
 
   return NextResponse.json({
