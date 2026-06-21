@@ -34,17 +34,19 @@ export async function PUT(request) {
   const realEmail = user.email?.endsWith('@xiaowo.local') ? null : user.email
 
   // Sync directly to shared Landlord table (same Supabase DB)
+  let syncError = null
   if (realEmail) {
     try {
       const existing = await db.landlord.findUnique({ where: { email: realEmail } })
       if (existing) {
-        // Update name/phone if already exists
         await db.landlord.update({
           where: { email: realEmail },
-          data: { name: user.name || existing.name, phone: user.phone || existing.phone },
+          data: {
+            name: user.name || existing.name,
+            phone: user.phone || existing.phone || null,
+          },
         })
       } else {
-        // Create new landlord record
         const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
         const passwordHash = crypto.createHash('sha256')
           .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
@@ -59,11 +61,14 @@ export async function PUT(request) {
         })
       }
     } catch (e) {
-      console.error('sync landlord failed:', e.message)
+      console.error('sync landlord failed:', e.message, e.code)
+      syncError = e.message
     }
+  } else {
+    syncError = 'no_email' // phone-only user needs to add email first
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, syncError })
 }
 
 export async function GET() {

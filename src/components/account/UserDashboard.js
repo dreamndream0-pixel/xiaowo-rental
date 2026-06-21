@@ -24,7 +24,7 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
 
   // 完善資料 modal
   const [profileModal, setProfileModal]   = useState(false)
-  const [isLinkedLandlord, setIsLinked]   = useState(true) // default true to avoid flash
+  const [isLinkedLandlord, setIsLinked]   = useState(false) // show button by default until confirmed linked
   const [profileForm, setProfileForm]     = useState({ name: user.name || '', phone: user.phone || '', email: '' })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileError, setProfileError]   = useState('')
@@ -64,10 +64,19 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileForm),
       })
-      if (!res.ok) { const d = await res.json(); setProfileError(d.error || '儲存失敗'); setProfileSaving(false); return }
+      const d = await res.json()
+      if (!res.ok) { setProfileError(d.error || '儲存失敗'); setProfileSaving(false); return }
+      if (d.syncError === 'no_email') {
+        setProfileError('請填寫 Email，才能加入房東管理後台')
+        setProfileSaving(false); return
+      }
+      if (d.syncError) {
+        setProfileError('後台同步失敗：' + d.syncError)
+        setProfileSaving(false); return
+      }
       // Re-check linked status
-      fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
-        if (d) setIsLinked(!!d.isLinkedLandlord)
+      fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(data => {
+        if (data) setIsLinked(!!data.isLinkedLandlord)
       })
       setProfileModal(false)
     } catch { setProfileError('儲存失敗，請稍後再試') }

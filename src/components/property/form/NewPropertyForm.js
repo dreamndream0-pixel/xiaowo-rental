@@ -1,6 +1,6 @@
 'use client'
 // src/components/property/form/NewPropertyForm.js
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ALL_CITIES, getDistricts } from '@/lib/districts'
@@ -40,16 +40,6 @@ export default function NewPropertyForm() {
   const [customTag, setCustomTag] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
-  const [landlord, setLandlord] = useState(null)
-
-  // Modal states
-  const [profileModalOpen, setProfileModalOpen] = useState(false)
-  const [superModalOpen, setSuperModalOpen] = useState(false)
-
-  // Profile modal form
-  const [profileForm, setProfileForm] = useState({ name: '', phone: '', email: '' })
-  const [profileSaving, setProfileSaving] = useState(false)
-  const [profileError, setProfileError] = useState('')
 
   // Photos state
   const [photos, setPhotos] = useState([]) // { url, cloudinaryId, uploading, error }
@@ -57,22 +47,7 @@ export default function NewPropertyForm() {
 
   const up = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
   const districts = getDistricts(form.city)
-  const isSuper = landlord?.isSuper
-  const MAX_PHOTOS = isSuper ? 9 : 5
-
-  function fetchLandlord() {
-    fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (d) {
-        setLandlord(d)
-        setProfileForm({ name: d.name || '', phone: d.phone || '', email: d.email || '' })
-      }
-    }).catch(() => {})
-  }
-
-  // Load landlord profile
-  useEffect(() => {
-    fetchLandlord()
-  }, [])
+  const MAX_PHOTOS = 5  // super landlord: 9 (future)
 
   function toggleAmenity(name) {
     setAmenities(prev => prev.includes(name) ? prev.filter(a => a !== name) : [...prev, name])
@@ -89,25 +64,6 @@ export default function NewPropertyForm() {
     const v = customTag.trim()
     if (v && !tags.includes(v)) { setTags(prev => [...prev, v]) }
     setCustomTag('')
-  }
-
-  // ── Profile Modal ──────────────────────────────────────────────
-  async function handleSaveProfile() {
-    setProfileError('')
-    setProfileSaving(true)
-    try {
-      const res = await fetch('/api/landlord/me', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: profileForm.name, phone: profileForm.phone, email: profileForm.email }),
-      })
-      if (!res.ok) { setProfileError('儲存失敗，請稍後再試'); setProfileSaving(false); return }
-      fetchLandlord()
-      setProfileModalOpen(false)
-    } catch {
-      setProfileError('儲存失敗，請稍後再試')
-    }
-    setProfileSaving(false)
   }
 
   // ── Photo Upload ───────────────────────────────────────────────
@@ -211,59 +167,6 @@ export default function NewPropertyForm() {
           <h1 style={{ fontSize: 26, fontWeight: 900, color: '#3d3d3d', marginBottom: 4 }}>🏠 新增房源</h1>
           <p style={{ fontSize: 13, color: '#aaa' }}>填寫完整資訊，讓租客更快找到您的房源</p>
         </div>
-
-        {/* Landlord profile card */}
-        {landlord ? (
-          <div style={{ background: 'white', borderRadius: 16, padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 46, height: 46, borderRadius: 12, background: 'var(--sage-bg,#EBF2EC)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-              {landlord.avatar ? <img src={landlord.avatar} alt="" style={{ width: 46, height: 46, borderRadius: 12, objectFit: 'cover' }} /> : '🏠'}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#3d3d3d' }}>
-                {landlord.name}
-                {isSuper && <span style={{ marginLeft: 6, background: '#FEF3D0', color: '#B8860B', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>⭐ 超級房東</span>}
-              </div>
-              <div style={{ fontSize: 12, color: '#aaa', marginTop: 2 }}>
-                {landlord.phone && <span>📱 {landlord.phone}</span>}
-                {landlord.email && <span style={{ marginLeft: 8 }}>✉️ {landlord.email}</span>}
-              </div>
-            </div>
-            {landlord.isLinkedLandlord ? (
-              <div style={{ fontSize: 11, color: '#4E7153', background: '#EBF2EC', border: '1px solid #C8DCC9', borderRadius: 8, padding: '5px 12px', fontWeight: 700 }}>
-                ✅ 已加入房東管理
-              </div>
-            ) : (
-              <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                完善資料
-              </button>
-            )}
-          </div>
-        ) : session && (
-          <div style={{ background: 'white', borderRadius: 16, padding: '16px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 22 }}>🏠</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#3d3d3d' }}>{session.user.name || '我的帳號'}</div>
-              <div style={{ fontSize: 12, color: '#bbb' }}>請填寫房東資料以加入管理後台</div>
-            </div>
-            <button onClick={() => setProfileModalOpen(true)} style={{ fontSize: 12, color: '#4E7153', background: 'none', border: '1px solid #4E7153', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-              完善資料
-            </button>
-          </div>
-        )}
-
-        {/* Super landlord CTA */}
-        {!isSuper && (
-          <div style={{ background: 'linear-gradient(135deg,#FFFBF0 0%,#FEF3D0 100%)', borderRadius: 14, padding: '14px 18px', border: '1px solid #F5E9C6', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 24 }}>⭐</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#B8860B' }}>升級超級房東，解鎖更多功能</div>
-              <div style={{ fontSize: 12, color: '#C9A227', marginTop: 2 }}>獲得 LINE Bot 推播通知、置頂曝光、專屬標章...</div>
-            </div>
-            <button onClick={() => setSuperModalOpen(true)} style={{ fontSize: 12, fontWeight: 700, color: '#B8860B', background: 'white', border: '1.5px solid #F5E9C6', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-              了解更多
-            </button>
-          </div>
-        )}
 
         {/* ── Section: 基本資訊 ── */}
         <Section title="基本資訊">
@@ -471,115 +374,6 @@ export default function NewPropertyForm() {
         </div>
       </div>
 
-      {/* ── Profile Modal ── */}
-      {profileModalOpen && (
-        <div
-          onClick={e => { if (e.target === e.currentTarget) setProfileModalOpen(false) }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-        >
-          <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
-            <button
-              onClick={() => setProfileModalOpen(false)}
-              style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}
-            >✕</button>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#3d3d3d', marginBottom: 20 }}>完善房東資料</h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Field label="姓名">
-                <input
-                  value={profileForm.name}
-                  onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="請輸入姓名"
-                  style={inputSt}
-                />
-              </Field>
-              <Field label="手機">
-                <input
-                  value={profileForm.phone}
-                  onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
-                  placeholder="例：0912345678"
-                  style={inputSt}
-                />
-              </Field>
-              <Field label="Email">
-                <input
-                  type="email"
-                  value={profileForm.email}
-                  onChange={e => setProfileForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="請輸入 Email"
-                  style={inputSt}
-                />
-                <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>填入 Email 後可用 Email 登入</div>
-              </Field>
-            </div>
-
-            {profileError && (
-              <div style={{ marginTop: 12, padding: '10px 14px', background: '#FAEAEA', color: '#e53935', borderRadius: 8, fontSize: 13 }}>
-                {profileError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-              <button
-                onClick={() => setProfileModalOpen(false)}
-                style={{ ...outlineBtn, flex: 1 }}
-              >取消</button>
-              <button
-                onClick={handleSaveProfile}
-                disabled={profileSaving}
-                style={{ ...primaryBtn, flex: 2, opacity: profileSaving ? 0.6 : 1 }}
-              >{profileSaving ? '儲存中...' : '儲存'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Super Modal ── */}
-      {superModalOpen && (
-        <div
-          onClick={e => { if (e.target === e.currentTarget) setSuperModalOpen(false) }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-        >
-          <div style={{ background: 'white', border: '2px solid #F5E9C6', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
-            <button
-              onClick={() => setSuperModalOpen(false)}
-              style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}
-            >✕</button>
-
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
-              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#B8860B', marginBottom: 4 }}>超級房東方案</h2>
-              <p style={{ fontSize: 13, color: '#C9A227' }}>解鎖專屬功能，讓出租更輕鬆！</p>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-              {[
-                'LINE Bot 推播通知（新預約、維修申請即時通知）',
-                '房源置頂曝光（優先排序在搜尋結果）',
-                '超級房東專屬標章（增加租客信任度）',
-                '上傳照片數：一般房東 5 張 → 超級房東 9 張',
-                '專屬客服支援',
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#3d3d3d' }}>
-                  <span style={{ color: '#4E7153', flexShrink: 0 }}>✅</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: '#FFFBF0', border: '1px solid #F5E9C6', borderRadius: 12, padding: '14px 16px', fontSize: 13, color: '#8B6914' }}>
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>📞 聯絡我們升級</div>
-              <div>LINE: <a href="https://lin.ee/5qLEcxX" target="_blank" rel="noopener noreferrer" style={{ color: '#4E7153', textDecoration: 'none', fontWeight: 600 }}>https://lin.ee/5qLEcxX</a></div>
-              <div style={{ marginTop: 4 }}>電話: <span style={{ fontWeight: 600 }}>0800-899-969</span></div>
-            </div>
-
-            <button
-              onClick={() => setSuperModalOpen(false)}
-              style={{ ...outlineBtn, width: '100%', marginTop: 16, textAlign: 'center' }}
-            >關閉</button>
-          </div>
-        </div>
-      )}
     </main>
   )
 }
