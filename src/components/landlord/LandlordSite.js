@@ -1,11 +1,46 @@
 'use client'
 // src/components/landlord/LandlordSite.js
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import PropertyCard from '@/components/property/PropertyCard'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import SearchBar from '@/components/search/SearchBar'
 
-export default function LandlordSite({ landlord, properties, recommendations, searchParams }) {
+function SiteSlideshow({ slides }) {
+  const [current, setCurrent] = useState(0)
+  const [fading, setFading] = useState(false)
+
+  useEffect(() => {
+    if (slides.length <= 1) return
+    const t = setInterval(() => {
+      setFading(true)
+      setTimeout(() => { setCurrent(i => (i + 1) % slides.length); setFading(false) }, 400)
+    }, 4000)
+    return () => clearInterval(t)
+  }, [slides.length])
+
+  if (!slides.length) return null
+  return (
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/6', overflow: 'hidden', background: '#3A5740', minHeight: 200 }}>
+      <img
+        key={current}
+        src={slides[current].url}
+        alt=""
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: fading ? 0 : 1, transition: 'opacity 0.4s ease' }}
+      />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.35) 100%)' }} />
+      {slides.length > 1 && (
+        <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+          {slides.map((_, i) => (
+            <button key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 20 : 8, height: 8, borderRadius: 4, background: i === current ? 'white' : 'rgba(255,255,255,0.5)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.3s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function LandlordSite({ landlord, properties, recommendations, searchParams, siteSlides = [] }) {
   const siteName = landlord.siteName || `${landlord.name} 的租屋`
 
   function toCard(p) {
@@ -20,6 +55,9 @@ export default function LandlordSite({ landlord, properties, recommendations, se
   return (
     <>
       <LandlordSiteHeader landlord={landlord} />
+
+      {/* 輪播圖（有設定才顯示） */}
+      {siteSlides.length > 0 && <SiteSlideshow slides={siteSlides} />}
 
       {/* Hero + 搜尋 */}
       <section style={{ background: 'var(--oat-light)', padding: '40px 20px 32px' }}>

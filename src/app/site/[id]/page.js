@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
 export default async function LandlordSitePage({ params, searchParams }) {
   const landlord = await db.landlord.findUnique({
     where: { id: params.id },
-    select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true },
+    select: { id: true, name: true, siteName: true, siteLogo: true, isActive: true, features: true },
   })
 
   if (!landlord || !landlord.isActive) notFound()
@@ -97,12 +97,19 @@ export default async function LandlordSitePage({ params, searchParams }) {
     take: 6,
   })
 
+  let siteSlides = []
+  try {
+    const feats = landlord.features ? JSON.parse(landlord.features) : {}
+    siteSlides = Array.isArray(feats.siteSlides) ? feats.siteSlides : []
+  } catch (_) {}
+
   return (
     <LandlordSite
       landlord={landlord}
       properties={properties}
       recommendations={recommendations}
       searchParams={searchParams || {}}
+      siteSlides={siteSlides}
     />
   )
 }
