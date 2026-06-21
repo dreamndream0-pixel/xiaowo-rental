@@ -47,7 +47,7 @@ export default function NewPropertyForm() {
   const [superModalOpen, setSuperModalOpen] = useState(false)
 
   // Profile modal form
-  const [profileForm, setProfileForm] = useState({ name: '', phone: '' })
+  const [profileForm, setProfileForm] = useState({ name: '', phone: '', email: '' })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileError, setProfileError] = useState('')
 
@@ -64,7 +64,7 @@ export default function NewPropertyForm() {
     fetch('/api/landlord/me').then(r => r.ok ? r.json() : null).then(d => {
       if (d) {
         setLandlord(d)
-        setProfileForm({ name: d.name || '', phone: d.phone || '' })
+        setProfileForm({ name: d.name || '', phone: d.phone || '', email: d.email || '' })
       }
     }).catch(() => {})
   }
@@ -99,7 +99,7 @@ export default function NewPropertyForm() {
       const res = await fetch('/api/landlord/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: profileForm.name, phone: profileForm.phone }),
+        body: JSON.stringify({ name: profileForm.name, phone: profileForm.phone, email: profileForm.email }),
       })
       if (!res.ok) { setProfileError('儲存失敗，請稍後再試'); setProfileSaving(false); return }
       fetchLandlord()
@@ -495,12 +495,15 @@ export default function NewPropertyForm() {
                   style={inputSt}
                 />
               </Field>
-              <Field label="Email（無法更改）">
+              <Field label="Email">
                 <input
-                  value={landlord?.email || session?.user?.email || ''}
-                  disabled
-                  style={{ ...inputSt, background: '#F5F5F5', color: '#aaa', cursor: 'not-allowed' }}
+                  type="email"
+                  value={profileForm.email}
+                  onChange={e => setProfileForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="請輸入 Email"
+                  style={inputSt}
                 />
+                <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>填入 Email 後可用 Email 登入</div>
               </Field>
             </div>
 

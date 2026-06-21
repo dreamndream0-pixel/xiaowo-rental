@@ -10,13 +10,23 @@ export async function PUT(request) {
 
   const body = await request.json()
 
-  // Update user name and phone
+  // Build update data
+  const updateData = {}
+  if (body.name !== undefined) updateData.name = body.name
+  if (body.phone !== undefined) updateData.phone = body.phone
+  // Allow overwriting fake @xiaowo.local email with a real one
+  if (body.email && body.email.includes('@') && !body.email.endsWith('@xiaowo.local')) {
+    // Check uniqueness first
+    const existing = await db.user.findUnique({ where: { email: body.email } })
+    if (existing && existing.id !== session.user.id) {
+      return NextResponse.json({ error: '此 Email 已被其他帳號使用' }, { status: 400 })
+    }
+    updateData.email = body.email.trim().toLowerCase()
+  }
+
   const user = await db.user.update({
     where: { id: session.user.id },
-    data: {
-      ...(body.name !== undefined ? { name: body.name } : {}),
-      ...(body.phone !== undefined ? { phone: body.phone } : {}),
-    },
+    data: updateData,
     select: { id: true, name: true, email: true, phone: true },
   })
 
