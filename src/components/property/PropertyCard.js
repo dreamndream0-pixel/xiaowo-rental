@@ -6,13 +6,10 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 
-const TAG_LIMIT = 6
-
 export default function PropertyCard({ property, detailHref, initialFaved = false }) {
   const [fav, setFav] = useState(initialFaved)
   const [favLoading, setFavLoading] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [tagsOpen, setTagsOpen] = useState(false)
 
   const {
     id, title, type, status, city, district, availableFrom,
@@ -123,22 +120,16 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
           <div style={{ fontSize: 12, color: 'var(--gray-mid)' }}>📍 {city}{district}</div>
           {tags.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {(tagsOpen ? tags : tags.slice(0, TAG_LIMIT)).map(t => (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 5,
+                maxHeight: 58,
+                overflow: 'hidden',
+              }}>
+                {tags.map(t => (
                   <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
                 ))}
-                {!tagsOpen && tags.length > TAG_LIMIT && (
-                  <button onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsOpen(true) }}
-                    style={{ background: 'var(--oat-mid)', color: 'var(--gray-mid)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
-                    +{tags.length - TAG_LIMIT}
-                  </button>
-                )}
-                {tagsOpen && tags.length > TAG_LIMIT && (
-                  <button onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsOpen(false) }}
-                    style={{ background: 'var(--oat-mid)', color: 'var(--gray-mid)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
-                    收起
-                  </button>
-                )}
               </div>
             </div>
           )}

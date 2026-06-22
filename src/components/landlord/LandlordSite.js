@@ -49,6 +49,10 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       city: p.city, district: p.district, size: p.size, price: p.price,
       coverUrl: p.images?.[0]?.url || null,
       tags: p.tags?.map(t => t.name) ?? [],
+      landlordName: siteName,
+      landlordSiteId: landlord.id,
+      landlordAvatar: landlord.siteLogo || null,
+      landlordVerified: true,
     }
   }
 
@@ -94,7 +98,10 @@ export default function LandlordSite({ landlord, properties, recommendations, se
         {featuredMode && properties.length > 0 && (
           <div className="section-header">
             <div>
-              <h2 className="section-title-main">精選房源</h2>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                <h2 className="section-title-main">精選房源</h2>
+                <span style={{ fontSize: 13, color: 'var(--gray-light)', fontFamily: 'Montserrat,sans-serif' }}>共 {properties.length} 筆</span>
+              </div>
               <p className="section-subtitle">房東嚴選推薦・安心入住</p>
             </div>
           </div>
