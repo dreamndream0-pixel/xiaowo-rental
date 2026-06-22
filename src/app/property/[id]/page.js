@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import { cache } from 'react'
 import Navbar from '@/components/layout/NavbarWrapper'
+import Footer from '@/components/layout/Footer'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import PropertyDetail from '@/components/property/PropertyDetail'
 
@@ -125,6 +126,7 @@ export default async function PropertyPage({ params, searchParams }) {
     <>
       {siteLandlord ? <LandlordSiteHeader landlord={siteLandlord} /> : <Navbar />}
       <PropertyDetail property={{ ...safeProperty, lineUrl }} />
+      {!siteLandlord && <Footer />}
     </>
   )
 }

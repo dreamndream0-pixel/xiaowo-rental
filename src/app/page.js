@@ -2,6 +2,7 @@
 import { db } from '@/lib/db'
 import { unstable_cache } from 'next/cache'
 import Navbar from '@/components/layout/NavbarWrapper'
+import Footer from '@/components/layout/Footer'
 import SearchBar from '@/components/search/SearchBar'
 import PropertyGrid from '@/components/property/PropertyGrid'
 import StatsRow from '@/components/ui/StatsRow'
@@ -93,6 +94,7 @@ export default async function HomePage() {
           <PropertyGrid properties={featured} />
         </section>
       </main>
+      <Footer />
     </>
   )
 }

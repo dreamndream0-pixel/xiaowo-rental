@@ -1,6 +1,7 @@
 // src/app/listings/page.js
 import { Suspense } from 'react'
 import Navbar from '@/components/layout/NavbarWrapper'
+import Footer from '@/components/layout/Footer'
 import PropertyGrid from '@/components/property/PropertyGrid'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
@@ -140,6 +141,7 @@ export default function ListingsPage({ searchParams }) {
           <PropertiesSection searchParams={searchParams} />
         </Suspense>
       </main>
+      <Footer />
     </>
   )
 }

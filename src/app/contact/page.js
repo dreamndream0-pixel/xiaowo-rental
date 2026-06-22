@@ -1,5 +1,6 @@
 // src/app/contact/page.js  (Server Component)
 import Navbar from '@/components/layout/NavbarWrapper'
+import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/contact/ContactForm'
 
 export const metadata = {
@@ -12,6 +13,7 @@ export default function ContactPage() {
     <>
       <Navbar />
       <ContactForm />
+      <Footer />
     </>
   )
 }
