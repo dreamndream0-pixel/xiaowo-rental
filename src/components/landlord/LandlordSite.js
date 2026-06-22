@@ -122,7 +122,11 @@ export default function LandlordSite({ landlord, properties, recommendations, se
 
       {/* 頁尾 */}
       <footer style={{ background: 'var(--charcoal)', color: 'rgba(255,255,255,0.7)', padding: '28px 20px', textAlign: 'center', fontSize: 13 }}>
-        <p style={{ margin: '0 0 12px' }}>{siteName} · 由 🐌 小蝸出租 提供技術支援</p>
+        <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span>{siteName} · 由</span>
+          <img src="/logo-admin.png" alt="小蝸出租" style={{ height: 16, width: 'auto', display: 'inline-block' }} />
+          <span>提供技術支援</span>
+        </p>
         <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 18px' }}>
           <Link href="/" style={{ color: 'var(--sage-light)', textDecoration: 'none', fontSize: 13 }}>瀏覽全部房源</Link>
           <Link href="/privacy" style={{ color: 'var(--sage-light)', textDecoration: 'none', fontSize: 13 }}>隱私權政策</Link>
