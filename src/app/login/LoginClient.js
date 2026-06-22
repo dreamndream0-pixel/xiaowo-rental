@@ -30,7 +30,7 @@ export default function LoginClient() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <img src="/logo.png" alt="小蝸出租" style={{ height: 130, objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
+          <img src="/logo.png" alt="小蝸出租" style={{ width: '100%', maxWidth: 240, height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
         </div>
 
         {/* Tab: 手機 / Email */}

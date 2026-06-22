@@ -49,7 +49,7 @@ export default function RegisterForm() {
       <div style={{ background: 'white', borderRadius: 24, padding: '36px 32px', maxWidth: 420, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.10)' }}>
 
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <img src="/logo.png" alt="小蝸出租" style={{ height: 100, objectFit: 'contain', marginBottom: 8 }} />
+          <img src="/logo.png" alt="小蝸出租" style={{ width: '100%', maxWidth: 220, height: 'auto', objectFit: 'contain', marginBottom: 8 }} />
           <div style={{ fontSize: 13, color: '#aaa' }}>選擇您偏好的方式加入</div>
         </div>
 
