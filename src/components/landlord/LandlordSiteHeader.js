@@ -44,7 +44,7 @@ export default function LandlordSiteHeader({ landlord }) {
           color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none',
           padding: '8px 16px', borderRadius: 99,
           border: '1.5px solid rgba(255,255,255,0.5)', whiteSpace: 'nowrap',
-        }}>🏡 房源首頁</Link>
+        }}>首頁</Link>
       </div>
     </header>
   )
