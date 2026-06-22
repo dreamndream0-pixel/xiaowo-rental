@@ -85,7 +85,6 @@ export async function GET(request) {
       title:            p.title,
       type:             p.type,
       status:           p.status,
-      availableFrom:    p.availableFrom,
       featured:         p.featured,
       city:             p.city,
       district:         p.district,

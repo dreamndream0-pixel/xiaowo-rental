@@ -45,7 +45,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
 
   function toCard(p) {
     return {
-      id: p.id, title: p.title, type: p.type, status: p.status, availableFrom: p.availableFrom,
+      id: p.id, title: p.title, type: p.type, status: p.status,
       city: p.city, district: p.district, size: p.size, price: p.price,
       coverUrl: p.images?.[0]?.url || null,
       tags: p.tags?.map(t => t.name) ?? [],

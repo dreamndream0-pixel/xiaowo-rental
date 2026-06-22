@@ -15,17 +15,14 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
   const [tagsOpen, setTagsOpen] = useState(false)
 
   const {
-    id, title, type, status, city, district, availableFrom,
+    id, title, type, status, city, district,
     size, price, coverUrl, tags = [],
     landlordName, landlordHandle, landlordSiteId, landlordAvatar, landlordVerified,
   } = property
 
-  const releaseDate = availableFrom
-    ? new Date(availableFrom).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })
-    : ''
   const statusVariant = {
     AVAILABLE: { label: '可租', color: 'white', bg: 'rgba(78,113,83,0.9)' },
-    COMING_SOON: { label: releaseDate ? `即將釋出 ${releaseDate}` : '即將釋出', color: 'white', bg: 'rgba(201,145,58,0.95)' },
+    COMING_SOON: { label: '即將釋出', color: 'white', bg: 'rgba(201,145,58,0.95)' },
     RENTED:    { label: '已租', color: 'white', bg: 'rgba(61,61,61,0.75)' },
     PENDING:   { label: '審核中', color: 'white', bg: 'var(--warn)' },
   }[status] ?? { label: status, color: 'white', bg: 'var(--gray-mid)' }

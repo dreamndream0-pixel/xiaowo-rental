@@ -18,19 +18,17 @@ const amenityIcon = name => AMENITY_ICONS[name] ?? '✓'
 const STATUS_CONFIG = {
   AVAILABLE: { label: '可預約', color: '#06C755', bg: '#e6f9ee' },
   RENTED:    { label: '已出租', color: '#e53e3e', bg: '#fff5f5' },
+  COMING_SOON: { label: '即將釋出', color: '#7B5EA7', bg: '#f3eeff' },
   PAUSED:    { label: '整理中', color: '#d69e2e', bg: '#fffbeb' },
   PENDING:   { label: '審核中', color: '#718096', bg: '#f7fafc' },
 }
 
 // ── 房源狀態 Badge ────────────────────────────────────────────────
-function StatusBadge({ status, availableFrom }) {
+function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING
-  const isComingSoon = status === 'PAUSED' && availableFrom && new Date(availableFrom) > new Date()
-  const label = isComingSoon
-    ? `即將釋出 ${new Date(availableFrom).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })}`
-    : cfg.label
-  const color = isComingSoon ? '#7B5EA7' : cfg.color
-  const bg = isComingSoon ? '#f3eeff' : cfg.bg
+  const label = cfg.label
+  const color = cfg.color
+  const bg = cfg.bg
 
   return (
     <span style={{
@@ -415,7 +413,7 @@ export default function PropertyDetail({ property }) {
           <div style={{ minWidth: 0 }}>
             {/* 狀態 + 標題 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <StatusBadge status={property.status} availableFrom={property.availableFrom} />
+              <StatusBadge status={property.status} />
             </div>
             <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: 1, marginBottom: 6 }}>{property.title}</h1>
             <div style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 16 }}>
