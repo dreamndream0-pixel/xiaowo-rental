@@ -79,23 +79,11 @@ export default async function LandlordSitePage({ params, searchParams }) {
     properties = await attachAvailableFrom(db, await db.property.findMany({ where: baseWhere, include, orderBy }))
   }
 
-  // 其他房東的推薦房源（排除自己，最多 6 間）
-  const recommendations = await attachAvailableFrom(db, await db.property.findMany({
-    where: {
-      ownerId: { not: landlord.id },
-      status: { in: ['AVAILABLE', 'COMING_SOON'] },
-      deletedAt: null,
-    },
-    include: { images: { where: { isCover: true }, take: 1 } },
-    orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
-    take: 6,
-  }))
-
   return (
     <LandlordSite
       landlord={landlord}
       properties={properties}
-      recommendations={recommendations}
+      recommendations={[]}
       searchParams={searchParams || {}}
       featuredMode={featuredMode}
     />

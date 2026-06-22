@@ -88,25 +88,12 @@ export default async function LandlordSitePage({ params, searchParams }) {
   const include = { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 }, tags: true }
   const orderBy = [{ boostPlan: 'desc' }, { createdAt: 'desc' }]
 
-  // 並行查詢房源與推薦，縮短冷啟動載入時間
-  // 首頁（無搜尋）只撈精選房源；有搜尋時撈全部符合的
-  const [rawProps, recommendations] = await Promise.all([
-    db.property.findMany({
-      where: hasSearch ? baseWhere : { ...baseWhere, siteFeatured: true },
-      include,
-      orderBy,
-    }),
-    db.property.findMany({
-      where: {
-        ownerId: { not: landlord.id },
-        status: { in: ['AVAILABLE', 'COMING_SOON'] },
-        deletedAt: null,
-      },
-      include: { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 } },
-      orderBy,
-      take: 6,
-    }),
-  ])
+  // 房東官網只查詢該房東自己的房源；首頁無搜尋時優先顯示官網精選。
+  const rawProps = await db.property.findMany({
+    where: hasSearch ? baseWhere : { ...baseWhere, siteFeatured: true },
+    include,
+    orderBy,
+  })
 
   // 首頁但房東尚未勾選任何精選房源 → 退回顯示全部可租，避免首頁空白
   let properties = await attachAvailableFrom(db, rawProps)
@@ -114,13 +101,12 @@ export default async function LandlordSitePage({ params, searchParams }) {
   if (!hasSearch && rawProps.length === 0) {
     properties = await attachAvailableFrom(db, await db.property.findMany({ where: baseWhere, include, orderBy }))
   }
-  const recommendationsWithRelease = await attachAvailableFrom(db, recommendations)
 
   return (
     <LandlordSite
       landlord={landlord}
       properties={properties}
-      recommendations={recommendationsWithRelease}
+      recommendations={[]}
       searchParams={searchParams || {}}
       siteSlides={siteSlides}
       featuredMode={featuredMode}
