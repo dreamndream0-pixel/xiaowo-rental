@@ -141,7 +141,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       <footer style={{ background: 'var(--charcoal)', color: 'rgba(255,255,255,0.7)', padding: '28px 20px', textAlign: 'center', fontSize: 13 }}>
         <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span>{siteName} · 由</span>
-          <img src="/logo-admin.png" alt="小蝸出租" style={{ height: 16, width: 'auto', display: 'inline-block' }} />
+          <img src="/logo-white.png" alt="小蝸出租" style={{ height: 18, width: 'auto', display: 'inline-block' }} />
           <span>提供技術支援</span>
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 18px' }}>
