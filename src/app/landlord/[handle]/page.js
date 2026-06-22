@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import LandlordSite from '@/components/landlord/LandlordSite'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export async function generateMetadata({ params }) {
   const user = await db.user.findUnique({
@@ -71,14 +72,15 @@ export default async function LandlordSitePage({ params, searchParams }) {
     include,
     orderBy,
   })
+  properties = await attachAvailableFrom(db, properties)
   const featuredMode = !hasSearch && properties.length > 0
   // 首頁但尚未勾選精選 → 退回顯示全部可租，避免首頁空白
   if (!hasSearch && properties.length === 0) {
-    properties = await db.property.findMany({ where: baseWhere, include, orderBy })
+    properties = await attachAvailableFrom(db, await db.property.findMany({ where: baseWhere, include, orderBy }))
   }
 
   // 其他房東的推薦房源（排除自己，最多 6 間）
-  const recommendations = await db.property.findMany({
+  const recommendations = await attachAvailableFrom(db, await db.property.findMany({
     where: {
       ownerId: { not: landlord.id },
       status: { in: ['AVAILABLE', 'COMING_SOON'] },
@@ -87,7 +89,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
     include: { images: { where: { isCover: true }, take: 1 } },
     orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
     take: 6,
-  })
+  }))
 
   return (
     <LandlordSite

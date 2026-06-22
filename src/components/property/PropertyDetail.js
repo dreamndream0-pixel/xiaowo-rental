@@ -24,9 +24,12 @@ const STATUS_CONFIG = {
 }
 
 // ── 房源狀態 Badge ────────────────────────────────────────────────
-function StatusBadge({ status }) {
+function StatusBadge({ status, availableFrom }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING
-  const label = cfg.label
+  const releaseDate = availableFrom
+    ? new Date(availableFrom).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })
+    : ''
+  const label = status === 'COMING_SOON' && releaseDate ? `即將釋出 ${releaseDate}` : cfg.label
   const color = cfg.color
   const bg = cfg.bg
 
@@ -413,7 +416,7 @@ export default function PropertyDetail({ property }) {
           <div style={{ minWidth: 0 }}>
             {/* 狀態 + 標題 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <StatusBadge status={property.status} />
+              <StatusBadge status={property.status} availableFrom={property.availableFrom} />
             </div>
             <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: 1, marginBottom: 6 }}>{property.title}</h1>
             <div style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 16 }}>

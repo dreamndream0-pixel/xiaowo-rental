@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export async function GET(request, { params }) {
   const { id } = params
@@ -32,7 +33,8 @@ export async function GET(request, { params }) {
     // Increment view count (fire-and-forget)
     db.property.update({ where: { id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
 
-    return NextResponse.json(property)
+    const propertyWithRelease = (await attachAvailableFrom(db, [property]))[0]
+    return NextResponse.json(propertyWithRelease)
   } catch (error) {
     return NextResponse.json({ error: '載入失敗' }, { status: 500 })
   }

@@ -1,6 +1,7 @@
 // src/app/api/properties/featured/route.js
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export async function GET(request) {
     ])
 
     return NextResponse.json(
-      { properties, total, page, totalPages: Math.ceil(total / limit) },
+      { properties: await attachAvailableFrom(db, properties), total, page, totalPages: Math.ceil(total / limit) },
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (e) {

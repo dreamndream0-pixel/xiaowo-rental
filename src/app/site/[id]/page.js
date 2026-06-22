@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import LandlordSite from '@/components/landlord/LandlordSite'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export async function generateMetadata({ params }) {
   const landlord = await db.landlord.findUnique({
@@ -108,17 +109,18 @@ export default async function LandlordSitePage({ params, searchParams }) {
   ])
 
   // 首頁但房東尚未勾選任何精選房源 → 退回顯示全部可租，避免首頁空白
-  let properties = rawProps
+  let properties = await attachAvailableFrom(db, rawProps)
   const featuredMode = !hasSearch && rawProps.length > 0
   if (!hasSearch && rawProps.length === 0) {
-    properties = await db.property.findMany({ where: baseWhere, include, orderBy })
+    properties = await attachAvailableFrom(db, await db.property.findMany({ where: baseWhere, include, orderBy }))
   }
+  const recommendationsWithRelease = await attachAvailableFrom(db, recommendations)
 
   return (
     <LandlordSite
       landlord={landlord}
       properties={properties}
-      recommendations={recommendations}
+      recommendations={recommendationsWithRelease}
       searchParams={searchParams || {}}
       siteSlides={siteSlides}
       featuredMode={featuredMode}

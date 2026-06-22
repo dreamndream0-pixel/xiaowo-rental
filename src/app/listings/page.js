@@ -6,6 +6,7 @@ import PropertyGrid from '@/components/property/PropertyGrid'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export const metadata = { title: '全部房源' }
 export const dynamic = 'force-dynamic'
@@ -58,7 +59,7 @@ async function getProperties(searchParams) {
     db.property.count({ where }),
   ])
 
-  return { properties, total, page: Number(page), totalPages: Math.ceil(total / limit) }
+  return { properties: await attachAvailableFrom(db, properties), total, page: Number(page), totalPages: Math.ceil(total / limit) }
 }
 
 // 房源列表（非同步，Suspense 串流）

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
@@ -27,7 +28,7 @@ export async function GET(request) {
         where: { id: { in: idList }, deletedAt: null },
         include: { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 } },
       })
-      return NextResponse.json(props)
+      return NextResponse.json(await attachAvailableFrom(db, props))
     } catch (e) {
       return NextResponse.json([], { status: 200 })
     }
@@ -74,7 +75,9 @@ export async function GET(request) {
     ])
 
     // Shape response
-    const cards = properties.map(p => ({
+    const propertiesWithRelease = await attachAvailableFrom(db, properties)
+
+    const cards = propertiesWithRelease.map(p => ({
       id:               p.id,
       landlordId:       p.landlord.id,
       landlordName:     p.landlord.name,
@@ -85,6 +88,7 @@ export async function GET(request) {
       title:            p.title,
       type:             p.type,
       status:           p.status,
+      availableFrom:    p.availableFrom,
       featured:         p.featured,
       city:             p.city,
       district:         p.district,

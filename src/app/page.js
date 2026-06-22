@@ -7,13 +7,14 @@ import SearchBar from '@/components/search/SearchBar'
 import FeaturedSection from '@/components/home/FeaturedSection'
 import StatsRow from '@/components/ui/StatsRow'
 import HeroSlideshow from '@/components/home/HeroSlideshow'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 export const dynamic = 'force-dynamic'
 
 // ⚠️ 不在 cache 內 catch：錯誤時不快取空值，下次請求自動重試
 const getFeaturedProperties = unstable_cache(
   async () => {
-    return await db.property.findMany({
+    const properties = await db.property.findMany({
       where:   { featured: true, status: { in: ['AVAILABLE', 'COMING_SOON'] }, deletedAt: null },
       include: {
         landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
@@ -24,6 +25,7 @@ const getFeaturedProperties = unstable_cache(
       orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
       take: 6,
     })
+    return attachAvailableFrom(db, properties)
   },
   ['featured-properties'],
   { revalidate: 120, tags: ['featured-properties'] }

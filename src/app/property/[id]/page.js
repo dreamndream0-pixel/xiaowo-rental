@@ -8,6 +8,7 @@ import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import PropertyDetail from '@/components/property/PropertyDetail'
+import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
 // React.cache：同一 request 內 generateMetadata 和頁面只打一次 DB
 const getProperty = cache(async (id) => {
@@ -45,7 +46,8 @@ const getProperty = cache(async (id) => {
        WHERE p.id = $1`, id
     ).catch(() => []),  // communities 表不存在時不影響主查詢
   ])
-  return { property: property ?? null, communityRows: communityRows ?? [] }
+  const propertyWithRelease = property ? (await attachAvailableFrom(db, [property]))[0] : null
+  return { property: propertyWithRelease ?? null, communityRows: communityRows ?? [] }
 })
 
 export async function generateMetadata({ params }) {
