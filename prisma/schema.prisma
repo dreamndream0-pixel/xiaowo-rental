@@ -97,6 +97,7 @@ model Landlord {
   tenants       Tenant[]
   bookings      Booking[]
   repairs       Repair[]
+  communities   Community[]
 
   @@index([email])
   @@index([adminKey])
@@ -174,8 +175,6 @@ model Property {
   ownerId     String?                          // 多房東架構：歸屬的 Landlord
   owner       Landlord?      @relation(fields: [ownerId], references: [id])
 
-  // communityId 欄位透過 raw SQL 管理，不經 Prisma ORM（避免欄位不存在時崩潰）
-
   title       String
   type        PropertyType
   status      PropertyStatus @default(PENDING)
@@ -233,6 +232,9 @@ model Property {
   lineTenants Tenant[]       @relation("TenantResidence")
   repairs     Repair[]
 
+  communityId String?
+  community   Community?     @relation(fields: [communityId], references: [id])
+
   @@index([landlordId])
   @@index([ownerId])
   @@index([city, district])
@@ -242,6 +244,35 @@ model Property {
   @@index([featured])
   @@index([siteFeatured])
   @@map("properties")
+}
+
+// ─────────────────────────────────────────────
+// 社區（房源群組）
+// ─────────────────────────────────────────────
+model Community {
+  id          String     @id @default(cuid())
+  ownerId     String?
+  owner       Landlord?  @relation(fields: [ownerId], references: [id])
+  name        String
+  description String     @default("") @db.Text
+  photos      String     @default("[]") @db.Text
+  mapUrl      String?
+  properties  Property[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("communities")
+}
+
+// ─────────────────────────────────────────────
+// 網站全域設定（logo、輪播圖等）
+// ─────────────────────────────────────────────
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("site_settings")
 }
 
 enum PropertyType {
@@ -265,8 +296,8 @@ enum PropertyStatus {
   RENTED
   PAUSED
   REJECTED
-  COMING_SOON  // 即將釋出（上架但尚未可租）
-  INACTIVE     // 已下架
+  COMING_SOON
+  INACTIVE
 }
 
 enum BoostPlan {
@@ -462,18 +493,4 @@ model Review {
   @@unique([propertyId, userId])
   @@index([propertyId])
   @@map("reviews")
-}
-
-// Community model 透過 raw SQL 管理（見 src/lib/migrations.js）
-// 不在 Prisma schema 定義，避免 DB 不同步時崩潰
-
-// ─────────────────────────────────────────────
-// 網站全域設定（logo、輪播圖等）
-// ─────────────────────────────────────────────
-model SiteSetting {
-  key       String   @id
-  value     String   @db.Text
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@map("site_settings")
 }
