@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache'
 import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import SearchBar from '@/components/search/SearchBar'
-import PropertyGrid from '@/components/property/PropertyGrid'
+import FeaturedSection from '@/components/home/FeaturedSection'
 import StatsRow from '@/components/ui/StatsRow'
 import HeroSlideshow from '@/components/home/HeroSlideshow'
 
@@ -29,6 +29,16 @@ const getFeaturedProperties = unstable_cache(
   { revalidate: 120, tags: ['featured-properties'] }
 )
 
+const getFeaturedTotal = unstable_cache(
+  async () => {
+    return await db.property.count({
+      where: { featured: true, status: { in: ['AVAILABLE', 'COMING_SOON'] }, deletedAt: null },
+    })
+  },
+  ['featured-properties-total'],
+  { revalidate: 120, tags: ['featured-properties'] }
+)
+
 const getPlatformStats = unstable_cache(
   async () => {
     const [listings, landlords, matches] = await Promise.all([
@@ -45,10 +55,12 @@ const getPlatformStats = unstable_cache(
 export default async function HomePage() {
   // 元件層 catch：DB 失敗時頁面仍正常渲染（顯示空列表）
   let featured = []
+  let featuredTotal = 0
   let stats = { listings: 0, landlords: 0, matches: 0 }
   try {
-    ;[featured, stats] = await Promise.all([
+    ;[featured, featuredTotal, stats] = await Promise.all([
       getFeaturedProperties(),
+      getFeaturedTotal(),
       getPlatformStats(),
     ])
   } catch {}
@@ -82,17 +94,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* 精選房源 */}
-        <section className="section-wrap">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title-main">精選房源</h2>
-              <p className="section-subtitle">每一間都親自看過、整理過</p>
-            </div>
-            <a href="/listings" className="section-link">查看全部 →</a>
-          </div>
-          <PropertyGrid properties={featured} />
-        </section>
+        {/* 精選房源（往下滑動自動載入更多） */}
+        <FeaturedSection initialProperties={featured} initialTotal={featuredTotal} />
       </main>
       <Footer />
     </>
