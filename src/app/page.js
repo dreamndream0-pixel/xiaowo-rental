@@ -26,7 +26,7 @@ const getFeaturedProperties = unstable_cache(
     })
   },
   ['featured-properties'],
-  { revalidate: 120 }
+  { revalidate: 120, tags: ['featured-properties'] }
 )
 
 const getPlatformStats = unstable_cache(

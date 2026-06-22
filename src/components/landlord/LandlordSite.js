@@ -68,9 +68,9 @@ export default function LandlordSite({ landlord, properties, recommendations, se
               {siteName}
             </h1>
           )}
-          <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>
-            {featuredMode ? `✨ 精選房源 · 共 ${properties.length} 間` : `共 ${properties.length} 間房源`}
-          </p>
+          {!featuredMode && (
+            <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
+          )}
 
           {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
           <SearchBar
@@ -90,7 +90,15 @@ export default function LandlordSite({ landlord, properties, recommendations, se
       </section>
 
       {/* 房源列表 */}
-      <section style={{ maxWidth: 1120, margin: '0 auto', padding: '32px 20px' }}>
+      <section className="section-wrap" style={{ padding: '40px 20px 56px' }}>
+        {featuredMode && properties.length > 0 && (
+          <div className="section-header">
+            <div>
+              <h2 className="section-title-main">精選房源</h2>
+              <p className="section-subtitle">房東嚴選推薦・安心入住</p>
+            </div>
+          </div>
+        )}
         {properties.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--gray-light)', background: 'var(--oat-light)', borderRadius: 18 }}>
             😔 找不到符合條件的房源，試試其他關鍵字
