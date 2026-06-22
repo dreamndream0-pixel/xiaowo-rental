@@ -1,35 +1,45 @@
 // src/app/api/admin/pages/route.js
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { getAllSitePages, upsertSitePage } from '@/lib/sitePages'
 import { revalidateTag } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session || session.user.role !== 'ADMIN') return null
-  return session
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
-export async function GET() {
-  const session = await requireAdmin()
-  if (!session) return NextResponse.json({ error: '無權限' }, { status: 403 })
+// 與 LINE Bot 後台（linebot-rental）共用的管理金鑰，兩邊需設定同一組 ADMIN_KEY
+function isAuthorized(request) {
+  const adminKey = process.env.ADMIN_KEY
+  if (!adminKey) return false
+  const key = request.nextUrl.searchParams.get('key') || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+  return key === adminKey
+}
 
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS })
+}
+
+export async function GET(request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: '無權限' }, { status: 401, headers: CORS })
+  }
   try {
     const pages = await getAllSitePages()
-    return NextResponse.json(pages, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json(pages, { headers: { ...CORS, 'Cache-Control': 'no-store' } })
   } catch (e) {
     console.error('admin pages GET error:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ about: {}, guide: {}, privacy: {}, terms: {} }, { headers: CORS })
   }
 }
 
 export async function POST(request) {
-  const session = await requireAdmin()
-  if (!session) return NextResponse.json({ error: '無權限' }, { status: 403 })
-
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: '無權限' }, { status: 401, headers: CORS })
+  }
   try {
     const body = await request.json()
     const entries = {
@@ -46,9 +56,9 @@ export async function POST(request) {
       })
     }
     revalidateTag('site-pages')
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true }, { headers: CORS })
   } catch (e) {
     console.error('admin pages POST error:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ error: e.message }, { status: 500, headers: CORS })
   }
 }
