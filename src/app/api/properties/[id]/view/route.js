@@ -12,9 +12,29 @@ export async function POST(request, { params }) {
   }
 
   try {
-    await db.property.update({
-      where: { id },
-      data: { viewCount: { increment: 1 } },
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS property_view_stats (
+        "propertyId" TEXT NOT NULL,
+        "date" DATE NOT NULL,
+        "count" INTEGER NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY ("propertyId", "date")
+      )
+    `)
+
+    await db.$transaction(async tx => {
+      await tx.property.update({
+        where: { id },
+        data: { viewCount: { increment: 1 } },
+      })
+      await tx.$executeRawUnsafe(
+        `INSERT INTO property_view_stats ("propertyId", "date", "count", "createdAt", "updatedAt")
+         VALUES ($1, (now() AT TIME ZONE 'Asia/Taipei')::date, 1, now(), now())
+         ON CONFLICT ("propertyId", "date")
+         DO UPDATE SET "count" = property_view_stats."count" + 1, "updatedAt" = now()`,
+        id
+      )
     })
 
     const res = NextResponse.json({ counted: true })
