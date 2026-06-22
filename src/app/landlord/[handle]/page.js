@@ -67,7 +67,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   // 該房東的房源；首頁（無搜尋）只顯示精選
   let properties = await db.property.findMany({
-    where: hasSearch ? baseWhere : { ...baseWhere, featured: true },
+    where: hasSearch ? baseWhere : { ...baseWhere, siteFeatured: true },
     include,
     orderBy,
   })

@@ -91,7 +91,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
   // 首頁（無搜尋）只撈精選房源；有搜尋時撈全部符合的
   const [rawProps, recommendations] = await Promise.all([
     db.property.findMany({
-      where: hasSearch ? baseWhere : { ...baseWhere, featured: true },
+      where: hasSearch ? baseWhere : { ...baseWhere, siteFeatured: true },
       include,
       orderBy,
     }),

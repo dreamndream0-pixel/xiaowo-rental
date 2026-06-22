@@ -179,7 +179,8 @@ model Property {
   title       String
   type        PropertyType
   status      PropertyStatus @default(PENDING)
-  featured    Boolean        @default(false)
+  featured     Boolean       @default(false)  // 主站精選（總管理員控制，未來廣告欄位）
+  siteFeatured Boolean       @default(false)  // 房東官網精選（房東自己控制，與 featured 分開）
   description String         @db.Text
 
   city        String
@@ -200,10 +201,10 @@ model Property {
   inclWater   Boolean        @default(false)
   inclCable   Boolean        @default(false)
 
-  electricType  String?
-  electricRate  Float?
-  electricFlat  Int?
-  cleaningFee   Int?
+  electricType  String?      // 電費計算方式：'meter'=台電度數, 'flat'=固定金額, 'included'=含在租金
+  electricRate  Float?       // 每度電費（electricType=meter 時使用）
+  electricFlat  Int?         // 固定電費金額（electricType=flat 時使用）
+  cleaningFee   Int?         // 清潔費
 
   allowPets   Boolean        @default(false)
   allowCook   Boolean        @default(false)
@@ -239,6 +240,7 @@ model Property {
   @@index([price])
   @@index([type])
   @@index([featured])
+  @@index([siteFeatured])
   @@map("properties")
 }
 
@@ -309,13 +311,13 @@ model PropertyAmenity {
 }
 
 // ─────────────────────────────────────────────
-// 房源標籤
+// 房源標籤（可租補、免仲介費等行銷標籤）
 // ─────────────────────────────────────────────
 model PropertyTag {
   id         String   @id @default(cuid())
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  name       String
+  name       String   // 例：'可租補', '免仲介費', '獨洗曬', '垃圾代收', '機車位'
 
   @@unique([propertyId, name])
   @@index([propertyId])
@@ -364,7 +366,6 @@ model Booking {
   visitorName   String?
   visitorPhone  String?
   visitorLineId String?
-
   landlordId String?                       // 歸屬房東
   landlord   Landlord?     @relation(fields: [landlordId], references: [id])
 
