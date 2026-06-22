@@ -41,7 +41,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   const baseWhere = {
     ownerId: landlord.id,
-    status: 'AVAILABLE',
+    status: { in: ['AVAILABLE', 'COMING_SOON'] },
     deletedAt: null,
     ...(city && { city }),
     ...(district && { district }),
@@ -81,7 +81,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
   const recommendations = await db.property.findMany({
     where: {
       ownerId: { not: landlord.id },
-      status: 'AVAILABLE',
+      status: { in: ['AVAILABLE', 'COMING_SOON'] },
       deletedAt: null,
     },
     include: { images: { where: { isCover: true }, take: 1 } },
