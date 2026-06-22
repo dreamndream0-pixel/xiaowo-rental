@@ -5,6 +5,36 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
+function toPropertyCard(p) {
+  const ownerName = p.owner?.siteName || p.owner?.name
+  const ownerAvatar = p.owner?.avatar
+  const publisher = p.landlord
+
+  return {
+    id:               p.id,
+    landlordId:       p.owner?.id || publisher?.id || null,
+    landlordName:     ownerName || publisher?.name || null,
+    landlordHandle:   p.owner?.id ? null : publisher?.handle || null,
+    landlordSiteId:   p.owner?.id || null,
+    landlordAvatar:   ownerAvatar || publisher?.avatar || null,
+    landlordVerified: publisher?.verified || false,
+    landlordRating:   publisher?.avgRating ?? null,
+    title:            p.title,
+    type:             p.type,
+    status:           p.status,
+    availableFrom:    p.availableFrom,
+    featured:         p.featured,
+    city:             p.city,
+    district:         p.district,
+    size:             p.size,
+    price:            p.price,
+    coverUrl:         p.images?.[0]?.url ?? null,
+    tags:             (p.amenities || p.tags || []).map(a => a.name),
+    favoriteCount:    p.favoriteCount,
+    createdAt:        p.createdAt,
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
 
@@ -26,9 +56,15 @@ export async function GET(request) {
     try {
       const props = await db.property.findMany({
         where: { id: { in: idList }, deletedAt: null },
-        include: { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 } },
+        include: {
+          landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true, avgRating: true } },
+          owner:    { select: { id: true, name: true, siteName: true, avatar: true } },
+          images:   { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 },
+          tags:     true,
+        },
       })
-      return NextResponse.json(await attachAvailableFrom(db, props))
+      const propsWithRelease = await attachAvailableFrom(db, props)
+      return NextResponse.json(propsWithRelease.map(toPropertyCard))
     } catch (e) {
       return NextResponse.json([], { status: 200 })
     }
@@ -60,6 +96,7 @@ export async function GET(request) {
         where,
         include: {
           landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true, avgRating: true } },
+          owner:    { select: { id: true, name: true, siteName: true, avatar: true } },
           images:   { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 },
           amenities: { take: 5 },
         },
@@ -76,29 +113,7 @@ export async function GET(request) {
 
     // Shape response
     const propertiesWithRelease = await attachAvailableFrom(db, properties)
-
-    const cards = propertiesWithRelease.map(p => ({
-      id:               p.id,
-      landlordId:       p.landlord.id,
-      landlordName:     p.landlord.name,
-      landlordHandle:   p.landlord.handle,
-      landlordAvatar:   p.landlord.avatar,
-      landlordVerified: p.landlord.verified,
-      landlordRating:   p.landlord.avgRating,
-      title:            p.title,
-      type:             p.type,
-      status:           p.status,
-      availableFrom:    p.availableFrom,
-      featured:         p.featured,
-      city:             p.city,
-      district:         p.district,
-      size:             p.size,
-      price:            p.price,
-      coverUrl:         p.images[0]?.url ?? null,
-      tags:             p.amenities.map(a => a.name),
-      favoriteCount:    p.favoriteCount,
-      createdAt:        p.createdAt,
-    }))
+    const cards = propertiesWithRelease.map(toPropertyCard)
 
     return NextResponse.json({
       properties: cards,

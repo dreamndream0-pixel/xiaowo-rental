@@ -23,14 +23,14 @@ export default function PropertyGrid({ properties = [] }) {
           detailHref={`/property/${p.id}`}
           property={{
             ...p,
-            coverUrl: p.images?.[0]?.url ?? null,
-            tags: p.tags?.map(t => t.name) ?? [],
+            coverUrl: p.images?.[0]?.url ?? p.coverUrl ?? null,
+            tags: p.tags?.map(t => typeof t === 'string' ? t : t.name) ?? [],
             // owner.siteName = 房東個人官網名稱（例：小蝸沙鹿館）
-            landlordName:     p.owner?.siteName  || p.owner?.name || p.landlord?.name,
-            landlordHandle:   p.landlord?.handle || null,
-            landlordSiteId:   p.owner?.id        || null,
-            landlordAvatar:   p.landlord?.avatar || p.owner?.avatar,
-            landlordVerified: p.landlord?.verified || false,
+            landlordName:     p.owner?.siteName  || p.owner?.name || p.landlordName || p.landlord?.name,
+            landlordHandle:   p.owner?.id ? null : p.landlordHandle || p.landlord?.handle || null,
+            landlordSiteId:   p.owner?.id        || p.landlordSiteId || null,
+            landlordAvatar:   p.owner?.avatar    || p.landlordAvatar || p.landlord?.avatar,
+            landlordVerified: p.landlord?.verified || p.landlordVerified || false,
           }} />
       ))}
     </div>
