@@ -88,9 +88,17 @@ export default async function LandlordSitePage({ params, searchParams }) {
   const include = { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 }, tags: true }
   const orderBy = [{ boostPlan: 'desc' }, { createdAt: 'desc' }]
 
+  // 精選首頁放寬狀態：房東勾選的精選房（含「已出租」當招牌）也要顯示，
+  // 仍排除審核中/已下架/退回等不該公開的狀態。
+  const featuredWhere = {
+    ...baseWhere,
+    status: { in: ['AVAILABLE', 'COMING_SOON', 'RENTED'] },
+    siteFeatured: true,
+  }
+
   // 房東官網只查詢該房東自己的房源；首頁無搜尋時優先顯示官網精選。
   const rawProps = await db.property.findMany({
-    where: hasSearch ? baseWhere : { ...baseWhere, siteFeatured: true },
+    where: hasSearch ? baseWhere : featuredWhere,
     include,
     orderBy,
   })
