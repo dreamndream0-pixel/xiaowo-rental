@@ -330,6 +330,17 @@ export default function PropertyDetail({ property }) {
       localStorage.setItem(key, JSON.stringify([property.id, ...prev].slice(0, 30)))
     } catch (_) {}
 
+    try {
+      const viewKey = `propertyView:${property.id}`
+      const lastViewedAt = Number(localStorage.getItem(viewKey) || 0)
+      const viewWindowMs = 1000 * 60 * 60 * 6
+      if (!lastViewedAt || Date.now() - lastViewedAt > viewWindowMs) {
+        fetch(`/api/properties/${property.id}/view`, { method: 'POST', keepalive: true })
+          .then(res => { if (res.ok) localStorage.setItem(viewKey, String(Date.now())) })
+          .catch(() => {})
+      }
+    } catch (_) {}
+
     return () => clearTimeout(t)
   }, [])
 

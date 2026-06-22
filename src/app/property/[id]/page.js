@@ -101,12 +101,6 @@ export default async function PropertyPage({ params, searchParams }) {
     } catch (_) {}
   }
 
-  // 瀏覽數累加（fire-and-forget，不阻塞渲染）
-  db.property.update({
-    where: { id: params.id },
-    data: { viewCount: { increment: 1 } },
-  }).catch(() => {})
-
   const siteId = searchParams?.site
   const siteLandlord = siteId && property.owner?.id === siteId && property.owner?.isActive
     ? property.owner : null

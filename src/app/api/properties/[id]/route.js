@@ -30,9 +30,6 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: '找不到此房源' }, { status: 404 })
     }
 
-    // Increment view count (fire-and-forget)
-    db.property.update({ where: { id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
-
     const propertyWithRelease = (await attachAvailableFrom(db, [property]))[0]
     return NextResponse.json(propertyWithRelease)
   } catch (error) {
