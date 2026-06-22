@@ -41,12 +41,38 @@ export const authOptions = {
     GoogleProvider({
       clientId:     process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // 同 email 若已用密碼註冊，允許自動連結（Google email 已驗證，安全）
+      allowDangerousEmailAccountLinking: true,
+      // 自訂 profile：User 表沒有 image 欄位（只有 avatar），
+      // 預設 profile 會回傳 image → Prisma createUser 會因未知欄位而失敗，導致登入/註冊整個掛掉
+      profile(profile) {
+        return {
+          id:     profile.sub,
+          name:   profile.name,
+          email:  profile.email,
+          avatar: profile.picture,
+          role:   'TENANT',
+        }
+      },
     }),
 
     // LINE OAuth
     LineProvider({
       clientId:     process.env.LINE_CLIENT_ID     || '',
       clientSecret: process.env.LINE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
+      // LINE 預設 scope（openid profile）不回傳 email，而 User.email 為必填唯一鍵；
+      // 用 line_<sub>@line.local 補一個唯一 email，並避免回傳 image 欄位
+      profile(profile) {
+        return {
+          id:     profile.sub,
+          name:   profile.name || 'LINE 用戶',
+          email:  profile.email || `line_${profile.sub}@line.local`,
+          avatar: profile.picture || null,
+          lineId: profile.sub,
+          role:   'TENANT',
+        }
+      },
     }),
   ],
 
