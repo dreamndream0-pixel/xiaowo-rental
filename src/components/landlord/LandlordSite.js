@@ -40,7 +40,7 @@ function SiteSlideshow({ slides }) {
   )
 }
 
-export default function LandlordSite({ landlord, properties, recommendations, searchParams, siteSlides = [] }) {
+export default function LandlordSite({ landlord, properties, recommendations, searchParams, siteSlides = [], featuredMode = false }) {
   const siteName = landlord.siteName || `${landlord.name} 的租屋`
 
   function toCard(p) {
@@ -68,7 +68,9 @@ export default function LandlordSite({ landlord, properties, recommendations, se
               {siteName}
             </h1>
           )}
-          <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
+          <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>
+            {featuredMode ? `✨ 精選房源 · 共 ${properties.length} 間` : `共 ${properties.length} 間房源`}
+          </p>
 
           {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
           <SearchBar

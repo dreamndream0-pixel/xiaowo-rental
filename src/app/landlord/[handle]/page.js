@@ -33,7 +33,13 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   // 搜尋條件
   const { city, district, keyword, minPrice = 0, maxPrice = 999999, tags } = searchParams || {}
-  const where = {
+  // 是否啟用搜尋/篩選；沒有的話＝首頁，只顯示精選房源
+  const hasSearch = !!(
+    city || district || keyword || tags ||
+    Number(minPrice) > 0 || Number(maxPrice) < 999999
+  )
+
+  const baseWhere = {
     ownerId: landlord.id,
     status: 'AVAILABLE',
     deletedAt: null,
@@ -56,12 +62,20 @@ export default async function LandlordSitePage({ params, searchParams }) {
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }
 
-  // 該房東的房源
-  const properties = await db.property.findMany({
-    where,
-    include: { images: { where: { isCover: true }, take: 1 }, tags: true, amenities: true },
-    orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
+  const include = { images: { where: { isCover: true }, take: 1 }, tags: true, amenities: true }
+  const orderBy = [{ boostPlan: 'desc' }, { createdAt: 'desc' }]
+
+  // 該房東的房源；首頁（無搜尋）只顯示精選
+  let properties = await db.property.findMany({
+    where: hasSearch ? baseWhere : { ...baseWhere, featured: true },
+    include,
+    orderBy,
   })
+  const featuredMode = !hasSearch && properties.length > 0
+  // 首頁但尚未勾選精選 → 退回顯示全部可租，避免首頁空白
+  if (!hasSearch && properties.length === 0) {
+    properties = await db.property.findMany({ where: baseWhere, include, orderBy })
+  }
 
   // 其他房東的推薦房源（排除自己，最多 6 間）
   const recommendations = await db.property.findMany({
@@ -81,6 +95,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
       properties={properties}
       recommendations={recommendations}
       searchParams={searchParams || {}}
+      featuredMode={featuredMode}
     />
   )
 }

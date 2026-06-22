@@ -58,7 +58,13 @@ export default async function LandlordSitePage({ params, searchParams }) {
     tags, type,
   } = searchParams || {}
 
-  const where = {
+  // 是否啟用搜尋/篩選；沒有的話＝首頁，只顯示精選房源
+  const hasSearch = !!(
+    city || district || keyword || type || tags ||
+    Number(minPrice) > 0 || Number(maxPrice) < 999999
+  )
+
+  const baseWhere = {
     ownerId: landlord.id,
     status: 'AVAILABLE',
     deletedAt: null,
@@ -78,12 +84,16 @@ export default async function LandlordSitePage({ params, searchParams }) {
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }
 
+  const include = { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 }, tags: true }
+  const orderBy = [{ boostPlan: 'desc' }, { createdAt: 'desc' }]
+
   // 並行查詢房源與推薦，縮短冷啟動載入時間
-  const [properties, recommendations] = await Promise.all([
+  // 首頁（無搜尋）只撈精選房源；有搜尋時撈全部符合的
+  const [rawProps, recommendations] = await Promise.all([
     db.property.findMany({
-      where,
-      include: { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 }, tags: true },
-      orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
+      where: hasSearch ? baseWhere : { ...baseWhere, featured: true },
+      include,
+      orderBy,
     }),
     db.property.findMany({
       where: {
@@ -92,10 +102,17 @@ export default async function LandlordSitePage({ params, searchParams }) {
         deletedAt: null,
       },
       include: { images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 } },
-      orderBy: [{ boostPlan: 'desc' }, { createdAt: 'desc' }],
+      orderBy,
       take: 6,
     }),
   ])
+
+  // 首頁但房東尚未勾選任何精選房源 → 退回顯示全部可租，避免首頁空白
+  let properties = rawProps
+  const featuredMode = !hasSearch && rawProps.length > 0
+  if (!hasSearch && rawProps.length === 0) {
+    properties = await db.property.findMany({ where: baseWhere, include, orderBy })
+  }
 
   return (
     <LandlordSite
@@ -104,6 +121,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
       recommendations={recommendations}
       searchParams={searchParams || {}}
       siteSlides={siteSlides}
+      featuredMode={featuredMode}
     />
   )
 }
