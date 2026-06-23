@@ -90,7 +90,7 @@ export async function GET() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, phone: true, image: true, role: true },
+    select: { id: true, name: true, email: true, phone: true, avatar: true, role: true },
   })
 
   if (!user) return NextResponse.json(null)
@@ -116,7 +116,7 @@ export async function GET() {
     name: user.name,
     email: realEmail,
     phone: user.phone,
-    avatar: user.image,
+    avatar: user.avatar,
     isSuper: false, // future: user.role === 'SUPER_LANDLORD'
     isLinkedLandlord,
   })
