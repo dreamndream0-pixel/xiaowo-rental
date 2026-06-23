@@ -24,10 +24,10 @@ const TAG_INLINE = 8
 
 export default function SearchBar({ searchBase = '/listings', initialParams = {} }) {
   const router = useRouter()
-  const [keyword,  setKeyword]  = useState(initialParams.keyword  || '')
-  const [city,     setCity]     = useState(initialParams.city     || '')
-  const [district, setDistrict] = useState(initialParams.district || '')
-  const [types,    setTypes]    = useState(initialParams.type ? initialParams.type.split(',') : [])
+  const [keyword,   setKeyword]   = useState(initialParams.keyword  || '')
+  const [city,      setCity]      = useState(initialParams.city     || '')
+  const [districts, setDistricts] = useState(initialParams.district ? initialParams.district.split(',') : [])
+  const [types,     setTypes]     = useState(initialParams.type ? initialParams.type.split(',') : [])
   const [rentMin,  setRentMin]  = useState(Number(initialParams.minPrice) || 0)
   const [rentMax,  setRentMax]  = useState(Number(initialParams.maxPrice) || 50000)
   const [tags,     setTags]     = useState(initialParams.tags ? initialParams.tags.split(',') : [])
@@ -38,7 +38,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
   const [activePopover, setActivePopover] = useState(null)
   const containerRef = useRef(null)
 
-  const districts = city ? getDistricts(city) : []
+  const districtList = city ? getDistricts(city) : []
 
   // 帶目前條件 fetch 標籤（initialParams 有值時為篩選後標籤）
   useEffect(() => {
@@ -85,9 +85,9 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
 
   const doSearch = () => {
     const params = new URLSearchParams()
-    if (keyword)       params.set('keyword',  keyword)
-    if (city)          params.set('city',     city)
-    if (district)      params.set('district', district)
+    if (keyword)         params.set('keyword',  keyword)
+    if (city)            params.set('city',     city)
+    if (districts.length) params.set('district', districts.join(','))
     if (types.length)  params.set('type',     types.join(','))
     if (rentMin > 0)     params.set('minPrice', rentMin)
     if (rentMax < 50000) params.set('maxPrice', rentMax)
@@ -130,7 +130,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
   })
 
   return (
-    <div ref={containerRef} style={{ background: 'white', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', maxWidth: 860 }}>
+    <div ref={containerRef} style={{ background: 'white', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', width: '100%' }}>
 
       {/* 關鍵字 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px 12px', borderBottom: '1px solid var(--oat-mid)' }}>
@@ -157,13 +157,13 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
           <span style={labelSt}>縣市</span>
           <span style={valueSt}>{city || '不限'}</span>
           {activePopover === 'city' && (
-            <div onClick={e => e.stopPropagation()} style={{ ...popoverSt, width: 300 }}>
+            <div onClick={e => e.stopPropagation()} className="sb-popover" style={{ ...popoverSt, width: 300 }}>
               <div style={popTitle}>選擇縣市</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                <button style={optionBtn(!city)} onClick={() => { setCity(''); setDistrict(''); setActivePopover(null) }}>不限</button>
+                <button style={optionBtn(!city)} onClick={() => { setCity(''); setDistricts([]); setActivePopover(null) }}>不限</button>
                 {ALL_CITIES.map(c => (
                   <button key={c} style={optionBtn(city === c)}
-                    onClick={() => { setCity(c); setDistrict(''); setActivePopover(null) }}>
+                    onClick={() => { setCity(c); setDistricts([]); setActivePopover(null) }}>
                     {c}
                   </button>
                 ))}
@@ -181,18 +181,27 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
           onMouseLeave={e => { if (activePopover !== 'district') e.currentTarget.style.background = '' }}
         >
           <span style={labelSt}>行政區</span>
-          <span style={valueSt}>{district || '不限'}</span>
+          <span style={valueSt}>
+            {districts.length === 0 ? '不限' : districts.length === 1 ? districts[0] : `已選 ${districts.length} 項`}
+          </span>
           {activePopover === 'district' && city && (
-            <div onClick={e => e.stopPropagation()} style={{ ...popoverSt, width: 300 }}>
-              <div style={popTitle}>選擇行政區</div>
+            <div onClick={e => e.stopPropagation()} className="sb-popover" style={{ ...popoverSt, width: 300 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={popTitle}>選擇行政區（可複選）</span>
+                {districts.length > 0 && (
+                  <button onClick={() => setDistricts([])} style={{ fontSize: 11, color: 'var(--sage)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>清除</button>
+                )}
+              </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                <button style={optionBtn(!district)} onClick={() => { setDistrict(''); setActivePopover(null) }}>不限</button>
-                {districts.map(d => (
-                  <button key={d} style={optionBtn(district === d)}
-                    onClick={() => { setDistrict(d); setActivePopover(null) }}>
-                    {d}
-                  </button>
-                ))}
+                {districtList.map(d => {
+                  const active = districts.includes(d)
+                  return (
+                    <button key={d} style={optionBtn(active)}
+                      onClick={() => setDistricts(prev => active ? prev.filter(v => v !== d) : [...prev, d])}>
+                      {d}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -209,18 +218,28 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
           <span style={labelSt}>月租金</span>
           <span style={valueSt}>{rentLabel}</span>
           {activePopover === 'rent' && (
-            <div onClick={e => e.stopPropagation()} style={{ ...popoverSt, width: 310 }}>
+            <div onClick={e => e.stopPropagation()} className="sb-popover" style={{ ...popoverSt, width: 310 }}>
               <div style={popTitle}>設定租金區間</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                {[
-                  [rentMin === 0 ? '不限' : `${(rentMin/1000).toFixed(0)}K`, '最低 / 元'],
-                  [rentMax >= 50000 ? '不限' : `${(rentMax/1000).toFixed(0)}K`, '最高 / 元'],
-                ].map(([num, unit], i) => (
-                  <div key={i} style={{ background: 'var(--sage-bg)', borderRadius: 8, padding: '6px 16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--sage-dark)', fontFamily: 'Montserrat,sans-serif', lineHeight: 1 }}>{num}</div>
-                    <div style={{ fontSize: 9, color: 'var(--gray-light)', marginTop: 3 }}>{unit}</div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: 'var(--gray-light)', marginBottom: 4 }}>最低 / 元</div>
+                  <input
+                    type="number" min={0} max={50000} step={500}
+                    value={rentMin}
+                    onChange={e => setRentMin(Math.min(Math.max(0, Number(e.target.value) || 0), rentMax - 1000))}
+                    style={{ width: '100%', padding: '7px 8px', borderRadius: 8, border: '1.5px solid var(--oat-mid)', fontSize: 13, fontFamily: 'inherit', textAlign: 'center', outline: 'none' }}
+                  />
+                </div>
+                <span style={{ color: 'var(--gray-light)', marginTop: 14 }}>–</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: 'var(--gray-light)', marginBottom: 4 }}>最高 / 元</div>
+                  <input
+                    type="number" min={0} max={50000} step={500}
+                    value={rentMax}
+                    onChange={e => setRentMax(Math.max(Math.min(50000, Number(e.target.value) || 50000), rentMin + 1000))}
+                    style={{ width: '100%', padding: '7px 8px', borderRadius: 8, border: '1.5px solid var(--oat-mid)', fontSize: 13, fontFamily: 'inherit', textAlign: 'center', outline: 'none' }}
+                  />
+                </div>
               </div>
               <div style={{ position: 'relative', height: 40, marginBottom: 4 }}>
                 <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 0, right: 0, height: 4, background: 'var(--oat-mid)', borderRadius: 2 }} />
@@ -261,7 +280,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
             {types.length === 0 ? '不限' : types.length === 1 ? TYPES.find(t => t.value === types[0])?.label : `已選 ${types.length} 項`}
           </span>
           {activePopover === 'type' && (
-            <div onClick={e => e.stopPropagation()} style={{ ...popoverSt, right: 0, left: 'auto', width: 240 }}>
+            <div onClick={e => e.stopPropagation()} className="sb-popover" style={{ ...popoverSt, right: 0, left: 'auto', width: 240 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={popTitle}>選擇房型（可複選）</span>
                 {types.length > 0 && (
@@ -344,6 +363,19 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
           width: 22px; height: 22px; border-radius: 50%;
           background: white; border: 2.5px solid var(--sage);
           pointer-events: all; cursor: grab;
+        }
+        /* 小螢幕：彈出選單改成置中浮層，避免跑出畫面外 */
+        @media (max-width: 640px) {
+          .sb-popover {
+            position: fixed !important;
+            left: 16px !important;
+            right: 16px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: auto !important;
+            max-height: 80vh;
+            overflow-y: auto;
+          }
         }
       `}</style>
     </div>

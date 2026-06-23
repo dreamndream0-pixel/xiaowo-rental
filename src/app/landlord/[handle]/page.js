@@ -45,7 +45,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
     status: { in: ['AVAILABLE', 'COMING_SOON'] },
     deletedAt: null,
     ...(city && { city }),
-    ...(district && { district }),
+    ...(district && { district: { in: district.split(',') } }),
     ...(keyword && {
       OR: [
         { title: { contains: keyword } },

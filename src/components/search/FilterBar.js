@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 
 const TAG_INLINE = 8
 
-export default function FilterBar() {
+export default function FilterBar({ basePath = '/listings' }) {
   const router = useRouter()
   const params = useSearchParams()
 
@@ -73,20 +73,20 @@ export default function FilterBar() {
     if (pendingTags.length === 0) p.delete('tags')
     else p.set('tags', pendingTags.join(','))
     p.delete('page')
-    router.push(`/listings?${p.toString()}`)
+    router.push(`${basePath}?${p.toString()}`)
   }
 
   const clearAll = () => {
     setPendingTypes([])
     setPendingTags([])
-    router.push('/listings')
+    router.push(basePath)
   }
 
   const setSort = (sort) => {
     const p = new URLSearchParams(params.toString())
     if (sort === 'newest') p.delete('sort')
     else p.set('sort', sort)
-    router.push(`/listings?${p.toString()}`)
+    router.push(`${basePath}?${p.toString()}`)
   }
 
   const hasApplied  = appliedTypes.length > 0 || appliedTags.length > 0

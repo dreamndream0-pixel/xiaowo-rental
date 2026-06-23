@@ -5,6 +5,7 @@ import Link from 'next/link'
 import PropertyCard from '@/components/property/PropertyCard'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import SearchBar from '@/components/search/SearchBar'
+import FilterBar from '@/components/search/FilterBar'
 
 function SiteSlideshow({ slides }) {
   const [current, setCurrent] = useState(0)
@@ -42,6 +43,12 @@ function SiteSlideshow({ slides }) {
 
 export default function LandlordSite({ landlord, properties, recommendations, searchParams, siteSlides = [], featuredMode = false }) {
   const siteName = landlord.siteName || `${landlord.name} 的租屋`
+  const hasSearch = !!(
+    searchParams.city || searchParams.district || searchParams.keyword ||
+    searchParams.type || searchParams.tags ||
+    Number(searchParams.minPrice) > 0 || Number(searchParams.maxPrice) < 999999
+  )
+  const resultTitle = hasSearch ? '搜尋房源' : featuredMode ? '精選房源' : '全部房源'
 
   function toCard(p) {
     return {
@@ -72,10 +79,6 @@ export default function LandlordSite({ landlord, properties, recommendations, se
               {siteName}
             </h1>
           )}
-          {!featuredMode && (
-            <p style={{ color: 'var(--gray-mid)', fontSize: 14, marginBottom: 24 }}>共 {properties.length} 間房源</p>
-          )}
-
           {/* 與主站完全相同的搜尋欄，搜尋結果導向此房東官網 */}
           <SearchBar
             searchBase={`/site/${landlord.id}`}
@@ -93,16 +96,20 @@ export default function LandlordSite({ landlord, properties, recommendations, se
         </div>
       </section>
 
+      <div className="section-wrap" style={{ padding: '20px 20px 0' }}>
+        <FilterBar basePath={`/site/${landlord.id}`} />
+      </div>
+
       {/* 房源列表 */}
-      <section className="section-wrap" style={{ padding: '40px 20px 56px' }}>
-        {featuredMode && properties.length > 0 && (
+      <section className="section-wrap" style={{ padding: '20px 20px 56px' }}>
+        {properties.length > 0 && (
           <div className="section-header">
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <h2 className="section-title-main">精選房源</h2>
+                <h2 className="section-title-main">{resultTitle}</h2>
                 <span style={{ fontSize: 13, color: 'var(--gray-light)', fontFamily: 'Montserrat,sans-serif' }}>共 {properties.length} 筆</span>
               </div>
-              <p className="section-subtitle">房東嚴選推薦・安心入住</p>
+              {featuredMode && !hasSearch && <p className="section-subtitle">房東嚴選推薦・安心入住</p>}
             </div>
           </div>
         )}

@@ -25,7 +25,7 @@ async function getProperties(searchParams) {
     deletedAt: null,
     status:    { in: ['AVAILABLE', 'COMING_SOON'] },
     ...(city     && { city }),
-    ...(district && { district }),
+    ...(district && { district: { in: district.split(',') } }),
     ...(type     && { type: { in: type.split(',') } }),
     ...(landlord && { ownerId: landlord }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
@@ -65,14 +65,24 @@ async function getProperties(searchParams) {
 // 房源列表（非同步，Suspense 串流）
 async function PropertiesSection({ searchParams }) {
   const { properties, total, page, totalPages } = await getProperties(searchParams)
-  const label = [searchParams.city, searchParams.district, searchParams.keyword]
+  const hasSearch = !!(
+    searchParams.city || searchParams.district || searchParams.keyword ||
+    searchParams.type || searchParams.tags ||
+    Number(searchParams.minPrice) > 0 || Number(searchParams.maxPrice) < 999999
+  )
+  const label = [searchParams.city, searchParams.district?.replace(/,/g, '、'), searchParams.keyword]
     .filter(Boolean).join(' · ')
 
   return (
     <>
-      <p className="section-subtitle" style={{ marginBottom: 16 }}>
-        {label ? `${label}：` : ''}共 {total} 筆房源
-      </p>
+      <div className="section-header" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <h1 className="section-title-main">{hasSearch ? '搜尋房源' : '全部房源'}</h1>
+          <span style={{ fontSize: 13, color: 'var(--gray-light)', fontFamily: 'Montserrat,sans-serif' }}>
+            {label ? `${label}・` : ''}共 {total} 筆
+          </span>
+        </div>
+      </div>
       <PropertyGrid properties={properties} />
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
@@ -129,9 +139,6 @@ export default function ListingsPage({ searchParams }) {
     <>
       <Navbar />
       <main className="section-wrap">
-        <div className="section-header" style={{ marginBottom: 16 }}>
-          <h1 className="section-title-main">全部房源</h1>
-        </div>
         <div style={{ marginBottom: 20 }}>
           <SearchBar initialParams={searchParams} />
         </div>

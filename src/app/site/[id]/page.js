@@ -70,7 +70,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
     status: { in: ['AVAILABLE', 'COMING_SOON'] },
     deletedAt: null,
     ...(city && { city }),
-    ...(district && { district }),
+    ...(district && { district: { in: district.split(',') } }),
     ...(type && { type: { in: type.split(',') } }),
     ...(keyword && {
       OR: [
