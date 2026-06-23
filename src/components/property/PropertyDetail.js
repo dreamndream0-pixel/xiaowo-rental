@@ -646,13 +646,6 @@ export default function PropertyDetail({ property }) {
               border: '1px solid var(--oat-mid)',
               position: 'sticky', top: 80,
             }}>
-              <div>
-                <span style={{ fontSize: 24, fontWeight: 900, color: 'var(--sage-dark)' }}>${property.price.toLocaleString()}</span>
-                <span style={{ fontSize: 12, color: 'var(--gray-light)', marginLeft: 2 }}>/ 月</span>
-              </div>
-
-              <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '16px 0' }} />
-
               {/* 房東卡片 */}
               <Link href={property.ownerId ? `/site/${property.ownerId}` : property.landlord?.handle ? `/landlord/${property.landlord.handle}` : '#'} style={{ textDecoration: 'none' }}>
                 <div style={{
@@ -735,9 +728,10 @@ export default function PropertyDetail({ property }) {
                       width: 30, height: 30, borderRadius: '50%', background: '#06C755',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path fill="white" d="M21 11.1c0-4.47-4.48-8.1-10-8.1S1 6.63 1 11.1c0 4.01 3.58 7.37 8.4 8.01.33.07.78.22.9.5.1.26.07.66.03.92l-.15.88c-.04.26-.21 1.02.89.56 1.1-.47 5.96-3.51 8.14-6.01C20.36 14.28 21 12.78 21 11.1z"/>
-                        <text x="6.1" y="13" fontSize="6.2" fontWeight="700" fill="#06C755" fontFamily="Arial,sans-serif">LINE</text>
+                      <svg width="22" height="22" viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="42" rx="38" ry="28" fill="white"/>
+                        <path fill="white" d="M30 64 C30 70 28 76 24 80 C32 79 39 76 44 71 L44 64 Z"/>
+                        <text x="50" y="49" fontSize="22" fontWeight="800" fill="#06C755" fontFamily="Arial,sans-serif" textAnchor="middle">LINE</text>
                       </svg>
                     </span>
                     詢問
@@ -753,8 +747,10 @@ export default function PropertyDetail({ property }) {
                       width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.12)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path fill="var(--gray-mid)" d="M21 11.1c0-4.47-4.48-8.1-10-8.1S1 6.63 1 11.1c0 4.01 3.58 7.37 8.4 8.01.33.07.78.22.9.5.1.26.07.66.03.92l-.15.88c-.04.26-.21 1.02.89.56 1.1-.47 5.96-3.51 8.14-6.01C20.36 14.28 21 12.78 21 11.1z"/>
+                      <svg width="22" height="22" viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="42" rx="38" ry="28" fill="white"/>
+                        <path fill="white" d="M30 64 C30 70 28 76 24 80 C32 79 39 76 44 71 L44 64 Z"/>
+                        <text x="50" y="49" fontSize="22" fontWeight="800" fill="var(--gray-mid)" fontFamily="Arial,sans-serif" textAnchor="middle">LINE</text>
                       </svg>
                     </span>
                     未設定
@@ -791,7 +787,7 @@ export default function PropertyDetail({ property }) {
 
               <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '16px 0' }} />
               <div style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', lineHeight: 1.8 }}>
-                預約即刻回覆・看房不收費<br />由平台保障安全交易
+                預約即刻回覆・看房不收費
               </div>
             </div>
           </div>
