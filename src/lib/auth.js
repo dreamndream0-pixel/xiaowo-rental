@@ -11,8 +11,12 @@ const baseAdapter = PrismaAdapter(db)
 
 function normalizeUserData(data = {}) {
   const { image, ...rest } = data
+  const email = rest.email || (rest.id ? `oauth_${rest.id}@oauth.local` : undefined)
   return {
     ...rest,
+    ...(email ? { email } : {}),
+    name: rest.name || email || '小蝸用戶',
+    role: rest.role || 'TENANT',
     ...(image && !rest.avatar ? { avatar: image } : {}),
   }
 }
@@ -62,8 +66,8 @@ export const authOptions = {
       profile(profile) {
         return {
           id:     profile.sub,
-          name:   profile.name,
-          email:  profile.email,
+          name:   profile.name || profile.email || 'Google 用戶',
+          email:  profile.email || `google_${profile.sub}@oauth.local`,
           avatar: profile.picture,
           role:   'TENANT',
         }
@@ -94,14 +98,14 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id   = user.id
-        token.role = user.role
+        token.role = user.role || 'TENANT'
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      if (session?.user && token) {
         session.user.id   = token.id
-        session.user.role = token.role
+        session.user.role = token.role || 'TENANT'
       }
       return session
     },
