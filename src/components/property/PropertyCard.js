@@ -60,7 +60,7 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
 
       {/* Image */}
       <Link href={propertyHref} style={{ textDecoration: 'none' }} onClick={() => setLoading(true)}>
-        <div style={{ height: 240, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
+        <div style={{ height: 190, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
           {coverUrl ? (
             <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
           ) : (
@@ -111,13 +111,12 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
       {/* Body */}
       <Link href={propertyHref} style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setLoading(true)}>
         <div style={{ padding: '16px 18px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--sage)', fontFamily: 'Montserrat,sans-serif' }}>NT$</span>
-            <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--sage-dark)', fontFamily: 'Montserrat,sans-serif', letterSpacing: -0.5 }}>{price.toLocaleString()}</span>
-            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-light)' }}>/月</span>
+          <div style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px', color: 'var(--charcoal)', letterSpacing: 0.3, lineHeight: 1.5 }}>{title}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--gray-mid)' }}>
+            <span>📍 {city}{district}</span>
+            <span style={{ color: 'var(--oat-deep)' }}>·</span>
+            <span>{size} 坪</span>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, margin: '8px 0 4px', color: 'var(--charcoal)', letterSpacing: 0.3, lineHeight: 1.5 }}>{title}</div>
-          <div style={{ fontSize: 12, color: 'var(--gray-mid)' }}>📍 {city}{district}</div>
           {tags.length > 0 && (
             <div style={{ marginTop: 10 }}>
               <div style={{
@@ -158,7 +157,11 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
           {landlordName}
           {landlordVerified && <span style={{ color: 'var(--sage)', fontSize: 9, fontWeight: 700 }}>✓</span>}
         </Link>
-        <span style={{ fontSize: 11, color: 'var(--gray-light)', fontFamily: 'Montserrat,sans-serif' }}>{size} 坪</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--sage)', fontFamily: 'Montserrat,sans-serif' }}>NT$</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--sage-dark)', fontFamily: 'Montserrat,sans-serif', letterSpacing: -0.5 }}>{price.toLocaleString()}</span>
+          <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--gray-light)' }}>/月</span>
+        </div>
       </div>
     </div>
   )
