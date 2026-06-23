@@ -31,6 +31,11 @@ export async function register() {
         ALTER TABLE properties ADD COLUMN IF NOT EXISTS "siteFeatured" BOOLEAN NOT NULL DEFAULT false
       `)
 
+      // 社群媒體串接設定（房東一鍵發文用）
+      await db.$executeRawUnsafe(`
+        ALTER TABLE landlords ADD COLUMN IF NOT EXISTS "socialConfig" TEXT
+      `)
+
       console.log('[instrumentation] DB migration OK')
     } catch (e) {
       console.error('[instrumentation] DB migration error:', e.message)
