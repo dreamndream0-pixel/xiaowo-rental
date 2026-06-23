@@ -96,6 +96,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.emoji-icon {
+  width: 1.08em;
+  height: 1.08em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  vertical-align: -0.16em;
+  margin: 0 0.08em;
+}
+
+.emoji-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 a { color: inherit; }
 
 :focus-visible {

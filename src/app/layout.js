@@ -3,6 +3,7 @@ import { Noto_Sans_TC, Noto_Serif_TC, Montserrat } from 'next/font/google'
 import Providers from './providers'
 import PageProgress from '@/components/layout/PageProgress'
 import ButtonEffects from '@/components/layout/ButtonEffects'
+import EmojiIconRuntime from '@/components/layout/EmojiIconRuntime'
 import '../styles/globals.css'
 
 const notoSansTC = Noto_Sans_TC({
@@ -41,7 +42,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="zh-TW" className={`${notoSansTC.variable} ${notoSerifTC.variable} ${montserrat.variable}`}>
-      <body><PageProgress /><ButtonEffects /><Providers>{children}</Providers></body>
+      <body><PageProgress /><ButtonEffects /><EmojiIconRuntime /><Providers>{children}</Providers></body>
     </html>
   )
 }
