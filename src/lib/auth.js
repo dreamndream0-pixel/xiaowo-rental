@@ -7,8 +7,22 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { db } from './db'
 
+const baseAdapter = PrismaAdapter(db)
+
+function normalizeUserData(data = {}) {
+  const { image, ...rest } = data
+  return {
+    ...rest,
+    ...(image && !rest.avatar ? { avatar: image } : {}),
+  }
+}
+
 export const authOptions = {
-  adapter: PrismaAdapter(db),
+  adapter: {
+    ...baseAdapter,
+    createUser: data => db.user.create({ data: normalizeUserData(data) }),
+    updateUser: ({ id, ...data }) => db.user.update({ where: { id }, data: normalizeUserData(data) }),
+  },
   providers: [
     // Email + 密碼登入
     CredentialsProvider({
@@ -100,6 +114,15 @@ export const authOptions = {
   },
 
   session: { strategy: 'jwt' },
+
+  logger: {
+    error(code, metadata) {
+      console.error('[next-auth]', code, metadata)
+    },
+    warn(code) {
+      console.warn('[next-auth]', code)
+    },
+  },
 }
 
 export default NextAuth(authOptions)

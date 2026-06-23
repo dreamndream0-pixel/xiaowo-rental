@@ -110,7 +110,7 @@ function authErrorMessage(code) {
     AccessDenied: '授權未完成，請重新登入。',
     Configuration: '登入設定尚未完成，請確認正式環境變數。',
   }
-  return messages[code] || '第三方登入失敗，請稍後再試。'
+  return messages[code] || `第三方登入失敗，請稍後再試。（${code || 'unknown'}）`
 }
 
 const inputSt = { width: '100%', padding: '12px 14px', border: '1.5px solid #EDE8DF', borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit' }
