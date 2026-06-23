@@ -724,12 +724,12 @@ export default function PropertyDetail({ property }) {
                 {lineInquiryUrl ? (
                   <a href={lineInquiryUrl} target="_blank" rel="noopener noreferrer" style={{
                     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                    padding: '10px 4px', borderRadius: 'var(--radius-md)',
-                    background: '#06C755', color: 'white', fontWeight: 700, fontSize: 12,
+                    padding: '10px 4px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--oat-mid)',
+                    background: 'white', color: '#06C755', fontWeight: 700, fontSize: 12,
                     textDecoration: 'none', boxSizing: 'border-box', transition: 'background .15s',
                   }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#05a847'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#06C755'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--oat-light)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'white'}
                   >
                     <span style={{
                       width: 30, height: 30, borderRadius: '50%', background: '#06C755',

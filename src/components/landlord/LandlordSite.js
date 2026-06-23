@@ -120,7 +120,7 @@ export default function LandlordSite({ landlord, properties, recommendations, se
             😔 找不到符合條件的房源，試試其他關鍵字
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {properties.map(p => <PropertyCard key={p.id} property={toCard(p)} detailHref={`/property/${p.id}?site=${landlord.id}`} />)}
           </div>
         )}
