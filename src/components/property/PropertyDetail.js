@@ -724,15 +724,8 @@ export default function PropertyDetail({ property }) {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--oat-light)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'white'}
                   >
-                    <span style={{
-                      width: 30, height: 30, borderRadius: '50%', background: '#06C755',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <svg width="22" height="22" viewBox="0 0 100 100">
-                        <ellipse cx="50" cy="42" rx="38" ry="28" fill="white"/>
-                        <path fill="white" d="M30 64 C30 70 28 76 24 80 C32 79 39 76 44 71 L44 64 Z"/>
-                        <text x="50" y="49" fontSize="22" fontWeight="800" fill="#06C755" fontFamily="Arial,sans-serif" textAnchor="middle">LINE</text>
-                      </svg>
+                    <span style={{ width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, display: 'block' }}>
+                      <Image src="/line-icon.png" alt="LINE" width={30} height={30} />
                     </span>
                     詢問
                   </a>
@@ -743,15 +736,8 @@ export default function PropertyDetail({ property }) {
                     background: 'var(--oat)', color: 'var(--gray-mid)', fontWeight: 600,
                     fontSize: 12, boxSizing: 'border-box',
                   }}>
-                    <span style={{
-                      width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.12)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <svg width="22" height="22" viewBox="0 0 100 100">
-                        <ellipse cx="50" cy="42" rx="38" ry="28" fill="white"/>
-                        <path fill="white" d="M30 64 C30 70 28 76 24 80 C32 79 39 76 44 71 L44 64 Z"/>
-                        <text x="50" y="49" fontSize="22" fontWeight="800" fill="var(--gray-mid)" fontFamily="Arial,sans-serif" textAnchor="middle">LINE</text>
-                      </svg>
+                    <span style={{ width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, display: 'block', filter: 'grayscale(1) opacity(0.5)' }}>
+                      <Image src="/line-icon.png" alt="LINE" width={30} height={30} />
                     </span>
                     未設定
                   </div>
