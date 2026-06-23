@@ -463,7 +463,15 @@ export default function PropertyDetail({ property }) {
             <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
 
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>房源介紹</h2>
-            <p style={{ fontSize: 13.5, color: 'var(--gray-mid)', lineHeight: 1.9 }}>{property.description}</p>
+            <p style={{
+              fontSize: 13.5,
+              color: 'var(--gray-mid)',
+              lineHeight: 1.9,
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
+              maxWidth: '100%',
+            }}>{property.description}</p>
 
             <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '24px 0' }} />
 
