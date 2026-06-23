@@ -3,13 +3,18 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
+
+const TAG_COLLAPSED_HEIGHT = 58 // 約兩排標籤的高度
 
 export default function PropertyCard({ property, detailHref, initialFaved = false }) {
   const [fav, setFav] = useState(initialFaved)
   const [favLoading, setFavLoading] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [tagsExpanded, setTagsExpanded] = useState(false)
+  const [tagsOverflow, setTagsOverflow] = useState(false)
+  const tagWrapRef = useRef(null)
 
   const {
     id, title, type, status, city, district, availableFrom,
@@ -28,6 +33,12 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
   }[status] ?? { label: status, color: 'white', bg: 'var(--gray-mid)' }
 
   const propertyHref = detailHref || `/property/${id}`
+
+  useEffect(() => {
+    if (tagWrapRef.current) {
+      setTagsOverflow(tagWrapRef.current.scrollHeight > TAG_COLLAPSED_HEIGHT + 2)
+    }
+  }, [tags])
 
   return (
     <div style={{
@@ -119,17 +130,28 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
           </div>
           {tags.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <div style={{
+              <div ref={tagWrapRef} style={{
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: 5,
-                maxHeight: 58,
+                maxHeight: tagsExpanded ? 'none' : TAG_COLLAPSED_HEIGHT,
                 overflow: 'hidden',
               }}>
                 {tags.map(t => (
                   <span key={t} style={{ background: 'var(--sage-bg)', color: 'var(--sage-dark)', borderRadius: 6, padding: '3px 8px', fontSize: 10, fontWeight: 600 }}>{t}</span>
                 ))}
               </div>
+              {tagsOverflow && (
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsExpanded(o => !o) }}
+                  style={{
+                    marginTop: 5, padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+                    fontSize: 10, fontWeight: 700, color: 'var(--sage-dark)', fontFamily: 'inherit',
+                  }}
+                >
+                  {tagsExpanded ? '收合 ▲' : '展開 ▼'}
+                </button>
+              )}
             </div>
           )}
         </div>
