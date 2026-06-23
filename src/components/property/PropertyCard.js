@@ -142,15 +142,17 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
                 ))}
               </div>
               {tagsOverflow && (
-                <button
-                  onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsExpanded(o => !o) }}
-                  style={{
-                    marginTop: 5, padding: 0, border: 'none', background: 'none', cursor: 'pointer',
-                    fontSize: 10, fontWeight: 700, color: 'var(--sage-dark)', fontFamily: 'inherit',
-                  }}
-                >
-                  {tagsExpanded ? '收合 ▲' : '展開 ▼'}
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 5 }}>
+                  <button
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); setTagsExpanded(o => !o) }}
+                    style={{
+                      padding: 0, border: 'none', background: 'none', cursor: 'pointer',
+                      fontSize: 10, fontWeight: 700, color: 'var(--sage-dark)', fontFamily: 'inherit',
+                    }}
+                  >
+                    {tagsExpanded ? '收合 ▲' : '展開 ▼'}
+                  </button>
+                </div>
               )}
             </div>
           )}
