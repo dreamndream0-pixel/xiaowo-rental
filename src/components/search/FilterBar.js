@@ -10,20 +10,17 @@ export default function FilterBar({ basePath = '/listings' }) {
   const router = useRouter()
   const params = useSearchParams()
 
-  // 從 URL 讀取當前已套用的篩選
-  const appliedTypes = params.get('type') ? params.get('type').split(',') : []
-  const appliedTags  = params.get('tags')  ? params.get('tags').split(',')  : []
+  // 從 URL 讀取當前已套用的標籤篩選（房型已移到搜尋欄管理，這裡不重複）
+  const appliedTags = params.get('tags') ? params.get('tags').split(',') : []
 
   // 本地暫存（未套用）
-  const [pendingTypes, setPendingTypes] = useState(appliedTypes)
-  const [pendingTags,  setPendingTags]  = useState(appliedTags)
+  const [pendingTags, setPendingTags] = useState(appliedTags)
   const [allTags, setAllTags] = useState([])
   const [tagExpanded, setTagExpanded] = useState(false)
 
   // URL 變化時同步暫存（換頁/清除後重設）
   useEffect(() => {
-    setPendingTypes(params.get('type') ? params.get('type').split(',') : [])
-    setPendingTags(params.get('tags')   ? params.get('tags').split(',')  : [])
+    setPendingTags(params.get('tags') ? params.get('tags').split(',') : [])
   }, [params.toString()])
 
   // 帶目前的篩選條件去抓標籤（排除 tags 本身，避免互相鎖死）
@@ -39,27 +36,6 @@ export default function FilterBar({ basePath = '/listings' }) {
     }).catch(() => {})
   }, [params.toString()])
 
-  const types = [
-    { value: 'SUITE',        label: '套房' },
-    { value: 'ROOM',         label: '雅房' },
-    { value: 'WHOLE_FLOOR',  label: '整層住家' },
-    { value: 'SHARED_SUITE', label: '分租套房' },
-    { value: 'STUDIO',       label: '獨立套房' },
-    { value: 'STORE',        label: '店面' },
-    { value: 'OFFICE',       label: '辦公' },
-    { value: 'LIVE_OFFICE',  label: '住辦' },
-    { value: 'FACTORY',      label: '廠房' },
-    { value: 'PARKING',      label: '車位' },
-    { value: 'LAND',         label: '土地' },
-    { value: 'OTHER',        label: '其他' },
-  ]
-
-  const toggleType = (value) => {
-    setPendingTypes(prev =>
-      prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
-    )
-  }
-
   const toggleTag = (tag) => {
     setPendingTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
@@ -68,8 +44,6 @@ export default function FilterBar({ basePath = '/listings' }) {
 
   const applyFilter = () => {
     const p = new URLSearchParams(params.toString())
-    if (pendingTypes.length === 0) p.delete('type')
-    else p.set('type', pendingTypes.join(','))
     if (pendingTags.length === 0) p.delete('tags')
     else p.set('tags', pendingTags.join(','))
     p.delete('page')
@@ -77,9 +51,11 @@ export default function FilterBar({ basePath = '/listings' }) {
   }
 
   const clearAll = () => {
-    setPendingTypes([])
     setPendingTags([])
-    router.push(basePath)
+    const p = new URLSearchParams(params.toString())
+    p.delete('tags')
+    p.delete('page')
+    router.push(`${basePath}?${p.toString()}`)
   }
 
   const setSort = (sort) => {
@@ -89,11 +65,10 @@ export default function FilterBar({ basePath = '/listings' }) {
     router.push(`${basePath}?${p.toString()}`)
   }
 
-  const hasApplied  = appliedTypes.length > 0 || appliedTags.length > 0
-  const hasPending  = pendingTypes.length > 0  || pendingTags.length > 0
+  const hasApplied = appliedTags.length > 0
+  const hasPending = pendingTags.length > 0
   // 暫存與已套用不同 → 有未套用的變更
-  const isDirty = JSON.stringify([...pendingTypes].sort()) !== JSON.stringify([...appliedTypes].sort()) ||
-                  JSON.stringify([...pendingTags].sort())  !== JSON.stringify([...appliedTags].sort())
+  const isDirty = JSON.stringify([...pendingTags].sort()) !== JSON.stringify([...appliedTags].sort())
 
   const extraSelected = pendingTags.filter(t => !allTags.slice(0, TAG_INLINE).includes(t)).length
 
@@ -133,28 +108,9 @@ export default function FilterBar({ basePath = '/listings' }) {
         </div>
       </div>
 
-      {/* ── 房型（多選）── */}
-      <div style={{ marginBottom: 12 }}>
-        <span style={labelStyle}>房型（可多選）</span>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {types.map(({ value, label }) => {
-            const active = pendingTypes.includes(value)
-            return (
-              <button key={value} onClick={() => toggleType(value)} style={{
-                padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: active ? 700 : 500,
-                border: `1.5px solid ${active ? 'var(--sage)' : 'var(--oat-mid)'}`,
-                background: active ? 'var(--sage)' : 'none',
-                color: active ? 'white' : 'var(--gray-mid)',
-                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', whiteSpace: 'nowrap',
-              }}>{label}</button>
-            )
-          })}
-        </div>
-      </div>
-
       {/* ── 標籤條件（多選）── */}
       {allTags.length > 0 && (
-        <div style={{ paddingTop: 12, marginBottom: 14, borderTop: '1px solid var(--oat-mid)' }}>
+        <div style={{ marginBottom: 14 }}>
           <span style={labelStyle}>標籤條件（可多選）</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             {(tagExpanded ? allTags : allTags.slice(0, TAG_INLINE)).map(tag => {
@@ -195,9 +151,9 @@ export default function FilterBar({ basePath = '/listings' }) {
           }}
         >
           🔍 套用篩選
-          {(pendingTypes.length > 0 || pendingTags.length > 0) && (
+          {pendingTags.length > 0 && (
             <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.85 }}>
-              ({pendingTypes.length + pendingTags.length} 項)
+              ({pendingTags.length} 項)
             </span>
           )}
         </button>

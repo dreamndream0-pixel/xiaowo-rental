@@ -96,9 +96,11 @@ export default function LandlordSite({ landlord, properties, recommendations, se
         </div>
       </section>
 
-      <div className="section-wrap" style={{ padding: '20px 20px 0' }}>
-        <FilterBar basePath={`/site/${landlord.id}`} />
-      </div>
+      {hasSearch && (
+        <div className="section-wrap" style={{ padding: '20px 20px 0' }}>
+          <FilterBar basePath={`/site/${landlord.id}`} />
+        </div>
+      )}
 
       {/* 房源列表 */}
       <section className="section-wrap" style={{ padding: '20px 20px 56px' }}>
