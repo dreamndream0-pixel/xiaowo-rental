@@ -9,6 +9,7 @@ export default function LoginClient() {
   const router = useRouter()
   const params = useSearchParams()
   const callbackUrl = params.get('callbackUrl') || '/account'
+  const authError = params.get('error')
 
   const [tab, setTab] = useState('email')
   const [form, setForm] = useState({ identifier: '', password: '' })
@@ -65,7 +66,11 @@ export default function LoginClient() {
           />
           <input value={form.password} onChange={up('password')} type="password" placeholder="密碼" required style={inputSt} />
 
-          {error && <div style={{ fontSize: 12, color: '#e53935', textAlign: 'center' }}>{error}</div>}
+          {(error || authError) && (
+            <div style={{ fontSize: 12, color: '#e53935', textAlign: 'center' }}>
+              {error || authErrorMessage(authError)}
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 12 }}>
             <Link href="/register" style={{ color: '#4E7153', textDecoration: 'none' }}>還沒有帳號？立即註冊</Link>
@@ -97,6 +102,16 @@ const OAuthBtn = ({ onClick, color, textColor, border, icon, label }) => (
     {label}
   </button>
 )
+
+function authErrorMessage(code) {
+  const messages = {
+    OAuthCallback: '第三方登入連線失敗，請確認 Google/LINE callback URL 與環境變數設定。',
+    OAuthAccountNotLinked: '這個 Email 已用其他方式註冊，請先用原本方式登入後再連結。',
+    AccessDenied: '授權未完成，請重新登入。',
+    Configuration: '登入設定尚未完成，請確認正式環境變數。',
+  }
+  return messages[code] || '第三方登入失敗，請稍後再試。'
+}
 
 const inputSt = { width: '100%', padding: '12px 14px', border: '1.5px solid #EDE8DF', borderRadius: 12, fontSize: 14, outline: 'none', fontFamily: 'inherit' }
 const primaryBtn = { padding: '13px 0', borderRadius: 12, border: 'none', background: '#4E7153', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%' }
