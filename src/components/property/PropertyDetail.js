@@ -685,74 +685,104 @@ export default function PropertyDetail({ property }) {
                 </div>
               </Link>
 
-              {/* 預約按鈕 */}
-              {isAvailable ? (
-                <button onClick={() => setBookingOpen(true)} style={{
-                  width: '100%', padding: 13, borderRadius: 'var(--radius-md)', marginBottom: 10,
-                  fontSize: 14, fontWeight: 800, letterSpacing: 1, cursor: 'pointer',
-                  background: 'var(--sage)', color: 'white', border: 'none',
-                  transition: 'background .15s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--sage-dark)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'var(--sage)'}
-                >
-                  📅 預約看房
-                </button>
-              ) : (
-                <div style={{
-                  width: '100%', padding: 13, borderRadius: 'var(--radius-md)', marginBottom: 10,
-                  fontSize: 13, fontWeight: 600, textAlign: 'center',
-                  background: 'var(--oat)', color: 'var(--gray-mid)',
-                }}>
-                  {property.status === 'RENTED' ? '此房源已出租' : '此房源暫不開放預約'}
-                </div>
-              )}
-
-              {/* LINE 詢問按鈕 */}
-              {lineInquiryUrl ? (
-                <a href={lineInquiryUrl} target="_blank" rel="noopener noreferrer" style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', padding: 13, borderRadius: 'var(--radius-md)',
-                  background: '#06C755', color: 'white', fontWeight: 700, fontSize: 14,
-                  textDecoration: 'none', boxSizing: 'border-box', transition: 'background .15s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#05a847'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#06C755'}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.89c.50 0 .866.35.866.87v4.71c0 .51-.366.87-.866.87H4.635c-.5 0-.866-.36-.866-.87V10.76c0-.52.366-.87.866-.87h14.73zM12 2C6.48 2 2 5.8 2 10.5c0 2.8 1.5 5.3 3.8 6.9l-.5 1.8 2.1-.9c.8.2 1.7.3 2.6.3 5.52 0 10-3.8 10-8.5S17.52 2 12 2z"/></svg>
-                  LINE 詢問房東
-                </a>
-              ) : (
-                <div style={{
-                  width: '100%', padding: 13, borderRadius: 'var(--radius-md)',
-                  background: 'var(--oat)', color: 'var(--gray-mid)', fontWeight: 600,
-                  fontSize: 13, textAlign: 'center', boxSizing: 'border-box',
-                }}>房東尚未設定 LINE 官方帳號</div>
-              )}
-
-              {/* 分享按鈕 */}
-              <button onClick={handleShare} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                width: '100%', padding: '11px 0', marginTop: 10,
-                borderRadius: 'var(--radius-md)', border: '1.5px solid var(--oat-mid)',
-                background: shareCopied ? '#F0F7F0' : 'white',
-                color: shareCopied ? 'var(--sage)' : 'var(--gray-mid)',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                transition: 'all .15s', boxSizing: 'border-box',
-              }}
-                onMouseEnter={e => { if (!shareCopied) e.currentTarget.style.background = 'var(--oat-light)' }}
-                onMouseLeave={e => { if (!shareCopied) e.currentTarget.style.background = 'white' }}
-              >
-                {shareCopied ? '✅ 連結已複製！' : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                    分享此房源
-                  </>
+              {/* 預約／LINE 詢問／分享 一排三顆，圖示做成圓形 */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                {/* 預約 */}
+                {isAvailable ? (
+                  <button onClick={() => setBookingOpen(true)} style={{
+                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: '10px 4px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 700, letterSpacing: 0.5,
+                    background: 'var(--sage)', color: 'white', border: 'none',
+                    transition: 'background .15s',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--sage-dark)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--sage)'}
+                  >
+                    <span style={{
+                      width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.22)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+                    }}>📅</span>
+                    預約
+                  </button>
+                ) : (
+                  <div style={{
+                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: '10px 4px', borderRadius: 'var(--radius-md)',
+                    fontSize: 12, fontWeight: 600,
+                    background: 'var(--oat)', color: 'var(--gray-mid)',
+                  }}>
+                    <span style={{
+                      width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.06)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+                    }}>📅</span>
+                    {property.status === 'RENTED' ? '已出租' : '不開放'}
+                  </div>
                 )}
-              </button>
+
+                {/* LINE 詢問 */}
+                {lineInquiryUrl ? (
+                  <a href={lineInquiryUrl} target="_blank" rel="noopener noreferrer" style={{
+                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: '10px 4px', borderRadius: 'var(--radius-md)',
+                    background: '#06C755', color: 'white', fontWeight: 700, fontSize: 12,
+                    textDecoration: 'none', boxSizing: 'border-box', transition: 'background .15s',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#05a847'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#06C755'}
+                  >
+                    <span style={{
+                      width: 30, height: 30, borderRadius: '50%', background: 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#06C755"><path d="M19.365 9.89c.50 0 .866.35.866.87v4.71c0 .51-.366.87-.866.87H4.635c-.5 0-.866-.36-.866-.87V10.76c0-.52.366-.87.866-.87h14.73zM12 2C6.48 2 2 5.8 2 10.5c0 2.8 1.5 5.3 3.8 6.9l-.5 1.8 2.1-.9c.8.2 1.7.3 2.6.3 5.52 0 10-3.8 10-8.5S17.52 2 12 2z"/></svg>
+                    </span>
+                    詢問
+                  </a>
+                ) : (
+                  <div style={{
+                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: '10px 4px', borderRadius: 'var(--radius-md)',
+                    background: 'var(--oat)', color: 'var(--gray-mid)', fontWeight: 600,
+                    fontSize: 12, boxSizing: 'border-box',
+                  }}>
+                    <span style={{
+                      width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.06)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--gray-mid)"><path d="M19.365 9.89c.50 0 .866.35.866.87v4.71c0 .51-.366.87-.866.87H4.635c-.5 0-.866-.36-.866-.87V10.76c0-.52.366-.87.866-.87h14.73zM12 2C6.48 2 2 5.8 2 10.5c0 2.8 1.5 5.3 3.8 6.9l-.5 1.8 2.1-.9c.8.2 1.7.3 2.6.3 5.52 0 10-3.8 10-8.5S17.52 2 12 2z"/></svg>
+                    </span>
+                    未設定
+                  </div>
+                )}
+
+                {/* 分享 */}
+                <button onClick={handleShare} style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                  padding: '10px 4px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--oat-mid)',
+                  background: shareCopied ? '#F0F7F0' : 'white',
+                  color: shareCopied ? 'var(--sage)' : 'var(--gray-mid)',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  transition: 'all .15s', boxSizing: 'border-box',
+                }}
+                  onMouseEnter={e => { if (!shareCopied) e.currentTarget.style.background = 'var(--oat-light)' }}
+                  onMouseLeave={e => { if (!shareCopied) e.currentTarget.style.background = 'white' }}
+                >
+                  <span style={{
+                    width: 30, height: 30, borderRadius: '50%',
+                    background: shareCopied ? 'rgba(78,113,83,0.12)' : 'var(--oat-light)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {shareCopied ? '✅' : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                      </svg>
+                    )}
+                  </span>
+                  {shareCopied ? '已複製' : '分享'}
+                </button>
+              </div>
 
               <hr style={{ border: 'none', borderTop: '1px solid var(--oat-mid)', margin: '16px 0' }} />
               <div style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', lineHeight: 1.8 }}>
