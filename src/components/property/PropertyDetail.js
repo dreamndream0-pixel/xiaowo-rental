@@ -732,10 +732,13 @@ export default function PropertyDetail({ property }) {
                     onMouseLeave={e => e.currentTarget.style.background = '#06C755'}
                   >
                     <span style={{
-                      width: 30, height: 30, borderRadius: '50%', background: 'white',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 30, height: 30, borderRadius: '50%', background: '#06C755',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#06C755"><path d="M19.365 9.89c.50 0 .866.35.866.87v4.71c0 .51-.366.87-.866.87H4.635c-.5 0-.866-.36-.866-.87V10.76c0-.52.366-.87.866-.87h14.73zM12 2C6.48 2 2 5.8 2 10.5c0 2.8 1.5 5.3 3.8 6.9l-.5 1.8 2.1-.9c.8.2 1.7.3 2.6.3 5.52 0 10-3.8 10-8.5S17.52 2 12 2z"/></svg>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path fill="white" d="M21 11.1c0-4.47-4.48-8.1-10-8.1S1 6.63 1 11.1c0 4.01 3.58 7.37 8.4 8.01.33.07.78.22.9.5.1.26.07.66.03.92l-.15.88c-.04.26-.21 1.02.89.56 1.1-.47 5.96-3.51 8.14-6.01C20.36 14.28 21 12.78 21 11.1z"/>
+                        <text x="6.1" y="13" fontSize="6.2" fontWeight="700" fill="#06C755" fontFamily="Arial,sans-serif">LINE</text>
+                      </svg>
                     </span>
                     詢問
                   </a>
@@ -747,10 +750,12 @@ export default function PropertyDetail({ property }) {
                     fontSize: 12, boxSizing: 'border-box',
                   }}>
                     <span style={{
-                      width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.06)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--gray-mid)"><path d="M19.365 9.89c.50 0 .866.35.866.87v4.71c0 .51-.366.87-.866.87H4.635c-.5 0-.866-.36-.866-.87V10.76c0-.52.366-.87.866-.87h14.73zM12 2C6.48 2 2 5.8 2 10.5c0 2.8 1.5 5.3 3.8 6.9l-.5 1.8 2.1-.9c.8.2 1.7.3 2.6.3 5.52 0 10-3.8 10-8.5S17.52 2 12 2z"/></svg>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path fill="var(--gray-mid)" d="M21 11.1c0-4.47-4.48-8.1-10-8.1S1 6.63 1 11.1c0 4.01 3.58 7.37 8.4 8.01.33.07.78.22.9.5.1.26.07.66.03.92l-.15.88c-.04.26-.21 1.02.89.56 1.1-.47 5.96-3.51 8.14-6.01C20.36 14.28 21 12.78 21 11.1z"/>
+                      </svg>
                     </span>
                     未設定
                   </div>
