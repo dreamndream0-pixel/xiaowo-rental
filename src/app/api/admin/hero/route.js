@@ -43,6 +43,14 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
+// 與後台共用的管理金鑰；接受 ?key= 或 Authorization: Bearer
+function isAuthorized(request) {
+  const adminKey = process.env.ADMIN_KEY
+  if (!adminKey) return false
+  const key = request.nextUrl.searchParams.get('key') || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+  return key === adminKey
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS })
 }
@@ -69,6 +77,9 @@ async function upsertSetting(key, value) {
 }
 
 export async function POST(request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: '無權限' }, { status: 401, headers: CORS })
+  }
   try {
     const body = await request.json()
     if (!Array.isArray(body.slides)) {
