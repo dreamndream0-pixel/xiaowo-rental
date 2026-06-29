@@ -54,7 +54,8 @@ export async function PUT(request) {
         },
       })
     } else {
-      const adminKey = 'LL-' + crypto.randomBytes(9).toString('base64url')
+      // 不在此產生 adminKey：明文金鑰寫入 DB 卻從未顯示給任何人看過，純粹是平白
+      // 多一份外洩風險。改由總管理員之後在後台用「重新產生金鑰」發給房東（會雜湊儲存）。
       const passwordHash = crypto.createHash('sha256')
         .update(crypto.randomBytes(6).toString('base64url')).digest('hex')
       landlord = await db.landlord.create({
@@ -63,7 +64,6 @@ export async function PUT(request) {
           email:    realEmail,
           phone:    user.phone || null,
           siteName: siteName,
-          adminKey,
           passwordHash,
         },
       })

@@ -70,8 +70,9 @@ model Landlord {
   phone         String?
   avatar        String?
 
-  // 後台存取金鑰（給 LINE Bot 後台用，類似之前的 ADMIN_KEY）
-  adminKey      String    @unique
+  // 後台存取金鑰：adminKey 為舊版明文欄位，登入成功後會遷移到 adminKeyHash 並清空
+  adminKey      String?   @unique
+  adminKeyHash  String?   @unique
 
   // 階段 B 預留：房東自己的 LINE Bot 設定
   lineChannelSecret      String?
@@ -103,6 +104,7 @@ model Landlord {
 
   @@index([email])
   @@index([adminKey])
+  @@index([adminKeyHash])
   @@map("landlords")
 }
 
@@ -518,7 +520,7 @@ model ManagedProperty {
   roomCount     Int       @default(1)  // 房間數
 
   // 委託類型與合約
-  manageType    String    // 'SUBLEASE'(包租) 或 'TRUST'(代管) 或 'HYBRID'(包租代管)
+  manageType    String    // 'SUBLEASE'(包租) 或 'TRUST'(代管)
   contractStart DateTime? // 合約起日
   contractEnd   DateTime? // 合約迄日
 
@@ -526,13 +528,13 @@ model ManagedProperty {
   leaseCost     Int       @default(0)
 
   // 代管服務費：feePercent 為百分比（N%）
-  feeType       String    @default("PERCENT")
+  feeType       String    @default("PERCENT")  // 'PERCENT'(抽成) 或 'FIXED'(固定)；目前代管固定用 PERCENT
   feePercent    Float     @default(10)          // 代管服務費 %
   feeFixed      Int       @default(0)           // 保留（舊欄位）
 
   // 包租服務費：類型(半個月/一個月/其他) + 其他自填金額
   subleaseFeeType  String?  // 'HALF_MONTH' / 'ONE_MONTH' / 'OTHER'
-  subleaseFeeOther Int      @default(0)
+  subleaseFeeOther Int      @default(0)  // subleaseFeeType=OTHER 時的金額
 
   // 預期租金收入（保留，目前表單已不顯示）
   expectedRent  Int       @default(0)
@@ -563,6 +565,10 @@ model ManagementRecord {
   id                 String          @id @default(cuid())
   managedPropertyId  String
   managedProperty    ManagedProperty @relation(fields: [managedPropertyId], references: [id], onDelete: Cascade)
+  leaseId            String?
+  lease              Lease?          @relation(fields: [leaseId], references: [id], onDelete: SetNull)
+  payoutId           String?
+  payout             OwnerPayout?    @relation(fields: [payoutId], references: [id], onDelete: SetNull)
 
   type        String    // 'INCOME'(收入：租金) 或 'EXPENSE'(支出：維修/雜支)
   category    String    // 'RENT'(租金) / 'REPAIR'(維修) / 'UTILITY'(水電) / 'OTHER'(其他)
@@ -572,6 +578,8 @@ model ManagementRecord {
   createdAt   DateTime  @default(now())
 
   @@index([managedPropertyId])
+  @@index([leaseId])
+  @@index([payoutId])
   @@index([recordDate])
   @@map("management_records")
 }
@@ -591,6 +599,7 @@ model OwnerPayout {
   paidDate    DateTime? // 撥款日期
   note        String?
   createdAt   DateTime  @default(now())
+  records     ManagementRecord[]
 
   @@unique([managedPropertyId, period])
   @@index([managedPropertyId])
@@ -616,6 +625,8 @@ model Lease {
   deposit       Int       @default(0)    // 押金
   payDay        Int?      // 每月付款日（1-31）
   payMethod     String?   // 付款方式
+  paymentCycle  String    @default("MONTHLY") // MONTHLY / BIMONTHLY / QUARTERLY / SEMIANNUAL / YEARLY
+  paymentDueMode String   @default("FIXED_DAY") // FIXED_DAY / CONTRACT_START
   leaseStart    DateTime? // 租約起日
   leaseEnd      DateTime? // 租約迄日
 
@@ -644,9 +655,60 @@ model Lease {
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  records       ManagementRecord[]
+  utilityReadings UtilityReading[]
+  rentPayments  RentPayment[]
 
   @@index([managedPropertyId])
   @@index([leaseEnd])
   @@index([status])
   @@map("leases")
+}
+
+model RentPayment {
+  id          String   @id @default(cuid())
+  leaseId     String
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  recordId    String?
+
+  periodStart DateTime
+  periodEnd   DateTime
+  dueDate     DateTime
+  amount      Int      @default(0)
+  paidAmount  Int      @default(0)
+  paidDate    DateTime?
+  payMethod   String?
+  receiptUrl  String?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([leaseId])
+  @@index([dueDate])
+  @@map("rent_payments")
+}
+
+model UtilityReading {
+  id          String   @id @default(cuid())
+  leaseId     String
+  lease       Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  startDate   DateTime?
+  startDegree Int      @default(0)
+  endDate     DateTime
+  endDegree   Int
+  usedDegree  Int      @default(0)
+  rate        Float    @default(0)
+  amount      Int      @default(0)
+  dueDate     DateTime?
+  paidAmount  Int      @default(0)
+  paidDate    DateTime?
+  payMethod   String?
+  receiptUrl  String?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([leaseId])
+  @@index([endDate])
+  @@map("utility_readings")
 }
