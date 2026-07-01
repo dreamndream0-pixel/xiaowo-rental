@@ -71,7 +71,7 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
 
       {/* Image */}
       <Link href={propertyHref} style={{ textDecoration: 'none' }} onClick={() => setLoading(true)}>
-        <div style={{ height: 190, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
+        <div style={{ height: 220, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
           {coverUrl ? (
             <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
           ) : (
