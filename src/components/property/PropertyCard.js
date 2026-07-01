@@ -73,7 +73,7 @@ export default function PropertyCard({ property, detailHref, initialFaved = fals
       <Link href={propertyHref} style={{ textDecoration: 'none' }} onClick={() => setLoading(true)}>
         <div style={{ height: 220, position: 'relative', background: 'var(--oat)', overflow: 'hidden' }}>
           {coverUrl ? (
-            <Image src={coverUrl} alt={title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+            <Image src={coverUrl} alt={title} fill style={{ objectFit: 'contain' }} sizes="(max-width: 768px) 100vw, 33vw" />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--gray-light)', fontSize: 12 }}>
               <svg width="44" height="44" viewBox="0 0 100 100" fill="none" aria-hidden="true">
