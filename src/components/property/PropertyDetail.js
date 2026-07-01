@@ -382,7 +382,7 @@ export default function PropertyDetail({ property }) {
           <div className="property-gallery" style={{
             display: 'grid',
             gridTemplateColumns: images.length >= 3 ? '1.6fr 1fr' : '1fr',
-            gap: 8, height: 340, borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+            gap: 8, height: 460, borderRadius: 'var(--radius-lg)', overflow: 'hidden',
           }}>
             <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => { setCurrentImg(0); setLightboxOpen(true) }}>
               <Image src={images[0].url} alt={property.title} fill style={{ objectFit: 'cover' }} priority />
@@ -394,20 +394,24 @@ export default function PropertyDetail({ property }) {
               }}>🔍 共 {images.length} 張・點擊查看</div>
             </div>
             {images.length >= 3 && (
-              <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 8 }}>
-                {images.slice(1, 3).map((img, i) => (
-                  <div key={i} style={{ position: 'relative', cursor: 'zoom-in' }}
-                    onClick={() => { setCurrentImg(i + 1); setLightboxOpen(true) }}>
-                    <Image src={img.url} alt={`照片 ${i + 2}`} fill style={{ objectFit: 'cover' }} loading="lazy" />
-                    {i === 1 && images.length > 3 && (
-                      <div style={{
-                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'white', fontSize: 18, fontWeight: 700,
-                      }}>+{images.length - 3} 張</div>
-                    )}
-                  </div>
-                ))}
+              <div style={{ display: 'grid', gridTemplateRows: images.length >= 5 ? '1fr 1fr' : '1fr 1fr', gridTemplateColumns: images.length >= 5 ? '1fr 1fr' : '1fr', gap: 8 }}>
+                {images.slice(1, images.length >= 5 ? 5 : 3).map((img, i) => {
+                  const showOverlay = images.length >= 5 ? (i === 3 && images.length > 5) : (i === 1 && images.length > 3)
+                  const remainCount = images.length >= 5 ? images.length - 5 : images.length - 3
+                  return (
+                    <div key={i} style={{ position: 'relative', cursor: 'zoom-in' }}
+                      onClick={() => { setCurrentImg(i + 1); setLightboxOpen(true) }}>
+                      <Image src={img.url} alt={`照片 ${i + 2}`} fill style={{ objectFit: 'cover' }} loading="lazy" />
+                      {showOverlay && remainCount > 0 && (
+                        <div style={{
+                          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: 'white', fontSize: 18, fontWeight: 700,
+                        }}>+{remainCount} 張</div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
             {images.length === 2 && (
