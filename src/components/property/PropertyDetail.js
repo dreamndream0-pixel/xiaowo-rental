@@ -305,6 +305,7 @@ export default function PropertyDetail({ property }) {
   const images = property.images ?? []
   const amenities = property.amenities?.map(a => a.name) ?? []
   const lineInquiryUrl = property.lineUrl || null
+  const lineTarget = lineInquiryUrl?.startsWith('line://') ? undefined : '_blank'
 
   const isAvailable = property.status === 'AVAILABLE'
 
@@ -719,7 +720,7 @@ export default function PropertyDetail({ property }) {
 
                 {/* LINE 詢問 */}
                 {lineInquiryUrl ? (
-                  <a href={lineInquiryUrl} target="_blank" rel="noopener noreferrer" style={{
+                  <a href={lineInquiryUrl} target={lineTarget} rel="noopener noreferrer" style={{
                     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                     padding: '10px 4px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--oat-mid)',
                     background: 'white', color: '#06C755', fontWeight: 700, fontSize: 12,
@@ -786,7 +787,7 @@ export default function PropertyDetail({ property }) {
 
       {/* 固定 LINE 浮動按鈕（手機版） */}
       {lineInquiryUrl && (
-        <a href={lineInquiryUrl} target="_blank" rel="noopener noreferrer" style={{
+        <a href={lineInquiryUrl} target={lineTarget} rel="noopener noreferrer" style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 100,
           background: '#06C755', color: 'white',
           width: 56, height: 56, borderRadius: '50%',

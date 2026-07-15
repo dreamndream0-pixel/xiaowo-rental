@@ -316,13 +316,14 @@ function TenantZoneContent({ tenant }) {
                 📞 撥打電話
               </a>
             )}
-            {(tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId) && (
-              <a href={buildLineContactUrl(tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId)}
-                target="_blank" rel="noreferrer"
+            {(tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId) && (() => {
+              const lineHref = buildLineContactUrl(tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId)
+              return <a href={lineHref}
+                target={lineHref?.startsWith('line://') ? undefined : '_blank'} rel="noreferrer"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 99, background: '#EDFAF1', color: '#06C755', fontSize: 14, fontWeight: 600, textDecoration: 'none', border: '1.5px solid #06C75544' }}>
                 💬 LINE 聯絡
               </a>
-            )}
+            })()}
           </div>
         </Section>
       )}
