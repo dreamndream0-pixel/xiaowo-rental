@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { buildLineContactUrl } from '@/lib/lineContact'
 
 const TABS = [
   { id: 'zone',      label: '🏠 租客專區' },
@@ -316,7 +317,7 @@ function TenantZoneContent({ tenant }) {
               </a>
             )}
             {(tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId) && (
-              <a href={`https://line.me/R/ti/p/${tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId}`}
+              <a href={buildLineContactUrl(tenant.landlord?.lineOfficialId || property?.owner?.lineOfficialId)}
                 target="_blank" rel="noreferrer"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 99, background: '#EDFAF1', color: '#06C755', fontSize: 14, fontWeight: 600, textDecoration: 'none', border: '1.5px solid #06C75544' }}>
                 💬 LINE 聯絡

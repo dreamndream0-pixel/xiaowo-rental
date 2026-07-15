@@ -9,6 +9,7 @@ import Footer from '@/components/layout/Footer'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import PropertyDetail from '@/components/property/PropertyDetail'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
+import { buildLineContactUrl } from '@/lib/lineContact'
 
 // React.cache：同一 request 內 generateMetadata 和頁面只打一次 DB
 const getProperty = cache(async (id) => {
@@ -106,9 +107,7 @@ export default async function PropertyPage({ params, searchParams }) {
     ? property.owner : null
 
   const lineMessage = `您好，我想詢問房源：${property.title}`
-  const lineUrl = lineOfficialId
-    ? `https://line.me/R/oaMessage/${encodeURIComponent(lineOfficialId)}/?${encodeURIComponent(lineMessage)}`
-    : null
+  const lineUrl = buildLineContactUrl(lineOfficialId, lineMessage)
 
   const { owner, ...safeProperty } = property
   safeProperty.ownerSiteName   = owner?.siteName || null
