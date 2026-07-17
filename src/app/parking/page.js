@@ -276,10 +276,10 @@ export default function ParkingPage() {
               onKeyDown={(e) => e.key === 'Enter' && enterVehicle()}
               style={{ flex: '1 1 200px', padding: '12px 14px', fontSize: 16, border: '1px solid #cbd5e1', borderRadius: 10, letterSpacing: 1, fontWeight: 600 }}
             />
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onPickPhoto} style={{ display: 'none' }} id="plate-photo" />
+            <input ref={fileRef} type="file" accept="image/*" onChange={onPickPhoto} style={{ display: 'none' }} id="plate-photo" />
             <label htmlFor="plate-photo"
               style={{ padding: '12px 16px', border: '1px dashed #94a3b8', borderRadius: 10, cursor: 'pointer', color: '#475569', fontSize: 14, whiteSpace: 'nowrap' }}>
-              {uploading ? '上傳中…' : recognizing ? '🔍 辨識中…' : photoUrl ? '✅ 已附照片' : '📷 拍/傳車牌照'}
+              {uploading ? '上傳中…' : recognizing ? '🔍 辨識中…' : photoUrl ? '✅ 已附照片（可換）' : '📷 拍照或選相簿'}
             </label>
             {photoUrl && <img src={photoUrl} alt="車牌" style={{ width: 54, height: 40, objectFit: 'cover', borderRadius: 6 }} />}
             <button onClick={enterVehicle} disabled={entering}
