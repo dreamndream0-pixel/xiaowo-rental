@@ -16,6 +16,7 @@ export async function PATCH(request, { params }) {
     if (body.hourlyRate !== undefined) data.hourlyRate = Math.max(0, parseInt(body.hourlyRate) || 0)
     if (body.freeMinutes !== undefined) data.freeMinutes = Math.max(0, parseInt(body.freeMinutes) || 0)
     if (body.dailyMax !== undefined) data.dailyMax = Math.max(0, parseInt(body.dailyMax) || 0)
+    if (body.payUrl !== undefined) data.payUrl = String(body.payUrl).trim() || null
 
     const lot = await db.parkingLot.update({ where: { id: params.id }, data })
     return NextResponse.json(lot)
