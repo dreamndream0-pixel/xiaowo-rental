@@ -248,6 +248,49 @@ export default function ParkingPage() {
     if (n) { flash(`已批次進場 ${n} 台`); reload(lotId) }
   }
 
+  // 呼叫 RTD 查詢金額
+  const queryFees = async (plates) => {
+    try {
+      const res = await fetch('/api/parking/query-fee', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plates }),
+      })
+      const data = await res.json()
+      if (!res.ok) { flash(data.error || '查金額失敗'); return [] }
+      return data.results || []
+    } catch { flash('查金額失敗'); return [] }
+  }
+
+  const queryFeeItem = async (it) => {
+    if (!it.plate.trim()) { flash('請先填車牌'); return }
+    updateBatch(it.id, { fee: { loading: true } })
+    const [r] = await queryFees([it.plate])
+    updateBatch(it.id, { fee: { loading: false, ...(r || { ok: false, error: '無回應' }) } })
+  }
+
+  const queryAllFees = async () => {
+    const items = batch.filter((x) => x.plate.trim())
+    if (!items.length) return
+    items.forEach((it) => updateBatch(it.id, { fee: { loading: true } }))
+    const results = await queryFees(items.map((x) => x.plate))
+    const byPlate = {}
+    results.forEach((r) => { byPlate[String(r.plate).toUpperCase()] = r })
+    setBatch((prev) => prev.map((x) => {
+      const r = byPlate[x.plate.trim().toUpperCase()]
+      return r ? { ...x, fee: { loading: false, ...r } } : (x.fee?.loading ? { ...x, fee: { loading: false, ok: false, error: '無回應' } } : x)
+    }))
+    flash('查金額完成')
+  }
+
+  // 把 fee 結果轉成顯示文字/顏色
+  const feeLabel = (fee) => {
+    if (!fee) return null
+    if (fee.loading) return { text: '查詢中…', color: '#64748b' }
+    if (fee.ok === false) return { text: `⚠ ${fee.error || '查詢失敗'}`, color: '#dc2626' }
+    if (fee.unknown) return { text: '⚠ 回應格式需確認', color: '#b45309' }
+    if (fee.owing) return { text: `待繳 ${money(fee.amount)}（${fee.count} 筆）`, color: '#b45309' }
+    return { text: '✓ 無待繳', color: '#15803d' }
+  }
+
   // 車輛進場
   const enterVehicle = async () => {
     if (!plate.trim()) return flash('請輸入車牌')
@@ -404,9 +447,16 @@ export default function ParkingPage() {
                     placeholder={it.recognizing ? '辨識中…' : '未辨識，可手動填'}
                     style={{ flex: '1 1 130px', minWidth: 110, padding: '10px 12px', fontSize: 15, fontWeight: 700, letterSpacing: 1, border: '1px solid #cbd5e1', borderRadius: 8 }}
                   />
-                  <button onClick={() => openPay(it.plate)}
+                  {(() => { const f = feeLabel(it.fee); return f ? (
+                    <span style={{ fontSize: 13, fontWeight: 700, color: f.color, whiteSpace: 'nowrap' }}>{f.text}</span>
+                  ) : null })()}
+                  <button onClick={() => queryFeeItem(it)}
                     style={{ padding: '9px 14px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    🔗 查繳費
+                    💰 查金額
+                  </button>
+                  <button onClick={() => openPay(it.plate)} title="開啟繳費網站（車牌自動複製）"
+                    style={{ padding: '9px 11px', background: '#fff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    🔗
                   </button>
                   <button onClick={() => enterBatchItem(it).then((ok) => ok && (flash(`${it.plate} 已進場`), reload(lotId)))}
                     style={{ padding: '9px 14px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -416,10 +466,16 @@ export default function ParkingPage() {
                     style={{ padding: '9px 10px', background: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, cursor: 'pointer' }}>✕</button>
                 </div>
               ))}
-              <button onClick={enterAllBatch}
-                style={{ alignSelf: 'flex-start', marginTop: 4, padding: '10px 20px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
-                全部進場（{batch.filter((x) => x.plate.trim()).length} 台）
-              </button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                <button onClick={queryAllFees}
+                  style={{ padding: '10px 20px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
+                  💰 全部查金額
+                </button>
+                <button onClick={enterAllBatch}
+                  style={{ padding: '10px 20px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
+                  全部進場（{batch.filter((x) => x.plate.trim()).length} 台）
+                </button>
+              </div>
             </div>
           )}
         </section>
