@@ -41,6 +41,8 @@ export async function ensureParkingTables() {
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_sessions_lot_idx ON parking_sessions ("lotId")`)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_sessions_plate_idx ON parking_sessions (plate)`)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_sessions_exit_idx ON parking_sessions ("exitAt")`)
+    // 後加欄位：繳費網站網址
+    await db.$queryRawUnsafe(`ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS "payUrl" TEXT`)
   } catch (e) {
     console.error('ensureParkingTables error:', e?.message)
   }

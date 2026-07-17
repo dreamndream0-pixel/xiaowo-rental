@@ -728,6 +728,7 @@ model ParkingLot {
   hourlyRate  Int      @default(30)          // 每小時費率（元）
   freeMinutes Int      @default(0)           // 免費停車分鐘數
   dailyMax    Int      @default(0)           // 單日收費上限（0 = 無上限）
+  payUrl      String?                        // 繳費網站網址（辨識後跳轉查金額）
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
