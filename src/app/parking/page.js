@@ -15,6 +15,35 @@ function durationLabel(entryAt, until) {
   return h === 0 ? `${m} 分` : `${h} 時 ${m} 分`
 }
 
+// 在瀏覽器端壓縮圖片：縮到最長邊 1280px、JPEG 品質 0.72
+// 回傳 { blob, dataUrl }，避免手機大照片超過伺服器上傳上限
+async function compressImage(file, maxSize = 1280, quality = 0.72) {
+  const src = await new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result)
+    r.onerror = reject
+    r.readAsDataURL(file)
+  })
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image()
+    i.onload = () => resolve(i)
+    i.onerror = reject
+    i.src = src
+  })
+  let { width, height } = img
+  if (width > maxSize || height > maxSize) {
+    if (width >= height) { height = Math.round((height * maxSize) / width); width = maxSize }
+    else { width = Math.round((width * maxSize) / height); height = maxSize }
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+  const dataUrl = canvas.toDataURL('image/jpeg', quality)
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+  return { blob: blob || file, dataUrl }
+}
+
 // ── 統計卡片 ──────────────────────────────────────
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -90,20 +119,33 @@ export default function ParkingPage() {
     return () => clearInterval(t)
   }, [lotId, reload])
 
-  // 上傳車牌照片
+  // 上傳車牌照片（先壓縮 → 上雲端；失敗則直接把壓縮圖存進資料庫）
   const onPickPhoto = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.url) { setPhotoUrl(data.url); flash('照片已上傳') }
-      else flash(data.error || '上傳失敗')
-    } catch { flash('上傳失敗') }
-    finally { setUploading(false) }
+      // 1. 瀏覽器端壓縮，避免手機大照片超過伺服器上傳上限
+      let compressed = null
+      try { compressed = await compressImage(file) } catch { /* 壓縮失敗就用原檔 */ }
+      const blob = compressed?.blob || file
+      const dataUrl = compressed?.dataUrl || null
+
+      // 2. 優先上傳到雲端圖庫
+      try {
+        const fd = new FormData()
+        fd.append('file', blob, 'plate.jpg')
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.url) { setPhotoUrl(data.url); flash('照片已上傳'); return }
+        }
+      } catch { /* 雲端失敗 → 走本地存檔 */ }
+
+      // 3. 保險：雲端失敗就用壓縮後的圖片直接存檔（存進資料庫）
+      if (dataUrl) { setPhotoUrl(dataUrl); flash('照片已存檔') }
+      else flash('照片上傳失敗，請再試一次')
+    } finally { setUploading(false) }
   }
 
   // 車輛進場
