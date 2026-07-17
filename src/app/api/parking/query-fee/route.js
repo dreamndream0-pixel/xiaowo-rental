@@ -36,7 +36,11 @@ async function queryOne(plate) {
       // 避免長時間卡住
       signal: AbortSignal.timeout(12000),
     })
-    if (!res.ok) return { plate, ok: false, error: `RTD 回應 ${res.status}` }
+    if (!res.ok) {
+      // 帶回 RTD 的錯誤內容，方便判斷缺什麼欄位
+      const detail = (await res.text().catch(() => '')).replace(/\s+/g, ' ').trim().slice(0, 200)
+      return { plate, ok: false, error: `RTD 回應 ${res.status}`, detail }
+    }
     const data = await res.json().catch(() => null)
     if (!data) return { plate, ok: false, error: '回應解析失敗' }
 

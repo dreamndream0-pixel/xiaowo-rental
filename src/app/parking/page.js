@@ -285,7 +285,7 @@ export default function ParkingPage() {
   const feeLabel = (fee) => {
     if (!fee) return null
     if (fee.loading) return { text: '查詢中…', color: '#64748b' }
-    if (fee.ok === false) return { text: `⚠ ${fee.error || '查詢失敗'}`, color: '#dc2626' }
+    if (fee.ok === false) return { text: `⚠ ${fee.error || '查詢失敗'}${fee.detail ? '：' + fee.detail : ''}`, color: '#dc2626' }
     if (fee.unknown) return { text: '⚠ 回應格式需確認', color: '#b45309' }
     if (fee.owing) return { text: `待繳 ${money(fee.amount)}（${fee.count} 筆）`, color: '#b45309' }
     return { text: '✓ 無待繳', color: '#15803d' }
@@ -448,7 +448,7 @@ export default function ParkingPage() {
                     style={{ flex: '1 1 130px', minWidth: 110, padding: '10px 12px', fontSize: 15, fontWeight: 700, letterSpacing: 1, border: '1px solid #cbd5e1', borderRadius: 8 }}
                   />
                   {(() => { const f = feeLabel(it.fee); return f ? (
-                    <span style={{ fontSize: 13, fontWeight: 700, color: f.color, whiteSpace: 'nowrap' }}>{f.text}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: f.color, maxWidth: 260, overflowWrap: 'anywhere' }}>{f.text}</span>
                   ) : null })()}
                   <button onClick={() => queryFeeItem(it)}
                     style={{ padding: '9px 14px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
