@@ -89,6 +89,8 @@ export default function ParkingPage() {
   // 批次車牌辨識
   const [batch, setBatch] = useState([]) // [{ id, file, dataUrl, photoUrl, plate, recognizing }]
   const batchRef = useRef(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const pdfRef = useRef(null)
 
   const lot = lots.find((l) => l.id === lotId)
 
@@ -191,6 +193,28 @@ export default function ParkingPage() {
     setBatch((prev) => [...prev, ...items])
     if (batchRef.current) batchRef.current.value = ''
     for (const it of items) await processBatchItem(it) // 依序處理，避免同時太多請求
+  }
+
+  // 上傳車牌 PDF → 分析出所有車牌 → 加入批次清單
+  const onPickPdf = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (pdfRef.current) pdfRef.current.value = ''
+    setPdfLoading(true)
+    flash('分析 PDF 中…')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/parking/extract-pdf', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok && Array.isArray(data.plates) && data.plates.length) {
+        const items = data.plates.map((p) => ({ id: `${Date.now()}-${Math.random()}`, dataUrl: '', photoUrl: '', plate: p, recognizing: false }))
+        setBatch((prev) => [...prev, ...items])
+        flash(`已從 PDF 讀取 ${data.plates.length} 個車牌`)
+      } else if (res.ok) flash('PDF 中找不到車牌')
+      else flash(data.error || 'PDF 分析失敗')
+    } catch { flash('PDF 分析失敗') }
+    finally { setPdfLoading(false) }
   }
 
   const processBatchItem = async (it) => {
@@ -402,53 +426,6 @@ export default function ParkingPage() {
           <div style={{ width: `${Math.min(100, util)}%`, height: '100%', background: util >= 90 ? '#dc2626' : util >= 70 ? '#d97706' : '#16a34a', transition: 'width .3s' }} />
         </div>
 
-        {/* 車輛進場 */}
-        <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
-          <h2 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700 }}>🚗 車輛進場登記</h2>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input
-              value={plate}
-              onChange={(e) => { setPlate(e.target.value.toUpperCase()); setSingleFee(null) }}
-              placeholder={recognizing ? '辨識車牌中…' : '車牌（拍照自動辨識，或手動輸入）'}
-              onKeyDown={(e) => e.key === 'Enter' && enterVehicle()}
-              style={{ flex: '1 1 200px', padding: '12px 14px', fontSize: 16, border: '1px solid #cbd5e1', borderRadius: 10, letterSpacing: 1, fontWeight: 600 }}
-            />
-            <input ref={fileRef} type="file" accept="image/*" onChange={onPickPhoto} style={{ display: 'none' }} id="plate-photo" />
-            <label htmlFor="plate-photo"
-              style={{ padding: '12px 16px', border: '1px dashed #94a3b8', borderRadius: 10, cursor: 'pointer', color: '#475569', fontSize: 14, whiteSpace: 'nowrap' }}>
-              {uploading ? '上傳中…' : recognizing ? '🔍 辨識中…' : photoUrl ? '✅ 已附照片（可換）' : '📷 拍照或選相簿'}
-            </label>
-            {photoUrl && <img src={photoUrl} alt="車牌" style={{ width: 54, height: 40, objectFit: 'cover', borderRadius: 6 }} />}
-            <button onClick={enterVehicle} disabled={entering}
-              style={{ padding: '12px 24px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              {entering ? '登記中…' : '進場 →'}
-            </button>
-          </div>
-
-          {/* 查繳費金額（單筆）*/}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12, flexWrap: 'wrap' }}>
-            <button onClick={queryFeeSingle}
-              style={{ padding: '10px 16px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              💰 查繳費金額
-            </button>
-            <button onClick={() => openPay(plate)} title="開啟繳費網站（車牌自動複製）"
-              style={{ padding: '10px 14px', background: '#fff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 10, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              🔗 開繳費網站
-            </button>
-            {(() => { const f = feeLabel(singleFee); return f ? (
-              <span style={{ fontSize: 14, fontWeight: 700, color: f.color, maxWidth: 300, overflowWrap: 'anywhere' }}>{f.text}</span>
-            ) : null })()}
-          </div>
-
-          {lot && (
-            <p style={{ margin: '10px 0 0', fontSize: 12, color: '#94a3b8' }}>
-              費率：每小時 {money(lot.hourlyRate)}
-              {lot.freeMinutes > 0 && `・前 ${lot.freeMinutes} 分免費`}
-              {lot.dailyMax > 0 && `・單日上限 ${money(lot.dailyMax)}`}
-            </p>
-          )}
-        </section>
-
         {/* 批次車牌辨識 */}
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
@@ -458,12 +435,17 @@ export default function ParkingPage() {
               style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
               ＋ 選多張車牌照片
             </label>
+            <input ref={pdfRef} type="file" accept="application/pdf" onChange={onPickPdf} style={{ display: 'none' }} id="batch-pdf" />
+            <label htmlFor="batch-pdf"
+              style={{ padding: '8px 16px', background: '#0369a1', color: '#fff', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+              {pdfLoading ? '分析中…' : '📄 上傳車牌 PDF'}
+            </label>
             {batch.length > 0 && (
               <button onClick={() => setBatch([])} style={{ padding: '8px 12px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer', fontSize: 13 }}>清空</button>
             )}
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#94a3b8' }}>
-            一次選多張車牌照片 → 自動辨識車牌 → 按「查繳費」開繳費網站（車牌自動複製，貼上即可查金額）→ 可批次進場
+            上傳車牌 PDF 或多張照片 → 自動辨識出車牌 → 按「💰 查金額」查各車牌待繳金額（或全部查金額）
           </p>
 
           {batch.length > 0 && (
