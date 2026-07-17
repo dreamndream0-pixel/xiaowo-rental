@@ -226,7 +226,7 @@ export default function ParkingPage() {
         flash(`已匯入 ${data.reportDate}：${data.count} 台、待繳 ${money(data.total)}`)
         setOpenDay(null)
         loadReportDays()
-      } else flash(data.error || '匯入失敗')
+      } else flash(`${data.error || '匯入失敗'}${data.detail ? '：' + data.detail : ''}`)
     } catch { flash('匯入失敗') }
     finally { setImporting(false) }
   }
