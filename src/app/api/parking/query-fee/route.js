@@ -8,7 +8,7 @@ export const maxDuration = 60
 const RTD_URL = 'https://api.rtd.com.tw/api/general/payment/search'
 
 // 從單筆 paymentTask 防呆抓出金額（欄位名未知，依常見命名優先序比對）
-const AMOUNT_KEYS = ['amount', 'payAmount', 'amountDue', 'unpaidAmount', 'fee', 'totalAmount', 'total', 'price', 'money', 'charge']
+const AMOUNT_KEYS = ['actualPrice', 'amount', 'payAmount', 'amountDue', 'unpaidAmount', 'fee', 'totalAmount', 'total', 'price', 'money', 'charge']
 function taskAmount(task) {
   if (!task || typeof task !== 'object') return 0
   for (const k of AMOUNT_KEYS) {
