@@ -739,6 +739,19 @@ model ParkingLot {
   @@map("parking_lots")
 }
 
+// 每日繳費報表匯入的待繳紀錄
+model FeeRecord {
+  id         String   @id @default(cuid())
+  reportDate String              // 報表資料日期 'YYYY-MM-DD'
+  plate      String              // 車牌
+  entryAt    String?             // 入場/開始計費時間（原字串）
+  amount     Int      @default(0) // 應繳金額
+  createdAt  DateTime @default(now())
+
+  @@index([reportDate])
+  @@map("parking_fee_records")
+}
+
 // 每一筆車輛進出紀錄
 model ParkingSession {
   id         String     @id @default(cuid())
