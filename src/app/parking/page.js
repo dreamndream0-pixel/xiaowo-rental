@@ -46,6 +46,9 @@ async function compressImage(file, maxSize = 1280, quality = 0.72) {
 
 // 預設繳費網站（可於設定變更）
 const DEFAULT_PAY_URL = 'https://api.rtd.com.tw/scan_to_pay/entrance/PSS_HA511?utm_source=Offline&utm_medium=banner&utm_campaign=QRcode&utm_id=PSS_HA511'
+// 預設 RTD 查詢參數（可於設定變更）
+const DEFAULT_VENDOR_ID = '1'
+const DEFAULT_SCAN_CODE = 'gkM0VK1oICQkfBwl'
 
 // ── 統計卡片 ──────────────────────────────────────
 function StatCard({ label, value, sub, accent }) {
@@ -253,7 +256,12 @@ export default function ParkingPage() {
   const queryFees = async (plates) => {
     try {
       const res = await fetch('/api/parking/query-fee', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plates }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plates,
+          siteVendorId: lot?.rtdVendorId || DEFAULT_VENDOR_ID,
+          scanCode: lot?.rtdScanCode || DEFAULT_SCAN_CODE,
+        }),
       })
       const data = await res.json()
       if (!res.ok) { flash(data.error || '查金額失敗'); return [] }
@@ -592,6 +600,7 @@ function SettingsModal({ lots, lotId, onClose, onSaved, flash }) {
     name: cur?.name || '', totalSpaces: cur?.totalSpaces || 100,
     hourlyRate: cur?.hourlyRate || 30, freeMinutes: cur?.freeMinutes || 0, dailyMax: cur?.dailyMax || 0,
     payUrl: cur?.payUrl || '',
+    rtdVendorId: cur?.rtdVendorId || '', rtdScanCode: cur?.rtdScanCode || '',
   })
   const [saving, setSaving] = useState(false)
   const [newName, setNewName] = useState('')
@@ -648,9 +657,21 @@ function SettingsModal({ lots, lotId, onClose, onSaved, flash }) {
           {field('免費停車時間', 'freeMinutes', '分鐘')}
           {field('單日收費上限（0 = 無上限）', 'dailyMax', '元')}
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: '#475569' }}>
-            繳費網站網址（批次辨識後「查繳費」會開這個網站）
+            繳費網站網址（「開繳費網站」會開這個）
             <input value={form.payUrl} onChange={(e) => set('payUrl', e.target.value)}
               placeholder="留空則用預設 RTD 繳費連結"
+              style={{ padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13 }} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: '#475569' }}>
+            RTD 廠商代碼 siteVendorId（查金額用）
+            <input value={form.rtdVendorId} onChange={(e) => set('rtdVendorId', e.target.value)}
+              placeholder={`留空則用預設 ${DEFAULT_VENDOR_ID}`}
+              style={{ padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13 }} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: '#475569' }}>
+            RTD 入口掃碼代碼 scanCode（查金額用）
+            <input value={form.rtdScanCode} onChange={(e) => set('rtdScanCode', e.target.value)}
+              placeholder="留空則用預設值"
               style={{ padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13 }} />
           </label>
         </div>
