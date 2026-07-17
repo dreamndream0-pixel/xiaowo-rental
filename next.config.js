@@ -4,6 +4,10 @@ const nextConfig = {
     instrumentationHook: true,
     // pdf-parse(pdfjs) 需從 node_modules 載入（含 worker），不要打包進 bundle
     serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+    // 強制把 pdf-parse 完整檔案（含動態載入的 pdfjs worker）打包進該 API 的 serverless function
+    outputFileTracingIncludes: {
+      '/api/parking/import-report': ['./node_modules/pdf-parse/**/*'],
+    },
   },
   images: {
     remotePatterns: [

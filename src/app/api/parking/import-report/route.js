@@ -22,7 +22,8 @@ export async function POST(request) {
       parsed = await parseFeeReport(buffer)
     } catch (e) {
       console.error('parseFeeReport error:', e?.message)
-      return NextResponse.json({ error: 'PDF 解析失敗，請確認是繳費查詢分析報表' }, { status: 400 })
+      const detail = String(e?.message || e).slice(0, 200)
+      return NextResponse.json({ error: 'PDF 解析失敗', detail }, { status: 400 })
     }
 
     // 日期可由前端覆寫（表單 reportDate），否則用解析出來的
@@ -45,6 +46,6 @@ export async function POST(request) {
     return NextResponse.json({ reportDate, count: parsed.rows.length, total })
   } catch (e) {
     console.error('POST /api/parking/import-report error:', e?.message)
-    return NextResponse.json({ error: '匯入失敗，請稍後再試' }, { status: 500 })
+    return NextResponse.json({ error: '匯入失敗', detail: String(e?.message || e).slice(0, 200) }, { status: 500 })
   }
 }
