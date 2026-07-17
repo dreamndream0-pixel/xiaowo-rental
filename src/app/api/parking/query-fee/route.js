@@ -6,6 +6,9 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const RTD_URL = 'https://api.rtd.com.tw/api/general/payment/search'
+// 預設 RTD 查詢參數（可由停車場設定覆寫）
+const DEFAULT_VENDOR_ID = '1'
+const DEFAULT_SCAN_CODE = 'gkM0VK1oICQkfBwl'
 
 // 從單筆 paymentTask 防呆抓出金額（欄位名未知，依常見命名優先序比對）
 const AMOUNT_KEYS = ['actualPrice', 'amount', 'payAmount', 'amountDue', 'unpaidAmount', 'fee', 'totalAmount', 'total', 'price', 'money', 'charge']
@@ -20,19 +23,25 @@ function taskAmount(task) {
 }
 
 // 查詢單一車牌
-async function queryOne(plate) {
+async function queryOne(plate, vendorId, scanCode) {
   try {
     const res = await fetch(RTD_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        'X-Language': 'zh-TW',
         // 模擬瀏覽器請求，降低被 RTD 防機器人擋下的機率
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         Origin: 'https://api.rtd.com.tw',
         Referer: 'https://api.rtd.com.tw/scan_to_pay/entrance/PSS_HA511',
       },
-      body: JSON.stringify({ plateNumber: plate }),
+      body: JSON.stringify({
+        siteVendorId: vendorId,
+        plateNumber: plate,
+        vendorParams: { scanCode },
+        lang: 'zh-TW',
+      }),
       // 避免長時間卡住
       signal: AbortSignal.timeout(12000),
     })
@@ -77,10 +86,13 @@ export async function POST(request) {
 
     if (!list.length) return NextResponse.json({ error: '未提供車牌' }, { status: 400 })
 
+    const vendorId = String(body.siteVendorId || '').trim() || DEFAULT_VENDOR_ID
+    const scanCode = String(body.scanCode || '').trim() || DEFAULT_SCAN_CODE
+
     // 逐一查詢、間隔送出，避免對 RTD 造成瞬間壓力
     const results = []
     for (const plate of list) {
-      results.push(await queryOne(plate))
+      results.push(await queryOne(plate, vendorId, scanCode))
       if (list.length > 1) await new Promise((r) => setTimeout(r, 150))
     }
     return NextResponse.json({ results })
