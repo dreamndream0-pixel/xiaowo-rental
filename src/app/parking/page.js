@@ -66,6 +66,7 @@ export default function ParkingPage() {
   const [onsite, setOnsite] = useState([])
   const [history, setHistory] = useState([])
   const [tab, setTab] = useState('onsite')
+  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [toast, setToast] = useState('')
@@ -74,6 +75,7 @@ export default function ParkingPage() {
   const [plate, setPlate] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [recognizing, setRecognizing] = useState(false)
   const [entering, setEntering] = useState(false)
   const fileRef = useRef(null)
 
@@ -145,7 +147,27 @@ export default function ParkingPage() {
       // 3. 保險：雲端失敗就用壓縮後的圖片直接存檔（存進資料庫）
       if (dataUrl) { setPhotoUrl(dataUrl); flash('照片已存檔') }
       else flash('照片上傳失敗，請再試一次')
+
+      // 4. 自動辨識車牌（用壓縮後的圖片）
+      if (dataUrl) recognizePlate(dataUrl)
     } finally { setUploading(false) }
+  }
+
+  // 用 AI 視覺辨識車牌，成功就自動填入車牌欄位
+  const recognizePlate = async (dataUrl) => {
+    setRecognizing(true)
+    try {
+      const res = await fetch('/api/parking/recognize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl }),
+      })
+      const data = await res.json()
+      if (res.ok && data.plate) { setPlate(data.plate); flash(`已辨識車牌：${data.plate}`) }
+      else if (data.message) flash(data.message)
+      else if (data.error) flash(data.error)
+    } catch { flash('車牌辨識失敗，請手動輸入') }
+    finally { setRecognizing(false) }
   }
 
   // 車輛進場
@@ -202,6 +224,11 @@ export default function ParkingPage() {
 
   const util = stats?.utilization ?? 0
 
+  // 查詢時合併現場＋歷史用車牌過濾；否則顯示目前分頁
+  const shownList = query
+    ? [...onsite, ...history].filter((s) => s.plate.includes(query))
+    : tab === 'onsite' ? onsite : history
+
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9', color: '#0f172a', fontFamily: 'var(--font-sans, sans-serif)' }}>
       {/* 頂欄 */}
@@ -245,14 +272,14 @@ export default function ParkingPage() {
             <input
               value={plate}
               onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              placeholder="輸入車牌（例：ABC-1234）"
+              placeholder={recognizing ? '辨識車牌中…' : '車牌（拍照自動辨識，或手動輸入）'}
               onKeyDown={(e) => e.key === 'Enter' && enterVehicle()}
               style={{ flex: '1 1 200px', padding: '12px 14px', fontSize: 16, border: '1px solid #cbd5e1', borderRadius: 10, letterSpacing: 1, fontWeight: 600 }}
             />
             <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onPickPhoto} style={{ display: 'none' }} id="plate-photo" />
             <label htmlFor="plate-photo"
               style={{ padding: '12px 16px', border: '1px dashed #94a3b8', borderRadius: 10, cursor: 'pointer', color: '#475569', fontSize: 14, whiteSpace: 'nowrap' }}>
-              {uploading ? '上傳中…' : photoUrl ? '✅ 已附照片' : '📷 拍/傳車牌照'}
+              {uploading ? '上傳中…' : recognizing ? '🔍 辨識中…' : photoUrl ? '✅ 已附照片' : '📷 拍/傳車牌照'}
             </label>
             {photoUrl && <img src={photoUrl} alt="車牌" style={{ width: 54, height: 40, objectFit: 'cover', borderRadius: 6 }} />}
             <button onClick={enterVehicle} disabled={entering}
@@ -269,25 +296,37 @@ export default function ParkingPage() {
           )}
         </section>
 
-        {/* 分頁 */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          {[['onsite', `現場車輛 (${onsite.length})`], ['history', `歷史紀錄 (${history.length})`]].map(([k, label]) => (
-            <button key={k} onClick={() => setTab(k)}
-              style={{ padding: '9px 18px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-                background: tab === k ? '#0f172a' : '#fff', color: tab === k ? '#fff' : '#475569', boxShadow: tab === k ? 'none' : '0 1px 4px rgba(0,0,0,.06)' }}>
-              {label}
-            </button>
-          ))}
+        {/* 車牌查詢繳費狀態 */}
+        <div style={{ marginBottom: 12 }}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value.toUpperCase())}
+            placeholder="🔍 輸入車牌查詢繳費狀態（現場＋歷史）"
+            style={{ width: '100%', padding: '11px 14px', fontSize: 15, border: '1px solid #cbd5e1', borderRadius: 10, letterSpacing: 1 }}
+          />
         </div>
+
+        {/* 分頁（查詢時隱藏）*/}
+        {!query && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            {[['onsite', `現場車輛 (${onsite.length})`], ['history', `歷史紀錄 (${history.length})`]].map(([k, label]) => (
+              <button key={k} onClick={() => setTab(k)}
+                style={{ padding: '9px 18px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                  background: tab === k ? '#0f172a' : '#fff', color: tab === k ? '#fff' : '#475569', boxShadow: tab === k ? 'none' : '0 1px 4px rgba(0,0,0,.06)' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 車輛列表 */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {(tab === 'onsite' ? onsite : history).length === 0 && (
+          {shownList.length === 0 && (
             <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', background: '#fff', borderRadius: 16, border: '1px solid #eef1f5' }}>
-              {tab === 'onsite' ? '目前沒有在場車輛' : '尚無歷史紀錄'}
+              {query ? `查無車牌「${query}」的紀錄` : tab === 'onsite' ? '目前沒有在場車輛' : '尚無歷史紀錄'}
             </div>
           )}
-          {(tab === 'onsite' ? onsite : history).map((s) => (
+          {shownList.map((s) => (
             <div key={s.id} style={{ background: '#fff', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 2px 10px rgba(30,41,59,0.05)', border: '1px solid #eef1f5', flexWrap: 'wrap' }}>
               {s.photoUrl
                 ? <a href={s.photoUrl} target="_blank" rel="noreferrer"><img src={s.photoUrl} alt={s.plate} style={{ width: 66, height: 48, objectFit: 'cover', borderRadius: 8, background: '#f1f5f9' }} /></a>
@@ -305,8 +344,8 @@ export default function ParkingPage() {
               </div>
 
               <div style={{ minWidth: 90 }}>
-                <div style={{ fontSize: 12, color: '#94a3b8' }}>{tab === 'onsite' ? '目前應繳' : '代繳金額'}</div>
-                <div style={{ fontWeight: 800, fontSize: 18, color: '#0369a1' }}>{money(tab === 'onsite' ? s.liveAmount : s.amount)}</div>
+                <div style={{ fontSize: 12, color: '#94a3b8' }}>{s.exitAt ? '代繳金額' : '目前應繳'}</div>
+                <div style={{ fontWeight: 800, fontSize: 18, color: '#0369a1' }}>{money(s.exitAt ? s.amount : s.liveAmount)}</div>
               </div>
 
               <div style={{ flex: 1 }} />
@@ -316,7 +355,7 @@ export default function ParkingPage() {
                 {s.paid ? '✓ 已繳費' : '待繳費'}
               </span>
 
-              {tab === 'onsite'
+              {!s.exitAt
                 ? <button onClick={() => exitVehicle(s)} style={{ padding: '9px 16px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>出場</button>
                 : <button onClick={() => removeSession(s)} style={{ padding: '9px 12px', background: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, cursor: 'pointer' }}>刪除</button>}
             </div>
