@@ -80,6 +80,7 @@ export default function ParkingPage() {
   const [uploading, setUploading] = useState(false)
   const [recognizing, setRecognizing] = useState(false)
   const [entering, setEntering] = useState(false)
+  const [singleFee, setSingleFee] = useState(null) // 單筆查金額結果
   const fileRef = useRef(null)
 
   // 批次車牌辨識
@@ -170,7 +171,7 @@ export default function ParkingPage() {
         body: JSON.stringify({ image: dataUrl }),
       })
       const data = await res.json()
-      if (res.ok && data.plate) { setPlate(data.plate); flash(`已辨識車牌：${data.plate}`) }
+      if (res.ok && data.plate) { setPlate(data.plate); setSingleFee(null); flash(`已辨識車牌：${data.plate}`) }
       else if (data.message) flash(data.message)
       else if (data.error) flash(data.error)
     } catch { flash('車牌辨識失敗，請手動輸入') }
@@ -260,6 +261,13 @@ export default function ParkingPage() {
     } catch { flash('查金額失敗'); return [] }
   }
 
+  const queryFeeSingle = async () => {
+    if (!plate.trim()) { flash('請先填車牌'); return }
+    setSingleFee({ loading: true })
+    const [r] = await queryFees([plate])
+    setSingleFee({ loading: false, ...(r || { ok: false, error: '無回應' }) })
+  }
+
   const queryFeeItem = async (it) => {
     if (!it.plate.trim()) { flash('請先填車牌'); return }
     updateBatch(it.id, { fee: { loading: true } })
@@ -303,7 +311,7 @@ export default function ParkingPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        setPlate(''); setPhotoUrl('')
+        setPlate(''); setPhotoUrl(''); setSingleFee(null)
         if (fileRef.current) fileRef.current.value = ''
         flash('進場登記完成')
         reload(lotId)
@@ -392,7 +400,7 @@ export default function ParkingPage() {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
               value={plate}
-              onChange={(e) => setPlate(e.target.value.toUpperCase())}
+              onChange={(e) => { setPlate(e.target.value.toUpperCase()); setSingleFee(null) }}
               placeholder={recognizing ? '辨識車牌中…' : '車牌（拍照自動辨識，或手動輸入）'}
               onKeyDown={(e) => e.key === 'Enter' && enterVehicle()}
               style={{ flex: '1 1 200px', padding: '12px 14px', fontSize: 16, border: '1px solid #cbd5e1', borderRadius: 10, letterSpacing: 1, fontWeight: 600 }}
@@ -408,6 +416,22 @@ export default function ParkingPage() {
               {entering ? '登記中…' : '進場 →'}
             </button>
           </div>
+
+          {/* 查繳費金額（單筆）*/}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12, flexWrap: 'wrap' }}>
+            <button onClick={queryFeeSingle}
+              style={{ padding: '10px 16px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              💰 查繳費金額
+            </button>
+            <button onClick={() => openPay(plate)} title="開啟繳費網站（車牌自動複製）"
+              style={{ padding: '10px 14px', background: '#fff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 10, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              🔗 開繳費網站
+            </button>
+            {(() => { const f = feeLabel(singleFee); return f ? (
+              <span style={{ fontSize: 14, fontWeight: 700, color: f.color, maxWidth: 300, overflowWrap: 'anywhere' }}>{f.text}</span>
+            ) : null })()}
+          </div>
+
           {lot && (
             <p style={{ margin: '10px 0 0', fontSize: 12, color: '#94a3b8' }}>
               費率：每小時 {money(lot.hourlyRate)}
