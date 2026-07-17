@@ -92,6 +92,12 @@ export default function ParkingPage() {
   const [pdfLoading, setPdfLoading] = useState(false)
   const pdfRef = useRef(null)
 
+  // 每日繳費報表匯入
+  const [reportDays, setReportDays] = useState([])
+  const [openDay, setOpenDay] = useState(null) // { reportDate, count, total, rows }
+  const [importing, setImporting] = useState(false)
+  const reportRef = useRef(null)
+
   const lot = lots.find((l) => l.id === lotId)
 
   const flash = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
@@ -193,6 +199,52 @@ export default function ParkingPage() {
     setBatch((prev) => [...prev, ...items])
     if (batchRef.current) batchRef.current.value = ''
     for (const it of items) await processBatchItem(it) // 依序處理，避免同時太多請求
+  }
+
+  // ── 每日繳費報表匯入 ──────────────────────────
+  const loadReportDays = useCallback(async () => {
+    try {
+      const d = await fetch('/api/parking/fee-records').then((r) => r.json())
+      setReportDays(Array.isArray(d.days) ? d.days : [])
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => { loadReportDays() }, [loadReportDays])
+
+  const onImportReport = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (reportRef.current) reportRef.current.value = ''
+    setImporting(true)
+    flash('匯入報表中…')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/parking/import-report', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok) {
+        flash(`已匯入 ${data.reportDate}：${data.count} 台、待繳 ${money(data.total)}`)
+        setOpenDay(null)
+        loadReportDays()
+      } else flash(data.error || '匯入失敗')
+    } catch { flash('匯入失敗') }
+    finally { setImporting(false) }
+  }
+
+  const openDayDetail = async (date) => {
+    if (openDay?.reportDate === date) { setOpenDay(null); return }
+    try {
+      const d = await fetch(`/api/parking/fee-records?date=${date}`).then((r) => r.json())
+      setOpenDay(d)
+    } catch { flash('讀取失敗') }
+  }
+
+  const deleteDay = async (date) => {
+    if (!confirm(`刪除 ${date} 這天的匯入資料？`)) return
+    await fetch(`/api/parking/fee-records?date=${date}`, { method: 'DELETE' })
+    flash('已刪除')
+    if (openDay?.reportDate === date) setOpenDay(null)
+    loadReportDays()
   }
 
   // 上傳車牌 PDF → 分析出所有車牌 → 加入批次清單
@@ -425,6 +477,64 @@ export default function ParkingPage() {
         <div style={{ background: '#e2e8f0', borderRadius: 999, height: 10, overflow: 'hidden', marginBottom: 24 }}>
           <div style={{ width: `${Math.min(100, util)}%`, height: '100%', background: util >= 90 ? '#dc2626' : util >= 70 ? '#d97706' : '#16a34a', transition: 'width .3s' }} />
         </div>
+
+        {/* 每日繳費報表匯入 */}
+        <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>📊 每日繳費報表</h2>
+            <input ref={reportRef} type="file" accept="application/pdf" onChange={onImportReport} style={{ display: 'none' }} id="import-report" />
+            <label htmlFor="import-report"
+              style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+              {importing ? '匯入中…' : '📥 匯入報表 PDF'}
+            </label>
+          </div>
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#94a3b8' }}>
+            上傳「停車場車牌繳費查詢分析報表」PDF → 自動存進系統，可回看每日待繳清單與總額
+          </p>
+
+          {reportDays.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0', fontSize: 14 }}>尚未匯入任何報表</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {reportDays.map((d) => (
+                <div key={d.reportDate} style={{ border: '1px solid #eef1f5', borderRadius: 12, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f8fafc', cursor: 'pointer', flexWrap: 'wrap' }}
+                    onClick={() => openDayDetail(d.reportDate)}>
+                    <span style={{ fontWeight: 800, fontSize: 16 }}>{d.reportDate}</span>
+                    <span style={{ fontSize: 13, color: '#64748b' }}>{d.count} 台待繳</span>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: '#0369a1' }}>{money(d.total)}</span>
+                    <div style={{ flex: 1 }} />
+                    <span style={{ fontSize: 13, color: '#0369a1' }}>{openDay?.reportDate === d.reportDate ? '收合 ▲' : '明細 ▼'}</span>
+                    <button onClick={(e) => { e.stopPropagation(); deleteDay(d.reportDate) }}
+                      style={{ padding: '6px 10px', background: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>刪除</button>
+                  </div>
+                  {openDay?.reportDate === d.reportDate && (
+                    <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ color: '#94a3b8', textAlign: 'left' }}>
+                            <th style={{ padding: '8px 14px', fontWeight: 500 }}>車牌</th>
+                            <th style={{ padding: '8px 14px', fontWeight: 500 }}>入場/開始計費</th>
+                            <th style={{ padding: '8px 14px', fontWeight: 500, textAlign: 'right' }}>應繳</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(openDay.rows || []).map((r) => (
+                            <tr key={r.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '8px 14px', fontWeight: 700, letterSpacing: 1 }}>{r.plate}</td>
+                              <td style={{ padding: '8px 14px', color: '#64748b' }}>{r.entryAt || '—'}</td>
+                              <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{money(r.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* 批次車牌辨識 */}
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
