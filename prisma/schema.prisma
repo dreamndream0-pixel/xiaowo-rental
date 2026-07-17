@@ -715,3 +715,47 @@ model UtilityReading {
   @@index([endDate])
   @@map("utility_readings")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 停車場管理系統（獨立網站，與租屋功能分離）
+// ═══════════════════════════════════════════════════════════════
+
+// 停車場（一個場站）
+model ParkingLot {
+  id          String   @id @default(cuid())
+  name        String                        // 停車場名稱
+  totalSpaces Int      @default(100)         // 總車格數
+  hourlyRate  Int      @default(30)          // 每小時費率（元）
+  freeMinutes Int      @default(0)           // 免費停車分鐘數
+  dailyMax    Int      @default(0)           // 單日收費上限（0 = 無上限）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions    ParkingSession[]
+
+  @@map("parking_lots")
+}
+
+// 每一筆車輛進出紀錄
+model ParkingSession {
+  id         String     @id @default(cuid())
+  lotId      String
+  lot        ParkingLot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  plate      String                  // 車牌號碼
+  photoUrl   String?                 // 車牌照片
+  entryAt    DateTime   @default(now())   // 進場時間
+  exitAt     DateTime?               // 出場時間（null = 目前在場）
+  amount     Int        @default(0)  // 代繳金額（在場時即時試算，出場時定版）
+  paid       Boolean    @default(false)   // 是否已繳
+  paidAt     DateTime?
+  note       String?
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([lotId])
+  @@index([plate])
+  @@index([exitAt])
+  @@map("parking_sessions")
+}
