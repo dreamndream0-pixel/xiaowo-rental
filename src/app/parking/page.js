@@ -111,6 +111,7 @@ export default function ParkingPage() {
   const [reportDetails, setReportDetails] = useState({})
   const [selectedReportDate, setSelectedReportDate] = useState('')
   const [importing, setImporting] = useState(false)
+  const [liveQuery, setLiveQuery] = useState({ open: false, running: false, total: 0, done: 0, results: [] })
   const reportRef = useRef(null)
 
   const lot = lots.find((l) => l.id === lotId)
@@ -390,6 +391,27 @@ export default function ParkingPage() {
     flash('查金額完成')
   }
 
+  const startLiveReportQuery = async () => {
+    const plates = [...new Set(reportComparisonRows.map((row) => row.plate).filter(Boolean))]
+    if (!plates.length) { flash('目前沒有可查詢的累積車牌'); return }
+    setLiveQuery({ open: true, running: true, total: plates.length, done: 0, results: [] })
+    const all = []
+    for (let i = 0; i < plates.length; i += 40) {
+      const chunk = plates.slice(i, i + 40)
+      const results = await queryFees(chunk)
+      all.push(...results)
+      setLiveQuery((prev) => ({
+        ...prev,
+        running: true,
+        done: Math.min(i + chunk.length, plates.length),
+        results: [...all],
+      }))
+      if (i + 40 < plates.length) await new Promise((r) => setTimeout(r, 250))
+    }
+    setLiveQuery((prev) => ({ ...prev, running: false, done: plates.length, results: all }))
+    flash(`即時查詢完成：${plates.length} 台`)
+  }
+
   // 把 fee 結果轉成顯示文字/顏色
   const feeLabel = (fee) => {
     if (!fee) return null
@@ -497,6 +519,24 @@ export default function ParkingPage() {
     })
   }, [reportComparisonRows, reportDatesAsc])
 
+  const liveQuerySummary = useMemo(() => {
+    return liveQuery.results.reduce(
+      (acc, row) => {
+        acc.checked += 1
+        if (row.ok === false) acc.errorCount += 1
+        else if (row.unknown) acc.unknownCount += 1
+        else if (row.owing) {
+          acc.owingCount += 1
+          acc.owingTotal += Number(row.amount || 0)
+        } else {
+          acc.noOwingCount += 1
+        }
+        return acc
+      },
+      { checked: 0, owingCount: 0, noOwingCount: 0, unknownCount: 0, errorCount: 0, owingTotal: 0 }
+    )
+  }, [liveQuery.results])
+
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748b' }}>載入中…</div>
   }
@@ -553,6 +593,10 @@ export default function ParkingPage() {
               style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
               {importing ? '匯入中...' : '匯入報表 PDF'}
             </label>
+            <button type="button" onClick={startLiveReportQuery} disabled={liveQuery.running || reportComparisonRows.length === 0}
+              style={{ padding: '8px 16px', background: liveQuery.running ? '#64748b' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: liveQuery.running || reportComparisonRows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
+              {liveQuery.running ? `即時查詢中 ${liveQuery.done}/${liveQuery.total}` : '即時代繳查詢'}
+            </button>
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
             判斷規則：RTD 回傳有入場/開始計費時間、actualPrice = 0，且查詢時間距離入場時間超過 15 分鐘，標記為「月租候選」。
@@ -808,6 +852,79 @@ export default function ParkingPage() {
           ))}
         </section>
       </main>
+
+      {liveQuery.open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 90, display: 'grid', placeItems: 'center', padding: 16 }}>
+          <div style={{ width: 'min(760px, 100%)', maxHeight: '86vh', overflow: 'hidden', background: '#fff', borderRadius: 16, boxShadow: '0 24px 70px rgba(15,23,42,.28)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>即時代繳查詢</h3>
+                <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>查詢累積報表車牌目前 RTD 待繳金額</div>
+              </div>
+              <div style={{ flex: 1 }} />
+              <button type="button" onClick={() => setLiveQuery((prev) => ({ ...prev, open: false }))}
+                style={{ width: 34, height: 34, borderRadius: 999, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: 18, overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8, fontSize: 13, color: '#475569', fontWeight: 700 }}>
+                <span>{liveQuery.running ? '資料查詢中...' : '查詢完成'}</span>
+                <span>{liveQuery.done}/{liveQuery.total} 台</span>
+              </div>
+              <div style={{ height: 10, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden', marginBottom: 16 }}>
+                <div style={{ width: `${liveQuery.total ? Math.round((liveQuery.done / liveQuery.total) * 100) : 0}%`, height: '100%', background: '#0369a1', transition: 'width .25s ease' }} />
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 16 }}>
+                <tbody>
+                  {[
+                    ['已查詢', liveQuerySummary.checked, '待繳台數', liveQuerySummary.owingCount],
+                    ['待繳總額', money(liveQuerySummary.owingTotal), '無待繳', liveQuerySummary.noOwingCount],
+                    ['未知回應', liveQuerySummary.unknownCount, '查詢失敗', liveQuerySummary.errorCount],
+                  ].map((r) => (
+                    <tr key={r[0]} style={{ borderTop: '1px solid #e2e8f0' }}>
+                      <th style={{ width: '25%', padding: '8px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[0]}</th>
+                      <td style={{ width: '25%', padding: '8px 10px', textAlign: 'right', fontWeight: 800 }}>{r[1]}</td>
+                      <th style={{ width: '25%', padding: '8px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[2]}</th>
+                      <td style={{ width: '25%', padding: '8px 10px', textAlign: 'right', fontWeight: 800 }}>{r[3]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', color: '#334155', textAlign: 'left' }}>
+                      <th style={{ padding: '9px 10px', borderBottom: '1px solid #e2e8f0' }}>車號</th>
+                      <th style={{ padding: '9px 10px', borderBottom: '1px solid #e2e8f0' }}>狀態</th>
+                      <th style={{ padding: '9px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>待繳金額</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveQuery.results.length === 0 ? (
+                      <tr><td colSpan={3} style={{ padding: 18, textAlign: 'center', color: '#94a3b8' }}>尚未取得結果</td></tr>
+                    ) : liveQuery.results
+                      .slice()
+                      .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0) || String(a.plate).localeCompare(String(b.plate)))
+                      .map((row) => (
+                        <tr key={row.plate} style={{ borderTop: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '9px 10px', fontWeight: 900, letterSpacing: 1 }}>{row.plate}</td>
+                          <td style={{ padding: '9px 10px', color: row.ok === false ? '#dc2626' : row.unknown ? '#b45309' : row.owing ? '#0369a1' : '#15803d', fontWeight: 800 }}>
+                            {row.ok === false ? (row.error || '查詢失敗') : row.unknown ? '未知回應' : row.owing ? `待繳 ${row.count || 0} 筆` : '無待繳'}
+                          </td>
+                          <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 900, color: row.owing ? '#0369a1' : '#64748b' }}>{money(row.amount)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 設定彈窗 */}
       {showSettings && <SettingsModal lots={lots} lotId={lotId} onClose={() => setShowSettings(false)}
