@@ -1,12 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 
 // ── 工具 ──────────────────────────────────────────
 const fmtTime = (d) =>
   d ? new Date(d).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—'
 
 const money = (n) => `$${(n || 0).toLocaleString('zh-TW')}`
+
+const shortDate = (date) => {
+  const [, m, d] = String(date || '').split('-')
+  return m && d ? `${Number(m)}/${Number(d)}` : date
+}
+
+const plainAmount = (n) => Number(n || 0).toLocaleString('zh-TW')
+
+const signedAmount = (n) => {
+  const value = Number(n || 0)
+  if (value > 0) return `+${plainAmount(value)}`
+  if (value < 0) return `-${plainAmount(Math.abs(value))}`
+  return '0'
+}
 
 function durationLabel(entryAt, until) {
   const mins = Math.max(0, Math.floor((new Date(until).getTime() - new Date(entryAt).getTime()) / 60000))
@@ -94,7 +108,8 @@ export default function ParkingPage() {
 
   // 每日繳費報表匯入
   const [reportDays, setReportDays] = useState([])
-  const [openDay, setOpenDay] = useState(null) // { reportDate, count, total, rows }
+  const [reportDetails, setReportDetails] = useState({})
+  const [selectedReportDate, setSelectedReportDate] = useState('')
   const [importing, setImporting] = useState(false)
   const reportRef = useRef(null)
 
@@ -205,7 +220,13 @@ export default function ParkingPage() {
   const loadReportDays = useCallback(async () => {
     try {
       const d = await fetch('/api/parking/fee-records').then((r) => r.json())
-      setReportDays(Array.isArray(d.days) ? d.days : [])
+      const days = Array.isArray(d.days) ? d.days : []
+      setReportDays(days)
+      setSelectedReportDate((prev) => (prev && days.some((day) => day.reportDate === prev) ? prev : days[0]?.reportDate || ''))
+      const details = await Promise.all(
+        days.map((day) => fetch(`/api/parking/fee-records?date=${day.reportDate}`).then((r) => r.json()))
+      )
+      setReportDetails(Object.fromEntries(details.map((day) => [day.reportDate, day])))
     } catch { /* ignore */ }
   }, [])
 
@@ -224,7 +245,7 @@ export default function ParkingPage() {
       const data = await res.json()
       if (res.ok) {
         flash(`已匯入 ${data.reportDate}：${data.count} 筆、待繳 ${data.dueCount ?? 0} 台、月租候選 ${data.monthlyCandidateCount ?? 0} 台、總額 ${money(data.total)}`)
-        setOpenDay(null)
+        setSelectedReportDate(data.reportDate)
         loadReportDays()
       } else flash(`${data.error || '匯入失敗'}${data.detail ? '：' + data.detail : ''}`)
     } catch { flash('匯入失敗') }
@@ -232,18 +253,14 @@ export default function ParkingPage() {
   }
 
   const openDayDetail = async (date) => {
-    if (openDay?.reportDate === date) { setOpenDay(null); return }
-    try {
-      const d = await fetch(`/api/parking/fee-records?date=${date}`).then((r) => r.json())
-      setOpenDay(d)
-    } catch { flash('讀取失敗') }
+    setSelectedReportDate(date)
   }
 
   const deleteDay = async (date) => {
     if (!confirm(`刪除 ${date} 這天的匯入資料？`)) return
     await fetch(`/api/parking/fee-records?date=${date}`, { method: 'DELETE' })
     flash('已刪除')
-    if (openDay?.reportDate === date) setOpenDay(null)
+    if (selectedReportDate === date) setSelectedReportDate('')
     loadReportDays()
   }
 
@@ -431,6 +448,41 @@ export default function ParkingPage() {
     if (res.ok) { flash('已刪除'); reload(lotId) }
   }
 
+  const reportDatesAsc = useMemo(
+    () => [...reportDays].map((day) => day.reportDate).sort(),
+    [reportDays]
+  )
+
+  const selectedReport = useMemo(
+    () => reportDetails[selectedReportDate] || reportDays.find((day) => day.reportDate === selectedReportDate) || null,
+    [reportDetails, reportDays, selectedReportDate]
+  )
+
+  const reportComparisonRows = useMemo(() => {
+    const byPlate = new Map()
+    for (const date of reportDatesAsc) {
+      for (const row of reportDetails[date]?.rows || []) {
+        if (!byPlate.has(row.plate)) byPlate.set(row.plate, {})
+        byPlate.get(row.plate)[date] = row
+      }
+    }
+
+    return (reportDetails[selectedReportDate]?.rows || [])
+      .map((row) => {
+        const records = byPlate.get(row.plate) || {}
+        const firstRecord = reportDatesAsc.map((date) => records[date]).find(Boolean) || row
+        return {
+          plate: row.plate,
+          entryAt: row.entryAt || firstRecord.entryAt,
+          status: row.status,
+          monthlyCandidate: row.monthlyCandidate,
+          amount: row.amount,
+          records,
+        }
+      })
+      .sort((a, b) => (b.amount || 0) - (a.amount || 0) || a.plate.localeCompare(b.plate))
+  }, [reportDatesAsc, reportDetails, selectedReportDate])
+
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748b' }}>載入中…</div>
   }
@@ -480,67 +532,109 @@ export default function ParkingPage() {
 
         {/* 每日繳費報表匯入 */}
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>📊 每日繳費報表</h2>
             <input ref={reportRef} type="file" accept="application/pdf" onChange={onImportReport} style={{ display: 'none' }} id="import-report" />
             <label htmlFor="import-report"
               style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
-              {importing ? '匯入中…' : '📥 匯入報表 PDF'}
+              {importing ? '匯入中...' : '匯入報表 PDF'}
             </label>
           </div>
-          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#94a3b8' }}>
-            上傳「停車場車牌繳費查詢分析報表」PDF → 自動存進系統，可回看每日待繳清單與總額
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
+            判斷規則：RTD 回傳有入場/開始計費時間、actualPrice = 0，且查詢時間距離入場時間超過 15 分鐘，標記為「月租候選」。
           </p>
 
           {reportDays.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0', fontSize: 14 }}>尚未匯入任何報表</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {reportDays.map((d) => (
-                <div key={d.reportDate} style={{ border: '1px solid #eef1f5', borderRadius: 12, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f8fafc', cursor: 'pointer', flexWrap: 'wrap' }}
-                    onClick={() => openDayDetail(d.reportDate)}>
-                    <span style={{ fontWeight: 800, fontSize: 16 }}>{d.reportDate}</span>
-                        <span style={{ fontSize: 13, color: '#64748b' }}>{d.count} 筆</span>
-                        <span style={{ fontSize: 13, color: '#64748b' }}>待繳 {d.dueCount ?? 0}</span>
-                        <span style={{ fontSize: 13, color: '#64748b' }}>月租候選 {d.monthlyCandidateCount ?? 0}</span>
-                        <span style={{ fontSize: 13, color: '#64748b' }}>查無 {d.noPaymentCount ?? 0}</span>
-                    <span style={{ fontSize: 16, fontWeight: 800, color: '#0369a1' }}>{money(d.total)}</span>
-                    <div style={{ flex: 1 }} />
-                    <span style={{ fontSize: 13, color: '#0369a1' }}>{openDay?.reportDate === d.reportDate ? '收合 ▲' : '明細 ▼'}</span>
-                    <button onClick={(e) => { e.stopPropagation(); deleteDay(d.reportDate) }}
-                      style={{ padding: '6px 10px', background: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>刪除</button>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 14 }}>
+                {reportDays.map((d) => {
+                  const active = selectedReportDate === d.reportDate
+                  return (
+                    <button key={d.reportDate} type="button" onClick={() => openDayDetail(d.reportDate)}
+                      style={{ flex: '0 0 auto', padding: '9px 14px', background: active ? '#0f172a' : '#f8fafc', color: active ? '#fff' : '#334155', border: active ? '1px solid #0f172a' : '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer', fontWeight: 800 }}>
+                      {shortDate(d.reportDate)}
+                      <span style={{ display: 'block', marginTop: 2, fontSize: 11, fontWeight: 600, color: active ? '#cbd5e1' : '#94a3b8' }}>{d.count} 台</span>
+                    </button>
+                  )
+                })}
+                <div style={{ flex: 1 }} />
+                {selectedReportDate && (
+                  <button type="button" onClick={() => deleteDay(selectedReportDate)}
+                    style={{ flex: '0 0 auto', padding: '8px 12px', background: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
+                    刪除本日
+                  </button>
+                )}
+              </div>
+
+              {selectedReport && (
+                <>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 800 }}>統計摘要</h3>
+                  <div style={{ overflowX: 'auto', marginBottom: 18 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 680 }}>
+                      <tbody>
+                        {[
+                          ['單一車輛', selectedReport.count ?? 0, '月租候選', selectedReport.monthlyCandidateCount ?? 0],
+                          ['0元未滿15分鐘', selectedReport.zeroUnder15Count ?? 0, '查無繳費紀錄', selectedReport.noPaymentCount ?? 0],
+                          ['有待繳金額', selectedReport.dueCount ?? 0, '待繳總額', money(selectedReport.total)],
+                          ['0元無法判斷', selectedReport.zeroUnknownCount ?? 0, '查詢異常', selectedReport.errorCount ?? 0],
+                        ].map((r) => (
+                          <tr key={r[0]} style={{ borderTop: '1px solid #e2e8f0' }}>
+                            <th style={{ width: '25%', padding: '7px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[0]}</th>
+                            <td style={{ width: '25%', padding: '7px 10px', textAlign: 'right', fontWeight: 700 }}>{r[1]}</td>
+                            <th style={{ width: '25%', padding: '7px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[2]}</th>
+                            <td style={{ width: '25%', padding: '7px 10px', textAlign: 'right', fontWeight: 700 }}>{r[3]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  {openDay?.reportDate === d.reportDate && (
-                    <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                        <thead>
-                            <tr style={{ color: '#94a3b8', textAlign: 'left' }}>
-                              <th style={{ padding: '8px 14px', fontWeight: 500 }}>車牌</th>
-                              <th style={{ padding: '8px 14px', fontWeight: 500 }}>狀態</th>
-                              <th style={{ padding: '8px 14px', fontWeight: 500 }}>入場/開始計費</th>
-                              <th style={{ padding: '8px 14px', fontWeight: 500, textAlign: 'right' }}>應繳</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                          {(openDay.rows || []).map((r) => (
-                            <tr key={r.id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '8px 14px', fontWeight: 700, letterSpacing: 1 }}>{r.plate}</td>
-                              <td style={{ padding: '8px 14px', color: r.monthlyCandidate ? '#b45309' : r.amount > 0 ? '#0369a1' : '#64748b', fontWeight: 700 }}>{r.status || (r.amount > 0 ? '待繳' : '0元')}</td>
-                              <td style={{ padding: '8px 14px', color: '#64748b' }}>{r.entryAt || '—'}</td>
-                              <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{money(r.amount)}</td>
-                            </tr>
+
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: Math.max(720, 260 + reportDatesAsc.length * 150) }}>
+                      <thead>
+                        <tr style={{ color: '#334155', textAlign: 'left', background: '#f8fafc' }}>
+                          <th style={{ padding: '9px 10px', borderBottom: '1px solid #e2e8f0', fontWeight: 800 }}>車號</th>
+                          <th style={{ padding: '9px 10px', borderBottom: '1px solid #e2e8f0', fontWeight: 800 }}>入場時間</th>
+                          {reportDatesAsc.map((date, index) => (
+                            <th key={date} style={{ padding: '9px 10px', borderBottom: '1px solid #e2e8f0', fontWeight: 800 }}>
+                              {shortDate(date)}{index === 0 ? '（初次統計）' : ''}
+                            </th>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportComparisonRows.map((row) => (
+                          <tr key={row.plate} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '9px 10px', fontWeight: 800, letterSpacing: 1, whiteSpace: 'nowrap' }}>{row.plate}</td>
+                            <td style={{ padding: '9px 10px', color: '#475569', whiteSpace: 'pre-line', minWidth: 150 }}>{row.entryAt || '-'}</td>
+                            {reportDatesAsc.map((date) => {
+                              const current = row.records[date]
+                              if (!current) {
+                                return <td key={date} style={{ padding: '9px 10px', color: '#cbd5e1' }}>—</td>
+                              }
+                              const previousDate = [...reportDatesAsc].filter((d) => d < date && row.records[d]).pop()
+                              const previous = previousDate ? row.records[previousDate] : null
+                              const value = previous ? Number(current.amount || 0) - Number(previous.amount || 0) : Number(current.amount || 0)
+                              const color = current.monthlyCandidate ? '#b45309' : current.amount > 0 ? '#0369a1' : '#64748b'
+                              return (
+                                <td key={date} style={{ padding: '9px 10px', color, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                                  {previous ? signedAmount(value) : plainAmount(value)}
+                                  <div style={{ marginTop: 2, fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{current.status}</div>
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </section>
-
         {/* 批次車牌辨識 */}
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
