@@ -1,5 +1,3 @@
-import { PDFParse } from 'pdf-parse'
-
 function normalizeText(text) {
   return String(text || '')
     .normalize('NFKC')
@@ -106,6 +104,7 @@ function parseRowsFromText(text) {
 }
 
 export async function parseFeeReport(buffer) {
+  const { PDFParse } = await import('pdf-parse')
   const parser = new PDFParse({ data: new Uint8Array(buffer), useWorker: false })
   let text = ''
   try {
