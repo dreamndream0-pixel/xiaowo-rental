@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ensureParkingTables } from '@/lib/parking'
+import parkbossHistory from '@/data/parkboss-txg-1497-history.json'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -9,6 +10,7 @@ const SOURCE = 'parkboss-txg-1497'
 const PARKBOSS_URL = 'https://parkboss.tw/parking-space/txg-1497'
 const TOTAL_SPACES = 970
 const KNOWN_DAILY = {
+  ...Object.fromEntries((parkbossHistory.daily || []).map((item) => [item.reportDate, item])),
   '2026-07-14': { reportDate: '2026-07-14', entries: 358, exits: 221, samples: 474, note: 'ParkBoss API 歷史統計，已排除 15:01-15:04 剩餘格數 +445 系統跳點' },
   '2026-07-15': { reportDate: '2026-07-15', entries: 395, exits: 162, samples: 471, note: 'ParkBoss API 歷史統計' },
 }
@@ -74,6 +76,35 @@ function buildTimeline(rows) {
   })
 }
 
+function normalizeHistoricalTimeline(rows) {
+  return (rows || []).map((row) => ({
+    sampledAt: row.sampledAt,
+    rawUpdatedAt: row.rawUpdatedAt,
+    available: Number(row.available || 0),
+    total: Number(row.total || TOTAL_SPACES),
+    occupied: Number(row.occupied || 0),
+    utilization: Number(row.utilization || 0),
+    entries: Number(row.entries || 0),
+    exits: Number(row.exits || 0),
+    turnover: Number(row.turnover || 0),
+    entryTurnoverRate: Number(row.entryTurnoverRate || 0),
+    totalTurnoverRate: Number(row.totalTurnoverRate || 0),
+    anomaly: Boolean(row.anomaly),
+    historical: true,
+  }))
+}
+
+function mergeTimeline(...groups) {
+  const byTime = new Map()
+  for (const group of groups) {
+    for (const row of group || []) {
+      const key = row.rawUpdatedAt || row.sampledAt
+      if (key) byTime.set(key, row)
+    }
+  }
+  return [...byTime.values()].sort((a, b) => new Date(a.sampledAt).getTime() - new Date(b.sampledAt).getTime())
+}
+
 function summarizeTimeline(timeline) {
   const byDate = new Map()
   for (const row of timeline) {
@@ -136,11 +167,14 @@ export async function GET() {
       WHERE source = ${SOURCE}
       ORDER BY "sampledAt" ASC
     `
-    const timeline = buildTimeline(rows)
-    const latestRow = timeline[timeline.length - 1] || (latest ? { ...latest, entries: 0, exits: 0, anomaly: false } : null)
+    const historicalTimeline = normalizeHistoricalTimeline(parkbossHistory.timeline)
+    const liveTimeline = buildTimeline(rows)
+    const timeline = mergeTimeline(historicalTimeline, liveTimeline)
+    const latestRow = liveTimeline[liveTimeline.length - 1] || timeline[timeline.length - 1] || (latest ? { ...latest, entries: 0, exits: 0, anomaly: false } : null)
     const liveDaily = summarizeTimeline(timeline)
-    const dailyByDate = new Map(Object.values(KNOWN_DAILY).map((item) => [item.reportDate, item]))
-    for (const item of liveDaily) dailyByDate.set(item.reportDate, { ...dailyByDate.get(item.reportDate), ...item })
+    const dailyByDate = new Map(liveDaily.map((item) => [item.reportDate, item]))
+    // 已知歷史日統計包含人工校正值，優先覆蓋由每 3 分鐘明細加總的結果。
+    for (const item of Object.values(KNOWN_DAILY)) dailyByDate.set(item.reportDate, { ...dailyByDate.get(item.reportDate), ...item })
 
     return NextResponse.json({
       source: SOURCE,
@@ -149,7 +183,7 @@ export async function GET() {
       fetchError,
       latest: latestRow,
       daily: [...dailyByDate.values()].sort((a, b) => b.reportDate.localeCompare(a.reportDate)),
-      timeline: timeline.slice(-120).reverse(),
+      timeline: timeline.slice(-2500).reverse(),
     })
   } catch (error) {
     console.error('GET /api/parking/parkboss error:', error)
