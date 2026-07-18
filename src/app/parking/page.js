@@ -662,6 +662,7 @@ export default function ParkingPage() {
     const summary = liveQuery.results.reduce(
       (acc, row) => {
         acc.checked += 1
+        if (liveQuery.meta?.[row.plate]?.monthlyCandidate) acc.checkedMonthlyCandidateCount += 1
         if (row.rateLimited || row.status === 403 || row.status === 429 || /403|429/.test(String(row.error || ''))) acc.rateLimitedCount += 1
         else if (row.ok === false) acc.errorCount += 1
         else if (row.unknown) acc.unknownCount += 1
@@ -673,7 +674,7 @@ export default function ParkingPage() {
         }
         return acc
       },
-      { checked: 0, owingCount: 0, noOwingCount: 0, unknownCount: 0, errorCount: 0, rateLimitedCount: 0, owingTotal: 0 }
+      { checked: 0, checkedMonthlyCandidateCount: 0, owingCount: 0, noOwingCount: 0, unknownCount: 0, errorCount: 0, rateLimitedCount: 0, owingTotal: 0 }
     )
     summary.monthlyCandidateCount = (liveQuery.plates || []).filter((plate) => liveQuery.meta?.[plate]?.monthlyCandidate).length
     return summary
@@ -1042,8 +1043,9 @@ export default function ParkingPage() {
                   {[
                     ['已查詢', liveQuerySummary.checked, '待繳台數', liveQuerySummary.owingCount],
                     ['待繳總額', money(liveQuerySummary.owingTotal), '無待繳', liveQuerySummary.noOwingCount],
-                    ['月租候選', liveQuerySummary.monthlyCandidateCount, 'RTD限制', liveQuerySummary.rateLimitedCount],
-                    ['未知回應', liveQuerySummary.unknownCount, '查詢失敗', liveQuerySummary.errorCount],
+                    ['月租候選(全部)', liveQuerySummary.monthlyCandidateCount, '已查月租候選', liveQuerySummary.checkedMonthlyCandidateCount],
+                    ['RTD限制', liveQuerySummary.rateLimitedCount, '查詢失敗', liveQuerySummary.errorCount],
+                    ['未知回應', liveQuerySummary.unknownCount, '查詢進度', `${liveQuery.done}/${liveQuery.total}`],
                   ].map((r) => (
                     <tr key={r[0]} style={{ borderTop: '1px solid #e2e8f0' }}>
                       <th style={{ width: '25%', padding: '8px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[0]}</th>
