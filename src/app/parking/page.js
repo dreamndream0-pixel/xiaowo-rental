@@ -24,6 +24,18 @@ const signedAmount = (n) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+const LIVE_QUERY_STORAGE_KEY = 'parking-live-fee-query-v1'
+
+const isLiveQueryProblem = (row) =>
+  !row || row.ok === false || row.unknown || row.rateLimited || row.status === 403 || row.status === 429 || /403|429/.test(String(row.error || ''))
+
+const mergeLiveResults = (previous, next) => {
+  const byPlate = new Map()
+  for (const row of previous || []) if (row?.plate) byPlate.set(String(row.plate).toUpperCase(), row)
+  for (const row of next || []) if (row?.plate) byPlate.set(String(row.plate).toUpperCase(), row)
+  return [...byPlate.values()]
+}
+
 function durationLabel(entryAt, until) {
   const mins = Math.max(0, Math.floor((new Date(until).getTime() - new Date(entryAt).getTime()) / 60000))
   const h = Math.floor(mins / 60)
@@ -113,7 +125,7 @@ export default function ParkingPage() {
   const [reportDetails, setReportDetails] = useState({})
   const [selectedReportDate, setSelectedReportDate] = useState('')
   const [importing, setImporting] = useState(false)
-  const [liveQuery, setLiveQuery] = useState({ open: false, running: false, total: 0, done: 0, results: [], message: '' })
+  const [liveQuery, setLiveQuery] = useState({ open: false, running: false, total: 0, done: 0, plates: [], results: [], message: '', updatedAt: null })
   const reportRef = useRef(null)
   const liveQueryStopRef = useRef(false)
 
@@ -152,6 +164,39 @@ export default function ParkingPage() {
 
   useEffect(() => { if (lotId) reload(lotId) }, [lotId, reload])
 
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LIVE_QUERY_STORAGE_KEY)
+      if (!raw) return
+      const saved = JSON.parse(raw)
+      if (!Array.isArray(saved?.plates) && !Array.isArray(saved?.results)) return
+      setLiveQuery({
+        open: false,
+        running: false,
+        total: Number(saved.total || saved.plates?.length || 0),
+        done: Number(saved.done || saved.results?.length || 0),
+        plates: Array.isArray(saved.plates) ? saved.plates : [],
+        results: Array.isArray(saved.results) ? saved.results : [],
+        message: saved.message || '已載入上次暫存，可繼續查詢',
+        updatedAt: saved.updatedAt || null,
+      })
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
+      const hasData = liveQuery.plates.length || liveQuery.results.length
+      if (!hasData) {
+        window.localStorage.removeItem(LIVE_QUERY_STORAGE_KEY)
+        return
+      }
+      window.localStorage.setItem(LIVE_QUERY_STORAGE_KEY, JSON.stringify({
+        ...liveQuery,
+        open: false,
+        running: false,
+      }))
+    } catch { /* ignore */ }
+  }, [liveQuery])
   // 每 30 秒自動更新即時金額與統計
   useEffect(() => {
     if (!lotId) return
@@ -394,42 +439,76 @@ export default function ParkingPage() {
     flash('查金額完成')
   }
 
-  const startLiveReportQuery = async () => {
-    const plates = [...new Set(reportComparisonRows.map((row) => row.plate).filter(Boolean))]
+  const startLiveReportQuery = async ({ reset = false } = {}) => {
+    const currentPlates = [...new Set(reportComparisonRows.map((row) => row.plate).filter(Boolean))]
+    const savedPlates = Array.isArray(liveQuery.plates) ? liveQuery.plates : []
+    const plates = [...new Set([...(reset ? [] : savedPlates), ...currentPlates])]
     if (!plates.length) { flash('目前沒有可查詢的累積車牌'); return }
+
+    const existingResults = reset ? [] : liveQuery.results || []
+    const existingByPlate = new Map(existingResults.map((row) => [String(row.plate || '').toUpperCase(), row]))
+    const pending = plates.filter((plate) => isLiveQueryProblem(existingByPlate.get(String(plate).toUpperCase())))
+
+    if (!pending.length) {
+      setLiveQuery((prev) => ({ ...prev, open: true, running: false, plates, total: plates.length, done: plates.length, message: '目前暫存結果都已完成，不需補查', updatedAt: new Date().toISOString() }))
+      flash('目前沒有需要補查的車牌')
+      return
+    }
+
     liveQueryStopRef.current = false
-    setLiveQuery({ open: true, running: true, total: plates.length, done: 0, results: [], message: '準備查詢...' })
-    const all = []
-    for (let i = 0; i < plates.length; i += 5) {
+    setLiveQuery({
+      open: true,
+      running: true,
+      total: plates.length,
+      done: plates.length - pending.length,
+      plates,
+      results: existingResults,
+      message: reset ? '重新查詢：已清空暫存' : `繼續查詢：剩 ${pending.length} 台需要補查`,
+      updatedAt: new Date().toISOString(),
+    })
+
+    let all = existingResults
+    for (let i = 0; i < pending.length; i += 5) {
       if (liveQueryStopRef.current) break
-      const chunk = plates.slice(i, i + 5)
+      const chunk = pending.slice(i, i + 5)
       let results = []
       for (let attempt = 0; attempt < 3; attempt += 1) {
         if (liveQueryStopRef.current) break
-        setLiveQuery((prev) => ({ ...prev, message: attempt ? `RTD 暫時限制，等待後重試第 ${attempt + 1} 次...` : `查詢 ${i + 1}-${Math.min(i + chunk.length, plates.length)} 台` }))
+        setLiveQuery((prev) => ({ ...prev, message: attempt ? `RTD 暫時限制，等待後重試第 ${attempt + 1} 次...` : `補查 ${i + 1}-${Math.min(i + chunk.length, pending.length)} / ${pending.length} 台` }))
         results = await queryFees(chunk)
         const limited = results.some((r) => r?.rateLimited || r?.status === 403 || r?.status === 429 || /403|429/.test(String(r?.error || '')))
         if (!limited || attempt === 2) break
         await sleep(attempt === 0 ? 15000 : 45000)
       }
-      all.push(...results)
+      all = mergeLiveResults(all, results)
+      const byPlate = new Map(all.map((row) => [String(row.plate || '').toUpperCase(), row]))
+      const remaining = plates.filter((plate) => isLiveQueryProblem(byPlate.get(String(plate).toUpperCase()))).length
       setLiveQuery((prev) => ({
         ...prev,
         running: true,
-        done: Math.min(i + chunk.length, plates.length),
-        results: [...all],
-        message: liveQueryStopRef.current ? '已停止查詢' : `已完成 ${Math.min(i + chunk.length, plates.length)} / ${plates.length} 台`,
+        done: plates.length - remaining,
+        plates,
+        total: plates.length,
+        results: all,
+        message: liveQueryStopRef.current ? '已暫停查詢' : `已完成 ${plates.length - remaining} / ${plates.length} 台，剩 ${remaining} 台需補查`,
+        updatedAt: new Date().toISOString(),
       }))
-      if (i + 5 < plates.length && !liveQueryStopRef.current) await sleep(2500)
+      if (i + 5 < pending.length && !liveQueryStopRef.current) await sleep(2500)
     }
+
+    const byPlate = new Map(all.map((row) => [String(row.plate || '').toUpperCase(), row]))
+    const remaining = plates.filter((plate) => isLiveQueryProblem(byPlate.get(String(plate).toUpperCase()))).length
     setLiveQuery((prev) => ({
       ...prev,
       running: false,
-      done: liveQueryStopRef.current ? prev.done : plates.length,
+      done: plates.length - remaining,
+      plates,
+      total: plates.length,
       results: all,
-      message: liveQueryStopRef.current ? '已停止查詢' : '查詢完成',
+      message: liveQueryStopRef.current ? `已暫停，剩 ${remaining} 台可繼續補查` : remaining ? `查詢完成，仍有 ${remaining} 台需補查` : '查詢完成',
+      updatedAt: new Date().toISOString(),
     }))
-    flash(liveQueryStopRef.current ? '已停止即時查詢' : `即時查詢完成：${plates.length} 台`)
+    flash(liveQueryStopRef.current ? '已暫停即時查詢，可稍後繼續' : `即時查詢完成：剩 ${remaining} 台需補查`)
   }
 
   // 把 fee 結果轉成顯示文字/顏色
@@ -614,9 +693,9 @@ export default function ParkingPage() {
               style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
               {importing ? '匯入中...' : '匯入報表 PDF'}
             </label>
-            <button type="button" onClick={startLiveReportQuery} disabled={liveQuery.running || reportComparisonRows.length === 0}
-              style={{ padding: '8px 16px', background: liveQuery.running ? '#64748b' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: liveQuery.running || reportComparisonRows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
-              {liveQuery.running ? `即時查詢中 ${liveQuery.done}/${liveQuery.total}` : '即時代繳查詢'}
+            <button type="button" onClick={() => startLiveReportQuery()} disabled={liveQuery.running || (reportComparisonRows.length === 0 && liveQuery.plates.length === 0)}
+              style={{ padding: '8px 16px', background: liveQuery.running ? '#64748b' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: liveQuery.running || (reportComparisonRows.length === 0 && liveQuery.plates.length === 0) ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
+              {liveQuery.running ? `即時查詢中 ${liveQuery.done}/${liveQuery.total}` : liveQuery.results.length ? '繼續即時查詢' : '即時代繳查詢'}
             </button>
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
@@ -887,6 +966,18 @@ export default function ParkingPage() {
                 <button type="button" onClick={() => { liveQueryStopRef.current = true; setLiveQuery((prev) => ({ ...prev, message: '正在停止，會在目前這批結束後停止...' })) }}
                   style={{ padding: '7px 12px', borderRadius: 10, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontWeight: 800 }}>
                   停止查詢
+                </button>
+              )}
+              {!liveQuery.running && (
+                <button type="button" onClick={() => startLiveReportQuery()}
+                  style={{ padding: '7px 12px', borderRadius: 10, border: '1px solid #bae6fd', background: '#0369a1', color: '#fff', cursor: 'pointer', fontWeight: 800 }}>
+                  繼續查詢
+                </button>
+              )}
+              {!liveQuery.running && (
+                <button type="button" onClick={() => startLiveReportQuery({ reset: true })}
+                  style={{ padding: '7px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', color: '#334155', cursor: 'pointer', fontWeight: 800 }}>
+                  重新查詢
                 </button>
               )}
               <button type="button" onClick={() => setLiveQuery((prev) => ({ ...prev, open: false }))}
