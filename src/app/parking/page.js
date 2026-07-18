@@ -467,21 +467,35 @@ export default function ParkingPage() {
       }
     }
 
-    return (reportDetails[selectedReportDate]?.rows || [])
-      .map((row) => {
-        const records = byPlate.get(row.plate) || {}
-        const firstRecord = reportDatesAsc.map((date) => records[date]).find(Boolean) || row
+    return [...byPlate.entries()]
+      .map(([plate, records]) => {
+        const firstRecord = reportDatesAsc.map((date) => records[date]).find(Boolean) || {}
+        const latestRecord = [...reportDatesAsc].reverse().map((date) => records[date]).find(Boolean) || firstRecord
         return {
-          plate: row.plate,
-          entryAt: row.entryAt || firstRecord.entryAt,
-          status: row.status,
-          monthlyCandidate: row.monthlyCandidate,
-          amount: row.amount,
+          plate,
+          entryAt: firstRecord.entryAt || latestRecord.entryAt,
+          status: latestRecord.status,
+          monthlyCandidate: latestRecord.monthlyCandidate,
+          amount: latestRecord.amount,
           records,
         }
       })
       .sort((a, b) => (b.amount || 0) - (a.amount || 0) || a.plate.localeCompare(b.plate))
-  }, [reportDatesAsc, reportDetails, selectedReportDate])
+  }, [reportDatesAsc, reportDetails])
+
+  const reportAmountTotals = useMemo(() => {
+    return reportDatesAsc.map((date) => {
+      const amount = reportComparisonRows.reduce((sum, row) => {
+        const current = row.records[date]
+        if (!current) return sum
+        const previousDate = [...reportDatesAsc].filter((d) => d < date && row.records[d]).pop()
+        const previous = previousDate ? row.records[previousDate] : null
+        return sum + (previous ? Number(current.amount || 0) - Number(previous.amount || 0) : Number(current.amount || 0))
+      }, 0)
+      const count = reportComparisonRows.reduce((sum, row) => sum + (row.records[date] ? 1 : 0), 0)
+      return { date, amount, count }
+    })
+  }, [reportComparisonRows, reportDatesAsc])
 
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748b' }}>載入中…</div>
@@ -587,6 +601,31 @@ export default function ParkingPage() {
                             <td style={{ width: '25%', padding: '7px 10px', textAlign: 'right', fontWeight: 700 }}>{r[3]}</td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 800 }}>金額加總</h3>
+                  <div style={{ overflowX: 'auto', marginBottom: 18 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: Math.max(560, reportDatesAsc.length * 150) }}>
+                      <thead>
+                        <tr style={{ color: '#334155', background: '#f8fafc' }}>
+                          {reportAmountTotals.map((item, index) => (
+                            <th key={item.date} style={{ padding: '8px 10px', border: '1px solid #e2e8f0', fontWeight: 800, textAlign: 'center' }}>
+                              {shortDate(item.date)}{index === 0 ? '（初次統計）' : ''}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {reportAmountTotals.map((item, index) => (
+                            <td key={item.date} style={{ padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 900, color: index === 0 ? '#0369a1' : item.amount >= 0 ? '#0369a1' : '#dc2626' }}>
+                              {index === 0 ? money(item.amount) : signedAmount(item.amount)}
+                              <div style={{ marginTop: 3, fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{item.count} 台</div>
+                            </td>
+                          ))}
+                        </tr>
                       </tbody>
                     </table>
                   </div>
