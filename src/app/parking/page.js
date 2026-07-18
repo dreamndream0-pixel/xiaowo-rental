@@ -22,6 +22,8 @@ const signedAmount = (n) => {
   return '0'
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 function durationLabel(entryAt, until) {
   const mins = Math.max(0, Math.floor((new Date(until).getTime() - new Date(entryAt).getTime()) / 60000))
   const h = Math.floor(mins / 60)
@@ -111,8 +113,9 @@ export default function ParkingPage() {
   const [reportDetails, setReportDetails] = useState({})
   const [selectedReportDate, setSelectedReportDate] = useState('')
   const [importing, setImporting] = useState(false)
-  const [liveQuery, setLiveQuery] = useState({ open: false, running: false, total: 0, done: 0, results: [] })
+  const [liveQuery, setLiveQuery] = useState({ open: false, running: false, total: 0, done: 0, results: [], message: '' })
   const reportRef = useRef(null)
+  const liveQueryStopRef = useRef(false)
 
   const lot = lots.find((l) => l.id === lotId)
 
@@ -394,22 +397,39 @@ export default function ParkingPage() {
   const startLiveReportQuery = async () => {
     const plates = [...new Set(reportComparisonRows.map((row) => row.plate).filter(Boolean))]
     if (!plates.length) { flash('目前沒有可查詢的累積車牌'); return }
-    setLiveQuery({ open: true, running: true, total: plates.length, done: 0, results: [] })
+    liveQueryStopRef.current = false
+    setLiveQuery({ open: true, running: true, total: plates.length, done: 0, results: [], message: '準備查詢...' })
     const all = []
-    for (let i = 0; i < plates.length; i += 40) {
-      const chunk = plates.slice(i, i + 40)
-      const results = await queryFees(chunk)
+    for (let i = 0; i < plates.length; i += 5) {
+      if (liveQueryStopRef.current) break
+      const chunk = plates.slice(i, i + 5)
+      let results = []
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (liveQueryStopRef.current) break
+        setLiveQuery((prev) => ({ ...prev, message: attempt ? `RTD 暫時限制，等待後重試第 ${attempt + 1} 次...` : `查詢 ${i + 1}-${Math.min(i + chunk.length, plates.length)} 台` }))
+        results = await queryFees(chunk)
+        const limited = results.some((r) => r?.rateLimited || r?.status === 403 || r?.status === 429 || /403|429/.test(String(r?.error || '')))
+        if (!limited || attempt === 2) break
+        await sleep(attempt === 0 ? 15000 : 45000)
+      }
       all.push(...results)
       setLiveQuery((prev) => ({
         ...prev,
         running: true,
         done: Math.min(i + chunk.length, plates.length),
         results: [...all],
+        message: liveQueryStopRef.current ? '已停止查詢' : `已完成 ${Math.min(i + chunk.length, plates.length)} / ${plates.length} 台`,
       }))
-      if (i + 40 < plates.length) await new Promise((r) => setTimeout(r, 250))
+      if (i + 5 < plates.length && !liveQueryStopRef.current) await sleep(2500)
     }
-    setLiveQuery((prev) => ({ ...prev, running: false, done: plates.length, results: all }))
-    flash(`即時查詢完成：${plates.length} 台`)
+    setLiveQuery((prev) => ({
+      ...prev,
+      running: false,
+      done: liveQueryStopRef.current ? prev.done : plates.length,
+      results: all,
+      message: liveQueryStopRef.current ? '已停止查詢' : '查詢完成',
+    }))
+    flash(liveQueryStopRef.current ? '已停止即時查詢' : `即時查詢完成：${plates.length} 台`)
   }
 
   // 把 fee 結果轉成顯示文字/顏色
@@ -523,7 +543,8 @@ export default function ParkingPage() {
     return liveQuery.results.reduce(
       (acc, row) => {
         acc.checked += 1
-        if (row.ok === false) acc.errorCount += 1
+        if (row.rateLimited || row.status === 403 || row.status === 429 || /403|429/.test(String(row.error || ''))) acc.rateLimitedCount += 1
+        else if (row.ok === false) acc.errorCount += 1
         else if (row.unknown) acc.unknownCount += 1
         else if (row.owing) {
           acc.owingCount += 1
@@ -533,7 +554,7 @@ export default function ParkingPage() {
         }
         return acc
       },
-      { checked: 0, owingCount: 0, noOwingCount: 0, unknownCount: 0, errorCount: 0, owingTotal: 0 }
+      { checked: 0, owingCount: 0, noOwingCount: 0, unknownCount: 0, errorCount: 0, rateLimitedCount: 0, owingTotal: 0 }
     )
   }, [liveQuery.results])
 
@@ -862,6 +883,12 @@ export default function ParkingPage() {
                 <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>查詢累積報表車牌目前 RTD 待繳金額</div>
               </div>
               <div style={{ flex: 1 }} />
+              {liveQuery.running && (
+                <button type="button" onClick={() => { liveQueryStopRef.current = true; setLiveQuery((prev) => ({ ...prev, message: '正在停止，會在目前這批結束後停止...' })) }}
+                  style={{ padding: '7px 12px', borderRadius: 10, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontWeight: 800 }}>
+                  停止查詢
+                </button>
+              )}
               <button type="button" onClick={() => setLiveQuery((prev) => ({ ...prev, open: false }))}
                 style={{ width: 34, height: 34, borderRadius: 999, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>
                 ×
@@ -870,7 +897,7 @@ export default function ParkingPage() {
 
             <div style={{ padding: 18, overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8, fontSize: 13, color: '#475569', fontWeight: 700 }}>
-                <span>{liveQuery.running ? '資料查詢中...' : '查詢完成'}</span>
+                <span>{liveQuery.message || (liveQuery.running ? '資料查詢中...' : '查詢完成')}</span>
                 <span>{liveQuery.done}/{liveQuery.total} 台</span>
               </div>
               <div style={{ height: 10, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden', marginBottom: 16 }}>
@@ -882,7 +909,8 @@ export default function ParkingPage() {
                   {[
                     ['已查詢', liveQuerySummary.checked, '待繳台數', liveQuerySummary.owingCount],
                     ['待繳總額', money(liveQuerySummary.owingTotal), '無待繳', liveQuerySummary.noOwingCount],
-                    ['未知回應', liveQuerySummary.unknownCount, '查詢失敗', liveQuerySummary.errorCount],
+                    ['RTD限制', liveQuerySummary.rateLimitedCount, '查詢失敗', liveQuerySummary.errorCount],
+                    ['未知回應', liveQuerySummary.unknownCount, '查詢進度', `${liveQuery.done}/${liveQuery.total}`],
                   ].map((r) => (
                     <tr key={r[0]} style={{ borderTop: '1px solid #e2e8f0' }}>
                       <th style={{ width: '25%', padding: '8px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[0]}</th>
@@ -912,8 +940,8 @@ export default function ParkingPage() {
                       .map((row) => (
                         <tr key={row.plate} style={{ borderTop: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '9px 10px', fontWeight: 900, letterSpacing: 1 }}>{row.plate}</td>
-                          <td style={{ padding: '9px 10px', color: row.ok === false ? '#dc2626' : row.unknown ? '#b45309' : row.owing ? '#0369a1' : '#15803d', fontWeight: 800 }}>
-                            {row.ok === false ? (row.error || '查詢失敗') : row.unknown ? '未知回應' : row.owing ? `待繳 ${row.count || 0} 筆` : '無待繳'}
+                          <td style={{ padding: '9px 10px', color: row.rateLimited || row.status === 403 || row.status === 429 ? '#b45309' : row.ok === false ? '#dc2626' : row.unknown ? '#b45309' : row.owing ? '#0369a1' : '#15803d', fontWeight: 800 }}>
+                            {row.rateLimited || row.status === 403 || row.status === 429 ? 'RTD限制' : row.ok === false ? (row.error || '查詢失敗') : row.unknown ? '未知回應' : row.owing ? `待繳 ${row.count || 0} 筆` : '無待繳'}
                           </td>
                           <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 900, color: row.owing ? '#0369a1' : '#64748b' }}>{money(row.amount)}</td>
                         </tr>

@@ -48,7 +48,7 @@ async function queryOne(plate, vendorId, scanCode) {
     if (!res.ok) {
       // 帶回 RTD 的錯誤內容，方便判斷缺什麼欄位
       const detail = (await res.text().catch(() => '')).replace(/\s+/g, ' ').trim().slice(0, 200)
-      return { plate, ok: false, error: `RTD 回應 ${res.status}`, detail }
+      return { plate, ok: false, status: res.status, rateLimited: res.status === 403 || res.status === 429, error: `RTD 回應 ${res.status}`, detail }
     }
     const data = await res.json().catch(() => null)
     if (!data) return { plate, ok: false, error: '回應解析失敗' }
@@ -82,7 +82,7 @@ export async function POST(request) {
     const list = plates
       .map((p) => String(p || '').trim().toUpperCase())
       .filter(Boolean)
-      .slice(0, 40) // 保護：單次最多 40 台
+      .slice(0, 10) // 保護：單次最多 10 台
 
     if (!list.length) return NextResponse.json({ error: '未提供車牌' }, { status: 400 })
 
@@ -93,7 +93,7 @@ export async function POST(request) {
     const results = []
     for (const plate of list) {
       results.push(await queryOne(plate, vendorId, scanCode))
-      if (list.length > 1) await new Promise((r) => setTimeout(r, 150))
+      if (list.length > 1) await new Promise((r) => setTimeout(r, 900))
     }
     return NextResponse.json({ results })
   } catch (e) {
