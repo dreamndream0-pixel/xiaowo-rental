@@ -36,6 +36,9 @@ const mergeLiveResults = (previous, next) => {
   return [...byPlate.values()]
 }
 
+const recordEntryAt = (record) =>
+  record?.entryAt || record?.entryTime || record?.startTime || record?.startAt || record?.beginTime || ''
+
 function durationLabel(entryAt, until) {
   const mins = Math.max(0, Math.floor((new Date(until).getTime() - new Date(entryAt).getTime()) / 60000))
   const h = Math.floor(mins / 60)
@@ -448,14 +451,7 @@ export default function ParkingPage() {
     const savedPlates = Array.isArray(liveQuery.plates) ? liveQuery.plates : []
     const plates = [...new Set([...(reset ? [] : savedPlates), ...currentPlates])]
     if (!plates.length) { flash('目前沒有可查詢的累積車牌'); return }
-    const currentMeta = Object.fromEntries(reportComparisonRows.map((row) => {
-      const records = Object.values(row.records || {})
-      return [row.plate, {
-        entryAt: row.entryAt || records.find((record) => record?.entryAt)?.entryAt || '',
-        monthlyCandidate: records.some((record) => record?.monthlyCandidate || record?.status === '月租候選'),
-      }]
-    }))
-    const meta = reset ? currentMeta : { ...(liveQuery.meta || {}), ...currentMeta }
+    const meta = reset ? reportPlateMeta : { ...(liveQuery.meta || {}), ...reportPlateMeta }
 
     const existingResults = reset ? [] : liveQuery.results || []
     const existingByPlate = new Map(existingResults.map((row) => [String(row.plate || '').toUpperCase(), row]))
@@ -609,7 +605,7 @@ export default function ParkingPage() {
         const latestRecord = [...reportDatesAsc].reverse().map((date) => records[date]).find(Boolean) || firstRecord
         return {
           plate,
-          entryAt: firstRecord.entryAt || latestRecord.entryAt,
+          entryAt: recordEntryAt(firstRecord) || recordEntryAt(latestRecord),
           status: latestRecord.status,
           monthlyCandidate: latestRecord.monthlyCandidate,
           amount: latestRecord.amount,
@@ -632,6 +628,35 @@ export default function ParkingPage() {
       return { date, amount, count }
     })
   }, [reportComparisonRows, reportDatesAsc])
+
+  const reportPlateMeta = useMemo(() => {
+    return Object.fromEntries(reportComparisonRows.map((row) => {
+      const records = Object.values(row.records || {})
+      return [row.plate, {
+        entryAt: row.entryAt || recordEntryAt(records.find((record) => recordEntryAt(record))) || '',
+        monthlyCandidate: records.some((record) => record?.monthlyCandidate || record?.status === '月租候選'),
+      }]
+    }))
+  }, [reportComparisonRows])
+
+  useEffect(() => {
+    const plates = Object.keys(reportPlateMeta)
+    if (!plates.length || (!liveQuery.plates.length && !liveQuery.results.length)) return
+    let changed = false
+    const meta = { ...(liveQuery.meta || {}) }
+    const mergedPlates = [...new Set([...(liveQuery.plates || []), ...plates])]
+    for (const plate of plates) {
+      const next = reportPlateMeta[plate]
+      const prev = meta[plate] || {}
+      if ((next.entryAt && prev.entryAt !== next.entryAt) || Boolean(prev.monthlyCandidate) !== Boolean(next.monthlyCandidate)) {
+        meta[plate] = { ...prev, ...next }
+        changed = true
+      }
+    }
+    if (changed || mergedPlates.length !== liveQuery.plates.length) {
+      setLiveQuery((prev) => ({ ...prev, meta, plates: mergedPlates, total: Math.max(prev.total || 0, mergedPlates.length) }))
+    }
+  }, [liveQuery.meta, liveQuery.plates, liveQuery.results.length, reportPlateMeta])
 
   const liveQuerySummary = useMemo(() => {
     const summary = liveQuery.results.reduce(
