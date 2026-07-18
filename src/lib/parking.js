@@ -69,6 +69,21 @@ export async function ensureParkingTables() {
     await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS "sourceRow" INTEGER`)
     await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS note TEXT`)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_fee_records_date_idx ON parking_fee_records ("reportDate")`)
+    await db.$queryRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS parking_occupancy_snapshots (
+        id              TEXT PRIMARY KEY,
+        source          TEXT NOT NULL,
+        "sampledAt"     TIMESTAMPTZ NOT NULL,
+        "rawUpdatedAt"  TEXT,
+        available       INTEGER NOT NULL,
+        total           INTEGER NOT NULL,
+        occupied        INTEGER NOT NULL,
+        utilization     DOUBLE PRECISION NOT NULL,
+        "createdAt"     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `)
+    await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_time_idx ON parking_occupancy_snapshots (source, "sampledAt")`)
+    await db.$queryRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_raw_idx ON parking_occupancy_snapshots (source, "rawUpdatedAt")`)
   } catch (e) {
     console.error('ensureParkingTables error:', e?.message)
   }
