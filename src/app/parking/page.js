@@ -223,7 +223,7 @@ export default function ParkingPage() {
       const res = await fetch('/api/parking/import-report', { method: 'POST', body: fd })
       const data = await res.json()
       if (res.ok) {
-        flash(`已匯入 ${data.reportDate}：${data.count} 台、待繳 ${money(data.total)}`)
+        flash(`已匯入 ${data.reportDate}：${data.count} 筆、待繳 ${data.dueCount ?? 0} 台、月租候選 ${data.monthlyCandidateCount ?? 0} 台、總額 ${money(data.total)}`)
         setOpenDay(null)
         loadReportDays()
       } else flash(`${data.error || '匯入失敗'}${data.detail ? '：' + data.detail : ''}`)
@@ -501,7 +501,10 @@ export default function ParkingPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f8fafc', cursor: 'pointer', flexWrap: 'wrap' }}
                     onClick={() => openDayDetail(d.reportDate)}>
                     <span style={{ fontWeight: 800, fontSize: 16 }}>{d.reportDate}</span>
-                    <span style={{ fontSize: 13, color: '#64748b' }}>{d.count} 台待繳</span>
+                        <span style={{ fontSize: 13, color: '#64748b' }}>{d.count} 筆</span>
+                        <span style={{ fontSize: 13, color: '#64748b' }}>待繳 {d.dueCount ?? 0}</span>
+                        <span style={{ fontSize: 13, color: '#64748b' }}>月租候選 {d.monthlyCandidateCount ?? 0}</span>
+                        <span style={{ fontSize: 13, color: '#64748b' }}>查無 {d.noPaymentCount ?? 0}</span>
                     <span style={{ fontSize: 16, fontWeight: 800, color: '#0369a1' }}>{money(d.total)}</span>
                     <div style={{ flex: 1 }} />
                     <span style={{ fontSize: 13, color: '#0369a1' }}>{openDay?.reportDate === d.reportDate ? '收合 ▲' : '明細 ▼'}</span>
@@ -512,16 +515,18 @@ export default function ParkingPage() {
                     <div style={{ maxHeight: 360, overflowY: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <thead>
-                          <tr style={{ color: '#94a3b8', textAlign: 'left' }}>
-                            <th style={{ padding: '8px 14px', fontWeight: 500 }}>車牌</th>
-                            <th style={{ padding: '8px 14px', fontWeight: 500 }}>入場/開始計費</th>
-                            <th style={{ padding: '8px 14px', fontWeight: 500, textAlign: 'right' }}>應繳</th>
-                          </tr>
+                            <tr style={{ color: '#94a3b8', textAlign: 'left' }}>
+                              <th style={{ padding: '8px 14px', fontWeight: 500 }}>車牌</th>
+                              <th style={{ padding: '8px 14px', fontWeight: 500 }}>狀態</th>
+                              <th style={{ padding: '8px 14px', fontWeight: 500 }}>入場/開始計費</th>
+                              <th style={{ padding: '8px 14px', fontWeight: 500, textAlign: 'right' }}>應繳</th>
+                            </tr>
                         </thead>
                         <tbody>
                           {(openDay.rows || []).map((r) => (
                             <tr key={r.id} style={{ borderTop: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '8px 14px', fontWeight: 700, letterSpacing: 1 }}>{r.plate}</td>
+                              <td style={{ padding: '8px 14px', color: r.monthlyCandidate ? '#b45309' : r.amount > 0 ? '#0369a1' : '#64748b', fontWeight: 700 }}>{r.status || (r.amount > 0 ? '待繳' : '0元')}</td>
                               <td style={{ padding: '8px 14px', color: '#64748b' }}>{r.entryAt || '—'}</td>
                               <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{money(r.amount)}</td>
                             </tr>

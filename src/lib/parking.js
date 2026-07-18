@@ -52,10 +52,22 @@ export async function ensureParkingTables() {
         "reportDate" TEXT NOT NULL,
         plate        TEXT NOT NULL,
         "entryAt"    TEXT,
+        "queryTime"  TEXT,
         amount       INTEGER NOT NULL DEFAULT 0,
+        status       TEXT NOT NULL DEFAULT '待繳',
+        "monthlyCandidate" BOOLEAN NOT NULL DEFAULT FALSE,
+        "parkedMinutes" INTEGER,
+        "sourceRow" INTEGER,
+        note         TEXT,
         "createdAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS "queryTime" TEXT`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT '待繳'`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS "monthlyCandidate" BOOLEAN NOT NULL DEFAULT FALSE`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS "parkedMinutes" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS "sourceRow" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_fee_records ADD COLUMN IF NOT EXISTS note TEXT`)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_fee_records_date_idx ON parking_fee_records ("reportDate")`)
   } catch (e) {
     console.error('ensureParkingTables error:', e?.message)

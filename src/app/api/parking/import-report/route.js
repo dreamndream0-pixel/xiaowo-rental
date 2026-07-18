@@ -1,5 +1,3 @@
-// src/app/api/parking/import-report/route.js
-// 匯入「停車場車牌繳費查詢分析報表」PDF → 存進資料庫
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { ensureParkingTables } from '@/lib/parking'
@@ -9,43 +7,76 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+function normalizeRow(row) {
+  const amount = Number(row.amount || 0)
+  const status =
+    row.status ||
+    (amount > 0 ? '待繳' : row.monthlyCandidate ? '月租候選' : row.entryAt ? '0元' : '查無繳費紀錄')
+
+  return {
+    reportDate: '',
+    plate: String(row.plate || '').toUpperCase().replace(/[^A-Z0-9-]/g, ''),
+    entryAt: row.entryAt || row.entryTime || null,
+    queryTime: row.queryTime || null,
+    amount: Number.isFinite(amount) ? amount : 0,
+    status,
+    monthlyCandidate: Boolean(row.monthlyCandidate || status === '月租候選'),
+    parkedMinutes: row.parkedMinutes == null ? null : Number(row.parkedMinutes),
+    sourceRow: row.sourceRow == null ? null : Number(row.sourceRow),
+    note: row.note || null,
+  }
+}
+
 export async function POST(request) {
   try {
     await ensureParkingTables()
     const form = await request.formData()
     const file = form.get('file')
-    if (!file) return NextResponse.json({ error: '未選擇報表 PDF' }, { status: 400 })
+    if (!file) return NextResponse.json({ error: '請上傳 PDF' }, { status: 400 })
 
     const buffer = Buffer.from(await file.arrayBuffer())
     let parsed
     try {
       parsed = await parseFeeReport(buffer)
-    } catch (e) {
-      console.error('parseFeeReport error:', e?.message)
-      const detail = String(e?.message || e).slice(0, 200)
-      return NextResponse.json({ error: 'PDF 解析失敗', detail }, { status: 400 })
+    } catch (error) {
+      console.error('parseFeeReport error:', error?.message)
+      return NextResponse.json(
+        { error: 'PDF 解析失敗', detail: String(error?.message || error).slice(0, 200) },
+        { status: 400 }
+      )
     }
 
-    // 日期可由前端覆寫（表單 reportDate），否則用解析出來的
     const reportDate = String(form.get('reportDate') || parsed.reportDate || '').trim()
-    if (!reportDate) return NextResponse.json({ error: '無法判斷報表日期，請手動指定' }, { status: 400 })
-    if (!parsed.rows.length) return NextResponse.json({ error: '報表中找不到「有金額待繳」明細' }, { status: 400 })
+    if (!reportDate) {
+      return NextResponse.json({ error: '無法判斷報表日期，請重新產生報表或改用 JSON 匯入' }, { status: 400 })
+    }
 
-    // 同一天重匯 → 先刪再寫（覆蓋）
+    const rows = (parsed.rows || []).map(normalizeRow).filter((row) => row.plate)
+    if (!rows.length) {
+      return NextResponse.json({ error: '報表中找不到可匯入的車牌明細' }, { status: 400 })
+    }
+
     await db.feeRecord.deleteMany({ where: { reportDate } })
     await db.feeRecord.createMany({
-      data: parsed.rows.map((r) => ({
-        reportDate,
-        plate: r.plate,
-        entryAt: r.entryAt,
-        amount: r.amount,
-      })),
+      data: rows.map((row) => ({ ...row, reportDate })),
     })
 
-    const total = parsed.rows.reduce((s, r) => s + r.amount, 0)
-    return NextResponse.json({ reportDate, count: parsed.rows.length, total })
-  } catch (e) {
-    console.error('POST /api/parking/import-report error:', e?.message)
-    return NextResponse.json({ error: '匯入失敗', detail: String(e?.message || e).slice(0, 200) }, { status: 500 })
+    const total = rows.reduce((sum, row) => sum + Number(row.amount || 0), 0)
+    const dueCount = rows.filter((row) => row.amount > 0).length
+    const monthlyCandidateCount = rows.filter((row) => row.monthlyCandidate).length
+
+    return NextResponse.json({
+      reportDate,
+      count: rows.length,
+      dueCount,
+      monthlyCandidateCount,
+      total,
+    })
+  } catch (error) {
+    console.error('POST /api/parking/import-report error:', error?.message)
+    return NextResponse.json(
+      { error: '匯入失敗', detail: String(error?.message || error).slice(0, 200) },
+      { status: 500 }
+    )
   }
 }
