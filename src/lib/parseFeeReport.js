@@ -104,6 +104,10 @@ function parseRowsFromText(text) {
 }
 
 export async function parseFeeReport(buffer) {
+  const canvas = await import('@napi-rs/canvas')
+  globalThis.DOMMatrix ||= canvas.DOMMatrix
+  globalThis.ImageData ||= canvas.ImageData
+  globalThis.Path2D ||= canvas.Path2D
   const { PDFParse } = await import('pdf-parse')
   const parser = new PDFParse({ data: new Uint8Array(buffer), useWorker: false })
   let text = ''
