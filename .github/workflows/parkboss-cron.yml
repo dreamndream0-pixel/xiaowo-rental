@@ -1,0 +1,15 @@
+name: ParkBoss Snapshot Cron
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-parkboss:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Store ParkBoss snapshot
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 \
+            "https://xiaowo-rental.vercel.app/api/parking/parkboss?source=github-cron"
