@@ -8,6 +8,7 @@ export const maxDuration = 30
 
 const SOURCE = 'parkboss-txg-1497'
 const PARKBOSS_URL = 'https://parkboss.tw/parking-space/txg-1497'
+const PARKBOSS_HISTORY_URL = 'https://parkboss.tw/api/v1/query-parking-space-history-by-id?id=txg-1497'
 const TOTAL_SPACES = 970
 const KNOWN_DAILY = {
   ...Object.fromEntries((parkbossHistory.daily || []).map((item) => [item.reportDate, item])),
@@ -22,6 +23,19 @@ function taipeiDate(value) {
     month: '2-digit',
     day: '2-digit',
   }).format(value)
+}
+
+function taipeiDateTime(value) {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(value).replace('T', ' ')
 }
 
 function parseParkBoss(html) {
@@ -72,8 +86,43 @@ function buildTimeline(rows) {
       entries: !prev || anomaly ? 0 : Math.max(0, -diff),
       exits: !prev || anomaly ? 0 : Math.max(0, diff),
       anomaly,
+      officialHistory: Boolean(row.officialHistory),
+      historical: Boolean(row.historical),
     }
   })
+}
+
+async function fetchOfficialHistory() {
+  const res = await fetch(PARKBOSS_HISTORY_URL, {
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'Mozilla/5.0 parking-dashboard/1.0',
+    },
+  })
+  if (!res.ok) throw new Error(`ParkBoss 歷史回應 ${res.status}`)
+  const data = await res.json()
+  if (!Array.isArray(data)) throw new Error('ParkBoss 歷史資料格式錯誤')
+
+  const rows = data
+    .filter((item) => Array.isArray(item) && Number.isFinite(Number(item[0])) && Number.isFinite(Number(item[1])))
+    .map((item) => {
+      const sampledAt = new Date(Number(item[0]) * 1000)
+      const available = Number(item[1])
+      const occupied = Math.max(0, TOTAL_SPACES - available)
+      return {
+        sampledAt,
+        rawUpdatedAt: taipeiDateTime(sampledAt),
+        available,
+        total: TOTAL_SPACES,
+        occupied,
+        utilization: Math.round((occupied / TOTAL_SPACES) * 1000) / 10,
+        officialHistory: true,
+      }
+    })
+    .sort((a, b) => a.sampledAt.getTime() - b.sampledAt.getTime())
+
+  return buildTimeline(rows)
 }
 
 function normalizeHistoricalTimeline(rows) {
@@ -117,6 +166,7 @@ function summarizeTimeline(timeline) {
     item.anomalies += row.anomaly ? 1 : 0
     item.avgUtilization += row.utilization
     item.lastAvailable = row.available
+    if (row.officialHistory) item.note = 'ParkBoss 歷史 API 統計'
   }
   return [...byDate.values()].map((item) => ({
     ...item,
@@ -149,6 +199,8 @@ export async function GET() {
     let latest = null
     let saved = false
     let fetchError = null
+    let historyFetchError = null
+    let officialHistoryTimeline = []
     try {
       const res = await fetch(PARKBOSS_URL, {
         cache: 'no-store',
@@ -160,6 +212,11 @@ export async function GET() {
     } catch (error) {
       fetchError = error?.message || 'ParkBoss 抓取失敗'
     }
+    try {
+      officialHistoryTimeline = await fetchOfficialHistory()
+    } catch (error) {
+      historyFetchError = error?.message || 'ParkBoss 歷史抓取失敗'
+    }
 
     const rows = await db.$queryRaw`
       SELECT "sampledAt", "rawUpdatedAt", available, total, occupied, utilization
@@ -169,7 +226,7 @@ export async function GET() {
     `
     const historicalTimeline = normalizeHistoricalTimeline(parkbossHistory.timeline)
     const liveTimeline = buildTimeline(rows)
-    const timeline = mergeTimeline(historicalTimeline, liveTimeline)
+    const timeline = mergeTimeline(historicalTimeline, officialHistoryTimeline, liveTimeline)
     const latestRow = liveTimeline[liveTimeline.length - 1] || timeline[timeline.length - 1] || (latest ? { ...latest, entries: 0, exits: 0, anomaly: false } : null)
     const liveDaily = summarizeTimeline(timeline)
     const dailyByDate = new Map(liveDaily.map((item) => [item.reportDate, item]))
@@ -181,6 +238,7 @@ export async function GET() {
       url: PARKBOSS_URL,
       saved,
       fetchError,
+      historyFetchError,
       latest: latestRow,
       daily: [...dailyByDate.values()].sort((a, b) => b.reportDate.localeCompare(a.reportDate)),
       timeline: timeline.slice(-2500).reverse(),
