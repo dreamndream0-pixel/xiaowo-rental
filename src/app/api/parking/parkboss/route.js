@@ -226,7 +226,9 @@ export async function GET() {
     `
     const historicalTimeline = normalizeHistoricalTimeline(parkbossHistory.timeline)
     const liveTimeline = buildTimeline(rows)
-    const timeline = mergeTimeline(historicalTimeline, officialHistoryTimeline, liveTimeline)
+    const officialHistoryDates = new Set(officialHistoryTimeline.map((row) => taipeiDate(new Date(row.sampledAt))))
+    const filteredLiveTimeline = liveTimeline.filter((row) => !officialHistoryDates.has(taipeiDate(new Date(row.sampledAt))))
+    const timeline = mergeTimeline(historicalTimeline, officialHistoryTimeline, filteredLiveTimeline)
     const latestRow = liveTimeline[liveTimeline.length - 1] || timeline[timeline.length - 1] || (latest ? { ...latest, entries: 0, exits: 0, anomaly: false } : null)
     const liveDaily = summarizeTimeline(timeline)
     const dailyByDate = new Map(liveDaily.map((item) => [item.reportDate, item]))
