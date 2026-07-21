@@ -192,6 +192,43 @@ async function saveSnapshot(snapshot) {
   return true
 }
 
+async function saveSnapshots(snapshots) {
+  const payload = (snapshots || [])
+    .filter((row) => row?.rawUpdatedAt && row?.sampledAt)
+    .map((row) => ({
+      id: crypto.randomUUID(),
+      sampledAt: new Date(row.sampledAt).toISOString(),
+      rawUpdatedAt: row.rawUpdatedAt,
+      available: Number(row.available || 0),
+      total: Number(row.total || TOTAL_SPACES),
+      occupied: Number(row.occupied || 0),
+      utilization: Number(row.utilization || 0),
+    }))
+  if (!payload.length) return 0
+
+  const inserted = await db.$executeRaw`
+    WITH incoming AS (
+      SELECT * FROM jsonb_to_recordset(${JSON.stringify(payload)}::jsonb)
+      AS x(
+        id TEXT,
+        "sampledAt" TIMESTAMPTZ,
+        "rawUpdatedAt" TEXT,
+        available INTEGER,
+        total INTEGER,
+        occupied INTEGER,
+        utilization DOUBLE PRECISION
+      )
+    )
+    INSERT INTO parking_occupancy_snapshots
+      (id, source, "sampledAt", "rawUpdatedAt", available, total, occupied, utilization)
+    SELECT id, ${SOURCE}, "sampledAt", "rawUpdatedAt", available, total, occupied, utilization
+    FROM incoming
+    ON CONFLICT (source, "rawUpdatedAt") DO NOTHING
+  `
+
+  return Number(inserted || 0)
+}
+
 export async function GET() {
   try {
     await ensureParkingTables()
@@ -200,6 +237,7 @@ export async function GET() {
     let saved = false
     let fetchError = null
     let historyFetchError = null
+    let historySaved = 0
     let officialHistoryTimeline = []
     try {
       const res = await fetch(PARKBOSS_URL, {
@@ -214,6 +252,7 @@ export async function GET() {
     }
     try {
       officialHistoryTimeline = await fetchOfficialHistory()
+      historySaved = await saveSnapshots(officialHistoryTimeline)
     } catch (error) {
       historyFetchError = error?.message || 'ParkBoss 歷史抓取失敗'
     }
@@ -239,6 +278,7 @@ export async function GET() {
       source: SOURCE,
       url: PARKBOSS_URL,
       saved,
+      historySaved,
       fetchError,
       historyFetchError,
       latest: latestRow,
