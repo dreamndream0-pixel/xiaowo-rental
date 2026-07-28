@@ -367,10 +367,13 @@ export default function ParkingPage() {
   <title>每日繳費報表 ${esc(selectedReportDate || '')}</title>
   <style>
     @page { size: A4 landscape; margin: 10mm; }
-    body { font-family: Arial, "Microsoft JhengHei", sans-serif; color: #0f172a; margin: 0; }
+    body { font-family: Arial, "Microsoft JhengHei", sans-serif; color: #0f172a; margin: 0; padding-top: 58px; }
     h1 { font-size: 20px; margin: 0 0 6px; }
     h2 { font-size: 15px; margin: 18px 0 8px; }
     .meta { color: #64748b; font-size: 12px; margin-bottom: 12px; }
+    .actions { position: fixed; z-index: 10; inset: 0 0 auto; min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #0f172a; color: #fff; box-shadow: 0 2px 10px rgba(15,23,42,.16); }
+    .actions button { border: 0; border-radius: 8px; background: #fff; color: #0f172a; font-weight: 800; padding: 9px 14px; cursor: pointer; }
+    .actions span { font-size: 12px; color: #cbd5e1; }
     table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: auto; }
     tr { page-break-inside: avoid; page-break-after: auto; }
     th, td { border: 1px solid #dbe3ee; padding: 5px 6px; vertical-align: top; }
@@ -381,9 +384,17 @@ export default function ParkingPage() {
     .monthly { color: #b45309; }
     .muted { color: #64748b; }
     .nowrap { white-space: nowrap; }
+    @media print {
+      body { padding-top: 0; }
+      .actions { display: none; }
+    }
   </style>
 </head>
 <body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">下載 / 儲存 PDF</button>
+    <span>開啟列印後選「儲存為 PDF」或「存到檔案」。</span>
+  </div>
   <h1>每日繳費報表</h1>
   <div class="meta">匯出時間：${esc(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }))}；目前選取日期：${esc(selectedReportDate || '-')}</div>
 
@@ -434,7 +445,9 @@ export default function ParkingPage() {
   <script>
     window.onload = function () {
       window.focus();
-      setTimeout(function () { window.print(); }, 300);
+      setTimeout(function () {
+        try { window.print(); } catch (e) {}
+      }, 500);
     };
   </script>
 </body>
