@@ -330,6 +330,126 @@ export default function ParkingPage() {
     loadReportDays()
   }
 
+  const exportReportPdf = () => {
+    if (!selectedReport || !reportComparisonRows.length) {
+      flash('目前沒有可匯出的報表資料')
+      return
+    }
+
+    const esc = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+    const cellAmount = (row, date) => {
+      const current = row.records[date]
+      if (!current) return '<td class="muted">-</td>'
+      const previousDate = [...reportDatesAsc].filter((d) => d < date && row.records[d]).pop()
+      const previous = previousDate ? row.records[previousDate] : null
+      const value = previous ? Number(current.amount || 0) - Number(previous.amount || 0) : Number(current.amount || 0)
+      const amountText = previous ? signedAmount(value) : plainAmount(value)
+      const cls = current.monthlyCandidate ? 'monthly' : current.amount > 0 ? 'due' : 'muted'
+      return `<td class="${cls}"><strong>${esc(amountText)}</strong><small>${esc(current.status)}</small></td>`
+    }
+
+    const summaryRows = [
+      ['單一車輛', selectedReport.count ?? 0, '月租候選', selectedReport.monthlyCandidateCount ?? 0],
+      ['0元未滿15分鐘', selectedReport.zeroUnder15Count ?? 0, '查無繳費紀錄', selectedReport.noPaymentCount ?? 0],
+      ['有待繳金額', selectedReport.dueCount ?? 0, '待繳總額', money(selectedReport.total)],
+      ['0元無法判斷', selectedReport.zeroUnknownCount ?? 0, '查詢異常', selectedReport.errorCount ?? 0],
+    ]
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>每日繳費報表 ${esc(selectedReportDate || '')}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    body { font-family: Arial, "Microsoft JhengHei", sans-serif; color: #0f172a; margin: 0; }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    h2 { font-size: 15px; margin: 18px 0 8px; }
+    .meta { color: #64748b; font-size: 12px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    th, td { border: 1px solid #dbe3ee; padding: 5px 6px; vertical-align: top; }
+    th { background: #eef3f9; font-weight: 800; text-align: left; }
+    td.num, th.num { text-align: right; }
+    small { display: block; color: #64748b; font-size: 9px; margin-top: 2px; }
+    .due { color: #0369a1; }
+    .monthly { color: #b45309; }
+    .muted { color: #64748b; }
+    .nowrap { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <h1>每日繳費報表</h1>
+  <div class="meta">匯出時間：${esc(new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }))}；目前選取日期：${esc(selectedReportDate || '-')}</div>
+
+  <h2>統計摘要</h2>
+  <table>
+    <tbody>
+      ${summaryRows.map((r) => `
+        <tr>
+          <th>${esc(r[0])}</th><td class="num">${esc(r[1])}</td>
+          <th>${esc(r[2])}</th><td class="num">${esc(r[3])}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <h2>金額加總</h2>
+  <table>
+    <thead><tr>${reportAmountTotals.map((item, index) => `<th class="num">${esc(shortDate(item.date))}${index === 0 ? '（初次統計）' : ''}</th>`).join('')}</tr></thead>
+    <tbody>
+      <tr>${reportAmountTotals.map((item, index) => `
+        <td class="num ${index === 0 || item.amount >= 0 ? 'due' : 'monthly'}">
+          <strong>${esc(index === 0 ? money(item.amount) : signedAmount(item.amount))}</strong>
+          <small>${esc(item.count)} 台</small>
+        </td>
+      `).join('')}</tr>
+    </tbody>
+  </table>
+
+  <h2>車牌金額明細</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="nowrap">車號</th>
+        <th class="nowrap">入場時間</th>
+        ${reportDatesAsc.map((date, index) => `<th class="nowrap">${esc(shortDate(date))}${index === 0 ? '（初次統計）' : ''}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${reportComparisonRows.map((row) => `
+        <tr>
+          <td class="nowrap"><strong>${esc(row.plate)}</strong></td>
+          <td class="nowrap muted">${esc(row.entryAt || '-')}</td>
+          ${reportDatesAsc.map((date) => cellAmount(row, date)).join('')}
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+  <script>
+    window.onload = function () {
+      window.focus();
+      setTimeout(function () { window.print(); }, 300);
+    };
+  </script>
+</body>
+</html>`
+
+    const win = window.open('', '_blank', 'noopener,noreferrer')
+    if (!win) {
+      flash('瀏覽器阻擋彈出視窗，請允許後再匯出')
+      return
+    }
+    win.document.open()
+    win.document.write(html)
+    win.document.close()
+  }
+
   // 上傳車牌 PDF → 分析出所有車牌 → 加入批次清單
   const onPickPdf = async (e) => {
     const file = e.target.files?.[0]
@@ -858,6 +978,10 @@ export default function ParkingPage() {
             <button type="button" onClick={() => liveQuery.running ? setLiveQuery((prev) => ({ ...prev, open: true })) : startLiveReportQuery()} disabled={!liveQuery.running && reportComparisonRows.length === 0 && liveQuery.plates.length === 0}
               style={{ padding: '8px 16px', background: liveQuery.running ? '#64748b' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: !liveQuery.running && reportComparisonRows.length === 0 && liveQuery.plates.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
               {liveQuery.running ? `即時查詢中 ${liveQuery.done}/${liveQuery.total}` : liveQuery.results.length ? '繼續即時查詢' : '即時代繳查詢'}
+            </button>
+            <button type="button" onClick={exportReportPdf} disabled={!selectedReport || reportComparisonRows.length === 0}
+              style={{ padding: '8px 16px', background: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, cursor: !selectedReport || reportComparisonRows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
+              匯出 PDF
             </button>
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
