@@ -130,6 +130,7 @@ export default function ParkingPage() {
   const [reportDetails, setReportDetails] = useState({})
   const [selectedReportDate, setSelectedReportDate] = useState('')
   const [importing, setImporting] = useState(false)
+  const [reportExporting, setReportExporting] = useState(false)
   const [liveQuery, setLiveQuery] = useState({ open: false, running: false, total: 0, done: 0, plates: [], results: [], meta: {}, message: '', updatedAt: null })
   const [liveQueryStorageReady, setLiveQueryStorageReady] = useState(false)
   const reportRef = useRef(null)
@@ -328,6 +329,145 @@ export default function ParkingPage() {
     flash('已刪除')
     if (selectedReportDate === date) setSelectedReportDate('')
     loadReportDays()
+  }
+
+  const downloadReportPdf = async () => {
+    if (!selectedReport || !reportComparisonRows.length || reportExporting) {
+      flash('目前沒有可匯出的報表資料')
+      return
+    }
+
+    setReportExporting(true)
+    try {
+      const { jsPDF } = await import('jspdf')
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4', compress: true })
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      const margin = 28
+      const scale = Math.min(2, window.devicePixelRatio || 2)
+      const fontFamily = '"Microsoft JhengHei", "PingFang TC", "Noto Sans TC", Arial, sans-serif'
+      let pdfPages = 0
+
+      const makePage = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(pageW * scale)
+        canvas.height = Math.round(pageH * scale)
+        const context = canvas.getContext('2d')
+        context.scale(scale, scale)
+        context.fillStyle = '#ffffff'
+        context.fillRect(0, 0, pageW, pageH)
+        context.textBaseline = 'middle'
+        return { canvas, context }
+      }
+
+      let page = makePage()
+      let ctx = page.context
+      let y = margin
+      const rowH = 28
+      const contentW = pageW - margin * 2
+
+      const setFont = (size, weight = 400, color = '#0f172a') => {
+        ctx.font = `${weight} ${size}px ${fontFamily}`
+        ctx.fillStyle = color
+      }
+      const drawText = (value, x, lineY, maxW, align = 'left') => {
+        const raw = String(value ?? '')
+        let s = raw
+        while (s.length > 1 && ctx.measureText(s).width > maxW) s = s.slice(0, -1)
+        if (s !== raw) s = `${s.slice(0, -1)}...`
+        ctx.textAlign = align
+        ctx.fillText(s, align === 'right' ? x + maxW : x, lineY, maxW)
+      }
+      const ensure = (height) => {
+        if (y + height <= pageH - margin) return
+        if (pdfPages > 0) pdf.addPage()
+        pdf.addImage(page.canvas.toDataURL('image/jpeg', 0.82), 'JPEG', 0, 0, pageW, pageH)
+        pdfPages += 1
+        page = makePage()
+        ctx = page.context
+        y = margin
+      }
+      const tableRow = (cells, widths, options = {}) => {
+        ensure(options.height || rowH)
+        const h = options.height || rowH
+        let x = margin
+        ctx.strokeStyle = '#dbe3ee'
+        ctx.lineWidth = 1
+        for (let i = 0; i < cells.length; i += 1) {
+          ctx.fillStyle = options.header ? '#eef3f9' : '#ffffff'
+          ctx.fillRect(x, y, widths[i], h)
+          ctx.strokeRect(x, y, widths[i], h)
+          setFont(options.fontSize || 10, options.header ? 800 : 500, options.colors?.[i] || '#0f172a')
+          drawText(cells[i], x + 6, y + h / 2, widths[i] - 12, options.aligns?.[i] || 'left')
+          x += widths[i]
+        }
+        y += h
+      }
+
+      setFont(18, 900)
+      drawText('每日繳費報表', margin, y + 10, 220)
+      setFont(10, 400, '#64748b')
+      drawText(`匯出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}；目前選取日期：${selectedReportDate || '-'}`, margin, y + 32, contentW)
+      y += 52
+
+      setFont(13, 900)
+      drawText('統計摘要', margin, y + 8, 140)
+      y += 20
+      const summaryRows = [
+        ['單一車輛', selectedReport.count ?? 0, '月租候選', selectedReport.monthlyCandidateCount ?? 0],
+        ['0元未滿15分鐘', selectedReport.zeroUnder15Count ?? 0, '查無繳費紀錄', selectedReport.noPaymentCount ?? 0],
+        ['有待繳金額', selectedReport.dueCount ?? 0, '待繳總額', money(selectedReport.total)],
+        ['0元無法判斷', selectedReport.zeroUnknownCount ?? 0, '查詢異常', selectedReport.errorCount ?? 0],
+      ]
+      summaryRows.forEach((r) => tableRow(r, [contentW * .25, contentW * .25, contentW * .25, contentW * .25], { aligns: ['left', 'right', 'left', 'right'] }))
+      y += 16
+
+      setFont(13, 900)
+      drawText('金額加總', margin, y + 8, 140)
+      y += 20
+      const totalWidths = reportAmountTotals.map(() => contentW / Math.max(reportAmountTotals.length, 1))
+      tableRow(reportAmountTotals.map((item, index) => `${shortDate(item.date)}${index === 0 ? ' 初次統計' : ''}`), totalWidths, { header: true, aligns: reportAmountTotals.map(() => 'right') })
+      tableRow(reportAmountTotals.map((item, index) => `${index === 0 ? money(item.amount) : signedAmount(item.amount)} / ${item.count}台`), totalWidths, { aligns: reportAmountTotals.map(() => 'right') })
+      y += 16
+
+      setFont(13, 900)
+      drawText('車牌金額明細', margin, y + 8, 160)
+      y += 20
+      const plateW = 90
+      const entryW = 132
+      const dateW = (contentW - plateW - entryW) / Math.max(reportDatesAsc.length, 1)
+      const detailWidths = [plateW, entryW, ...reportDatesAsc.map(() => dateW)]
+      tableRow(['車號', '入場時間', ...reportDatesAsc.map((date, index) => `${shortDate(date)}${index === 0 ? ' 初次統計' : ''}`)], detailWidths, { header: true, fontSize: 9 })
+
+      reportComparisonRows.forEach((row) => {
+        const cells = [row.plate, row.entryAt || '-']
+        const colors = ['#0f172a', '#64748b']
+        reportDatesAsc.forEach((date) => {
+          const current = row.records[date]
+          if (!current) {
+            cells.push('-')
+            colors.push('#64748b')
+            return
+          }
+          const previousDate = [...reportDatesAsc].filter((d) => d < date && row.records[d]).pop()
+          const previous = previousDate ? row.records[previousDate] : null
+          const value = previous ? Number(current.amount || 0) - Number(previous.amount || 0) : Number(current.amount || 0)
+          cells.push(`${previous ? signedAmount(value) : plainAmount(value)} ${current.status || ''}`)
+          colors.push(current.monthlyCandidate ? '#b45309' : current.amount > 0 ? '#0369a1' : '#64748b')
+        })
+        tableRow(cells, detailWidths, { fontSize: 8.5, colors })
+      })
+
+      if (pdfPages > 0) pdf.addPage()
+      pdf.addImage(page.canvas.toDataURL('image/jpeg', 0.82), 'JPEG', 0, 0, pageW, pageH)
+      pdf.save(`每日繳費報表-${selectedReportDate || 'report'}.pdf`)
+      flash('PDF 已產生，請查看下載項目')
+    } catch (err) {
+      console.error(err)
+      flash('PDF 產生失敗，請再試一次')
+    } finally {
+      setReportExporting(false)
+    }
   }
 
   const exportReportPdf = () => {
@@ -992,9 +1132,9 @@ export default function ParkingPage() {
               style={{ padding: '8px 16px', background: liveQuery.running ? '#64748b' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: !liveQuery.running && reportComparisonRows.length === 0 && liveQuery.plates.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
               {liveQuery.running ? `即時查詢中 ${liveQuery.done}/${liveQuery.total}` : liveQuery.results.length ? '繼續即時查詢' : '即時代繳查詢'}
             </button>
-            <button type="button" onClick={exportReportPdf} disabled={!selectedReport || reportComparisonRows.length === 0}
-              style={{ padding: '8px 16px', background: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, cursor: !selectedReport || reportComparisonRows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
-              匯出 PDF
+            <button type="button" onClick={downloadReportPdf} disabled={reportExporting || !selectedReport || reportComparisonRows.length === 0}
+              style={{ padding: '8px 16px', background: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, cursor: reportExporting || !selectedReport || reportComparisonRows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 700 }}>
+              {reportExporting ? '產生 PDF 中...' : '匯出 PDF'}
             </button>
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
