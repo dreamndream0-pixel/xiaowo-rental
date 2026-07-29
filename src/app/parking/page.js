@@ -1040,10 +1040,16 @@ export default function ParkingPage() {
               更新 TDX
             </button>
             {tdxAvailability?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.fetchError}</span>}
+            {tdxAvailability?.carParkFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.carParkFetchError}</span>}
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
             資料來源：TDX 官方 OffStreet/ParkingAvailability/City/Taichung。剩餘格下降視為進場、剩餘格上升視為出場；異常跳點不列入進出場。
           </p>
+          {tdxAvailability?.notice && (
+            <div style={{ padding: 12, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>
+              {tdxAvailability.notice}
+            </div>
+          )}
           {(tdxAvailability?.daily || []).length ? (
             <>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
@@ -1084,7 +1090,33 @@ export default function ParkingPage() {
               </div>
             </>
           ) : (
-            <div style={{ padding: 16, textAlign: 'center', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 10, marginBottom: 14 }}>尚未取得 TDX 官方剩餘車格資料</div>
+            <div style={{ padding: 16, textAlign: 'center', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 10, marginBottom: 14 }}>
+              尚未取得 TDX 官方剩餘車格資料
+            </div>
+          )}
+          {tdxAvailability?.dataStatus === 'carpark-list-only' && (tdxAvailability?.lots || []).length > 0 && (
+            <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10, marginBottom: 14 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', color: '#334155', textAlign: 'left' }}>
+                    <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>停車場 ID</th>
+                    <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>停車場名稱</th>
+                    <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>總格數</th>
+                    <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>地址</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(tdxAvailability.lots || []).slice(0, 80).map((row) => (
+                    <tr key={row.carParkId} style={{ borderTop: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 800, whiteSpace: 'nowrap' }}>{row.carParkId}</td>
+                      <td style={{ padding: '8px 10px' }}>{row.name || '-'}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>{row.total || '-'}</td>
+                      <td style={{ padding: '8px 10px', color: '#64748b' }}>{row.address || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
           <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 760 }}>

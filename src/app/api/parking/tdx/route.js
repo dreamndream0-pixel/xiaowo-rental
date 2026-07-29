@@ -8,6 +8,7 @@ export const maxDuration = 30
 const SOURCE = 'tdx-offstreet-taichung'
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
 const TDX_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung?$top=10000&$format=JSON'
+const TDX_CARPARK_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark/City/Taichung?$top=10000&$format=JSON'
 
 let cachedToken = null
 let cachedTokenExpiresAt = 0
@@ -94,22 +95,57 @@ function normalizeAvailability(item) {
   }
 }
 
-async function fetchTdxAvailability() {
-  const token = await getTdxToken()
-  const res = await fetch(TDX_AVAILABILITY_URL, {
+function normalizeStaticCarPark(item) {
+  const total = Number(item.TotalSpaces ?? item.CarParkSpaces ?? 0)
+  return {
+    carParkId: item.CarParkID,
+    name: normalizeCarParkName(item.CarParkName),
+    available: null,
+    total,
+    occupied: null,
+    utilization: null,
+    serviceStatus: null,
+    fullStatus: null,
+    chargeStatus: null,
+    rawUpdatedAt: null,
+    sampledAt: null,
+    remark: item.Description || item.FareDescription || '',
+    address: item.Address || '',
+    sourceType: 'carpark',
+  }
+}
+
+async function fetchTdxJson(url, token) {
+  const res = await fetch(url, {
     cache: 'no-store',
     headers: {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
     },
   })
-  if (!res.ok) throw new Error(`TDX ParkingAvailability 回應 ${res.status}`)
-  const data = await res.json()
+  if (!res.ok) throw new Error(`TDX 回應 ${res.status}`)
+  return res.json()
+}
+
+async function fetchTdxAvailability() {
+  const token = await getTdxToken()
+  const data = await fetchTdxJson(TDX_AVAILABILITY_URL, token)
   const items = Array.isArray(data.Items) ? data.Items : []
   return {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     items: items.map(normalizeAvailability).filter((row) => row.carParkId && row.total > 0),
+  }
+}
+
+async function fetchTdxCarParks() {
+  const token = await getTdxToken()
+  const data = await fetchTdxJson(TDX_CARPARK_URL, token)
+  const items = Array.isArray(data.Items) ? data.Items : []
+  return {
+    sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
+    count: Number(data.Count ?? items.length),
+    items: items.map(normalizeStaticCarPark).filter((row) => row.carParkId),
   }
 }
 
@@ -194,6 +230,8 @@ export async function GET() {
     let saved = false
     let fetchError = null
     let availability = null
+    let carParks = null
+    let carParkFetchError = null
 
     try {
       availability = await fetchTdxAvailability()
@@ -201,6 +239,14 @@ export async function GET() {
       saved = await saveSnapshot(latest)
     } catch (error) {
       fetchError = error?.message || 'TDX 停車場剩餘格數抓取失敗'
+    }
+
+    if (!availability?.items?.length) {
+      try {
+        carParks = await fetchTdxCarParks()
+      } catch (error) {
+        carParkFetchError = error?.message || 'TDX 停車場基本資料抓取失敗'
+      }
     }
 
     const rows = await db.$queryRaw`
@@ -214,18 +260,32 @@ export async function GET() {
       ? { ...latest, entries: 0, exits: 0, anomaly: false }
       : (timeline[timeline.length - 1] || null)
     const daily = summarizeTimeline(timeline)
+    const lots = availability?.items?.length ? availability.items : (carParks?.items || [])
+    const dataStatus = availability?.items?.length
+      ? 'live'
+      : (carParks?.items?.length ? 'carpark-list-only' : 'empty')
+    const notice = dataStatus === 'live'
+      ? null
+      : (dataStatus === 'carpark-list-only'
+        ? 'TDX 台中路外停車場剩餘位目前回傳 0 筆，已改顯示官方停車場清單供查詢 ID。'
+        : 'TDX 台中路外停車場剩餘位目前回傳 0 筆，且停車場清單也未取得資料。')
 
     return NextResponse.json({
       source: SOURCE,
       url: TDX_AVAILABILITY_URL,
+      carParkUrl: TDX_CARPARK_URL,
       saved,
       fetchError,
+      carParkFetchError,
       historyFetchError: null,
       latest: latestRow,
       daily: daily.sort((a, b) => b.reportDate.localeCompare(a.reportDate)),
       timeline: timeline.slice(-2500).reverse(),
-      lots: availability?.items || [],
+      lots,
       count: availability?.count || 0,
+      carParkCount: carParks?.count || 0,
+      dataStatus,
+      notice,
       sourceUpdateTime: availability?.sourceUpdateTime || null,
     })
   } catch (error) {
