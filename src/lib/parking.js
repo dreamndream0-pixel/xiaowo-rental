@@ -84,6 +84,13 @@ export async function ensureParkingTables() {
     `)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_time_idx ON parking_occupancy_snapshots (source, "sampledAt")`)
     await db.$queryRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_raw_idx ON parking_occupancy_snapshots (source, "rawUpdatedAt")`)
+    await db.$queryRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS parking_tdx_cache (
+        key          TEXT PRIMARY KEY,
+        payload      JSONB NOT NULL,
+        "fetchedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `)
   } catch (e) {
     console.error('ensureParkingTables error:', e?.message)
   }

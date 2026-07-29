@@ -6,12 +6,16 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
 const SOURCE = 'tdx-offstreet-taichung'
+const AVAILABILITY_CACHE_KEY = `${SOURCE}:availability`
+const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
+const CACHE_TTL_MS = 10 * 60 * 1000
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
 const TDX_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung?$top=10000&$format=JSON'
 const TDX_CARPARK_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark/City/Taichung?$top=10000&$format=JSON'
 
 let cachedToken = null
 let cachedTokenExpiresAt = 0
+let memoryCache = new Map()
 
 function taipeiDate(value) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -127,26 +131,78 @@ async function fetchTdxJson(url, token) {
   return res.json()
 }
 
+async function readCache(key) {
+  const memory = memoryCache.get(key)
+  if (memory) return memory
+  try {
+    const rows = await db.$queryRaw`
+      SELECT payload, "fetchedAt"
+      FROM parking_tdx_cache
+      WHERE key = ${key}
+      LIMIT 1
+    `
+    if (!rows.length) return null
+    const cached = {
+      payload: rows[0].payload,
+      fetchedAt: new Date(rows[0].fetchedAt),
+    }
+    memoryCache.set(key, cached)
+    return cached
+  } catch {
+    return null
+  }
+}
+
+function isFreshCache(cached) {
+  if (!cached?.fetchedAt) return false
+  return Date.now() - new Date(cached.fetchedAt).getTime() < CACHE_TTL_MS
+}
+
+async function writeCache(key, payload) {
+  const fetchedAt = new Date()
+  const payloadJson = JSON.stringify(payload)
+  memoryCache.set(key, { payload, fetchedAt })
+  await db.$executeRaw`
+    INSERT INTO parking_tdx_cache (key, payload, "fetchedAt")
+    VALUES (${key}, CAST(${payloadJson} AS JSONB), ${fetchedAt})
+    ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, "fetchedAt" = EXCLUDED."fetchedAt"
+  `
+}
+
+function isTdxRateLimitError(error) {
+  return String(error?.message || '').includes('429')
+}
+
 async function fetchTdxAvailability() {
+  const cached = await readCache(AVAILABILITY_CACHE_KEY)
+  if (isFreshCache(cached)) return { ...cached.payload, fromCache: true }
+
   const token = await getTdxToken()
   const data = await fetchTdxJson(TDX_AVAILABILITY_URL, token)
   const items = Array.isArray(data.Items) ? data.Items : []
-  return {
+  const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     items: items.map(normalizeAvailability).filter((row) => row.carParkId && row.total > 0),
   }
+  await writeCache(AVAILABILITY_CACHE_KEY, payload)
+  return payload
 }
 
 async function fetchTdxCarParks() {
+  const cached = await readCache(CARPARK_CACHE_KEY)
+  if (isFreshCache(cached)) return { ...cached.payload, fromCache: true }
+
   const token = await getTdxToken()
   const data = await fetchTdxJson(TDX_CARPARK_URL, token)
   const items = Array.isArray(data.Items) ? data.Items : []
-  return {
+  const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     items: items.map(normalizeStaticCarPark).filter((row) => row.carParkId),
   }
+  await writeCache(CARPARK_CACHE_KEY, payload)
+  return payload
 }
 
 function selectPrimaryAvailability(items) {
@@ -232,6 +288,7 @@ export async function GET() {
     let availability = null
     let carParks = null
     let carParkFetchError = null
+    let fallbackNotice = null
 
     try {
       availability = await fetchTdxAvailability()
@@ -239,13 +296,24 @@ export async function GET() {
       saved = await saveSnapshot(latest)
     } catch (error) {
       fetchError = error?.message || 'TDX 停車場剩餘格數抓取失敗'
+      const cached = await readCache(AVAILABILITY_CACHE_KEY)
+      if (cached?.payload) {
+        availability = { ...cached.payload, fromCache: true, stale: true }
+        latest = selectPrimaryAvailability(availability.items || [])
+        fallbackNotice = 'TDX 目前回應 429 限流，暫時顯示上次成功抓取的快取資料。'
+      }
     }
 
-    if (!availability?.items?.length) {
+    if (!availability?.items?.length && !isTdxRateLimitError({ message: fetchError })) {
       try {
         carParks = await fetchTdxCarParks()
       } catch (error) {
         carParkFetchError = error?.message || 'TDX 停車場基本資料抓取失敗'
+        const cached = await readCache(CARPARK_CACHE_KEY)
+        if (cached?.payload) {
+          carParks = { ...cached.payload, fromCache: true, stale: true }
+          fallbackNotice = fallbackNotice || 'TDX 目前無法取得最新資料，暫時顯示上次成功抓取的停車場清單快取。'
+        }
       }
     }
 
@@ -265,10 +333,12 @@ export async function GET() {
       ? 'live'
       : (carParks?.items?.length ? 'carpark-list-only' : 'empty')
     const notice = dataStatus === 'live'
-      ? null
+      ? fallbackNotice
       : (dataStatus === 'carpark-list-only'
-        ? 'TDX 台中路外停車場剩餘位目前回傳 0 筆，已改顯示官方停車場清單供查詢 ID。'
-        : 'TDX 台中路外停車場剩餘位目前回傳 0 筆，且停車場清單也未取得資料。')
+        ? (fallbackNotice || 'TDX 台中路外停車場剩餘位目前回傳 0 筆，已改顯示官方停車場清單供查詢 ID。')
+        : (fallbackNotice || (isTdxRateLimitError({ message: fetchError })
+          ? 'TDX 目前回應 429 限流，請稍後再更新；系統已避免連續重試，防止額度繼續被消耗。'
+          : 'TDX 台中路外停車場剩餘位目前回傳 0 筆，且停車場清單也未取得資料。')))
 
     return NextResponse.json({
       source: SOURCE,
@@ -286,6 +356,8 @@ export async function GET() {
       carParkCount: carParks?.count || 0,
       dataStatus,
       notice,
+      fromCache: Boolean(availability?.fromCache || carParks?.fromCache),
+      cacheTtlSeconds: CACHE_TTL_MS / 1000,
       sourceUpdateTime: availability?.sourceUpdateTime || null,
     })
   } catch (error) {
