@@ -155,14 +155,15 @@ export default function ParkingPage() {
   }, [])
 
   // 重新載入某停車場的資料
-  const reload = useCallback(async (id) => {
+  const reload = useCallback(async (id, options = {}) => {
     if (!id) return
+    const tdxUrl = options.forceTdxRefresh ? `/api/parking/tdx?refresh=1&ts=${Date.now()}` : '/api/parking/tdx'
     try {
       const [s, on, hist, pb] = await Promise.all([
         fetch(`/api/parking/stats?lotId=${id}`).then((r) => r.json()),
         fetch(`/api/parking/sessions?lotId=${id}&status=onsite`).then((r) => r.json()),
         fetch(`/api/parking/sessions?lotId=${id}&status=history`).then((r) => r.json()),
-        fetch('/api/parking/tdx').then((r) => r.json()).catch(() => null),
+        fetch(tdxUrl).then((r) => r.json()).catch(() => null),
       ])
       setStats(s)
       if (pb && !pb.error) setTdxAvailability(pb)
@@ -1035,12 +1036,14 @@ export default function ParkingPage() {
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>TDX 官方剩餘車格</h2>
-            <button type="button" onClick={() => reload(lotId)}
+            <button type="button" onClick={() => reload(lotId, { forceTdxRefresh: true })}
               style={{ padding: '8px 12px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
               更新 TDX
             </button>
             {tdxAvailability?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.fetchError}</span>}
+            {tdxAvailability?.spotFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.spotFetchError}</span>}
             {tdxAvailability?.carParkFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.carParkFetchError}</span>}
+            {tdxAvailability?.parkingSpaceFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.parkingSpaceFetchError}</span>}
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
             資料來源：TDX 官方 OffStreet/ParkingAvailability/City/Taichung。剩餘格下降視為進場、剩餘格上升視為出場；異常跳點不列入進出場。
@@ -1048,6 +1051,15 @@ export default function ParkingPage() {
           {tdxAvailability?.notice && (
             <div style={{ padding: 12, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>
               {tdxAvailability.notice}
+            </div>
+          )}
+          {tdxAvailability?.diagnostics && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+              {Object.values(tdxAvailability.diagnostics).map((item) => (
+                <span key={item.endpoint} style={{ padding: '6px 9px', borderRadius: 999, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                  {item.endpoint}: {item.rawItemsLength ?? 0} 筆
+                </span>
+              ))}
             </div>
           )}
           {(tdxAvailability?.daily || []).length ? (
