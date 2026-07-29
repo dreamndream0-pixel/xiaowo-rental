@@ -467,6 +467,7 @@ export async function GET(request) {
   try {
     await ensureParkingTables()
     const skipCache = request?.nextUrl?.searchParams?.get('refresh') === '1'
+    const debug = request?.nextUrl?.searchParams?.get('debug') === '1'
 
     let latest = null
     let saved = false
@@ -494,7 +495,7 @@ export async function GET(request) {
       }
     }
 
-    if (!availability?.items?.length && !isTdxRateLimitError({ message: fetchError })) {
+    if (debug && !availability?.items?.length && !isTdxRateLimitError({ message: fetchError })) {
       try {
         spotAvailability = await fetchTdxSpotAvailability({ skipCache })
         if (spotAvailability.items?.length) {
@@ -561,7 +562,7 @@ export async function GET(request) {
         ? (fallbackNotice || 'TDX 台中路外停車場剩餘位目前回傳 0 筆，已改顯示官方停車場清單/車位數資料供查詢 ID。')
         : (fallbackNotice || (isTdxRateLimitError({ message: fetchError })
           ? 'TDX 目前回應 429 限流，請稍後再更新；系統已避免連續重試，防止額度繼續被消耗。'
-          : 'TDX 台中路外停車場剩餘位、格位動態、停車場清單與車位數資料目前都回傳 0 筆。')))
+          : 'TDX 台中路外停車場剩餘位、停車場清單與車位數資料目前都回傳 0 筆。')))
 
     return NextResponse.json({
       source: SOURCE,
@@ -571,7 +572,7 @@ export async function GET(request) {
       parkingSpaceUrl: TDX_PARKING_SPACE_URL,
       saved,
       fetchError,
-      spotFetchError,
+      spotFetchError: debug ? spotFetchError : null,
       carParkFetchError,
       parkingSpaceFetchError,
       historyFetchError: null,
@@ -595,13 +596,13 @@ export async function GET(request) {
           normalizedItemsLength: availability?.items?.length || 0,
           fromCache: Boolean(availability?.fromCache),
         },
-        spotAvailability: {
+        ...(debug ? { spotAvailability: {
           endpoint: spotAvailability?.endpoint || 'ParkingSpotAvailability',
           count: spotAvailability?.count || 0,
           rawItemsLength: spotAvailability?.rawItemsLength || 0,
           normalizedItemsLength: spotAvailability?.items?.length || 0,
           fromCache: Boolean(spotAvailability?.fromCache),
-        },
+        } } : {}),
         carParks: {
           endpoint: carParks?.endpoint || 'CarPark',
           count: carParks?.count || 0,

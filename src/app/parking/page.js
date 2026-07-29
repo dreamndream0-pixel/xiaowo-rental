@@ -1041,7 +1041,6 @@ export default function ParkingPage() {
               更新 TDX
             </button>
             {tdxAvailability?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.fetchError}</span>}
-            {tdxAvailability?.spotFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.spotFetchError}</span>}
             {tdxAvailability?.carParkFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.carParkFetchError}</span>}
             {tdxAvailability?.parkingSpaceFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.parkingSpaceFetchError}</span>}
           </div>
