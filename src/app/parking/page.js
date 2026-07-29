@@ -1036,7 +1036,7 @@ export default function ParkingPage() {
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>TDX 官方剩餘車格</h2>
-            <button type="button" onClick={() => reload(lotId, { forceTdxRefresh: true })}
+            <button type="button" onClick={() => reload(lotId)}
               style={{ padding: '8px 12px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
               更新 TDX
             </button>

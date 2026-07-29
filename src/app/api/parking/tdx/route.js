@@ -10,8 +10,10 @@ const AVAILABILITY_CACHE_KEY = `${SOURCE}:availability`
 const SPOT_AVAILABILITY_CACHE_KEY = `${SOURCE}:spot-availability`
 const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
 const PARKING_SPACE_CACHE_KEY = `${SOURCE}:parking-spaces`
+const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const CACHE_TTL_MS = 10 * 60 * 1000
-const EMPTY_CACHE_TTL_MS = 60 * 1000
+const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
+const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
 const TDX_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung?$top=1000&$format=JSON'
 const TDX_SPOT_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingSpotAvailability/City/Taichung?$top=1000&$format=JSON'
@@ -256,12 +258,44 @@ function isTdxRateLimitError(error) {
   return String(error?.message || '').includes('429')
 }
 
+async function readRateLimitCooldown() {
+  const cached = await readCache(RATE_LIMIT_CACHE_KEY)
+  const until = cached?.payload?.until ? new Date(cached.payload.until) : null
+  if (!until || Number.isNaN(until.getTime()) || until.getTime() <= Date.now()) return null
+  return {
+    until,
+    message: cached.payload.message || `TDX 回應 429，已暫停自動刷新至 ${taipeiDateTime(until)}`,
+  }
+}
+
+async function writeRateLimitCooldown() {
+  const until = new Date(Date.now() + RATE_LIMIT_COOLDOWN_MS)
+  const message = `TDX 回應 429，已暫停自動刷新至 ${taipeiDateTime(until)}`
+  await writeCache(RATE_LIMIT_CACHE_KEY, { until: until.toISOString(), message, items: [{ status: 'rate-limited' }] })
+  return { until, message }
+}
+
+async function assertNoRateLimitCooldown() {
+  const cooldown = await readRateLimitCooldown()
+  if (cooldown) throw new Error(cooldown.message)
+}
+
 async function fetchTdxAvailability({ skipCache = false } = {}) {
   const cached = await readCache(AVAILABILITY_CACHE_KEY)
   if (!skipCache && isFreshCache(cached)) return { ...cached.payload, fromCache: true }
 
+  await assertNoRateLimitCooldown()
   const token = await getTdxToken()
-  const data = await fetchTdxJson(TDX_AVAILABILITY_URL, token)
+  let data
+  try {
+    data = await fetchTdxJson(TDX_AVAILABILITY_URL, token)
+  } catch (error) {
+    if (isTdxRateLimitError(error)) {
+      const cooldown = await writeRateLimitCooldown()
+      throw new Error(cooldown.message)
+    }
+    throw error
+  }
   const items = Array.isArray(data.Items) ? data.Items : []
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
@@ -278,8 +312,18 @@ async function fetchTdxSpotAvailability({ skipCache = false } = {}) {
   const cached = await readCache(SPOT_AVAILABILITY_CACHE_KEY)
   if (!skipCache && isFreshCache(cached)) return { ...cached.payload, fromCache: true }
 
+  await assertNoRateLimitCooldown()
   const token = await getTdxToken()
-  const data = await fetchTdxJson(TDX_SPOT_AVAILABILITY_URL, token)
+  let data
+  try {
+    data = await fetchTdxJson(TDX_SPOT_AVAILABILITY_URL, token)
+  } catch (error) {
+    if (isTdxRateLimitError(error)) {
+      const cooldown = await writeRateLimitCooldown()
+      throw new Error(cooldown.message)
+    }
+    throw error
+  }
   const items = Array.isArray(data.Items) ? data.Items : []
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
@@ -296,8 +340,18 @@ async function fetchTdxCarParks({ skipCache = false } = {}) {
   const cached = await readCache(CARPARK_CACHE_KEY)
   if (!skipCache && isFreshCache(cached)) return { ...cached.payload, fromCache: true }
 
+  await assertNoRateLimitCooldown()
   const token = await getTdxToken()
-  const data = await fetchTdxJson(TDX_CARPARK_URL, token)
+  let data
+  try {
+    data = await fetchTdxJson(TDX_CARPARK_URL, token)
+  } catch (error) {
+    if (isTdxRateLimitError(error)) {
+      const cooldown = await writeRateLimitCooldown()
+      throw new Error(cooldown.message)
+    }
+    throw error
+  }
   const items = Array.isArray(data.Items) ? data.Items : []
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
@@ -312,8 +366,18 @@ async function fetchTdxParkingSpaces({ skipCache = false } = {}) {
   const cached = await readCache(PARKING_SPACE_CACHE_KEY)
   if (!skipCache && isFreshCache(cached)) return { ...cached.payload, fromCache: true }
 
+  await assertNoRateLimitCooldown()
   const token = await getTdxToken()
-  const data = await fetchTdxJson(TDX_PARKING_SPACE_URL, token)
+  let data
+  try {
+    data = await fetchTdxJson(TDX_PARKING_SPACE_URL, token)
+  } catch (error) {
+    if (isTdxRateLimitError(error)) {
+      const cooldown = await writeRateLimitCooldown()
+      throw new Error(cooldown.message)
+    }
+    throw error
+  }
   const items = Array.isArray(data.Items) ? data.Items : []
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
