@@ -100,8 +100,8 @@ export default function ParkingPage() {
   const [lots, setLots] = useState([])
   const [lotId, setLotId] = useState('')
   const [stats, setStats] = useState(null)
-  const [parkboss, setParkboss] = useState(null)
-  const [selectedParkbossDate, setSelectedParkbossDate] = useState('')
+  const [tdxAvailability, setTdxAvailability] = useState(null)
+  const [selectedTdxDate, setSelectedTdxDate] = useState('')
   const [onsite, setOnsite] = useState([])
   const [history, setHistory] = useState([])
   const [tab, setTab] = useState('onsite')
@@ -162,10 +162,10 @@ export default function ParkingPage() {
         fetch(`/api/parking/stats?lotId=${id}`).then((r) => r.json()),
         fetch(`/api/parking/sessions?lotId=${id}&status=onsite`).then((r) => r.json()),
         fetch(`/api/parking/sessions?lotId=${id}&status=history`).then((r) => r.json()),
-        fetch('/api/parking/parkboss').then((r) => r.json()).catch(() => null),
+        fetch('/api/parking/tdx').then((r) => r.json()).catch(() => null),
       ])
       setStats(s)
-      if (pb && !pb.error) setParkboss(pb)
+      if (pb && !pb.error) setTdxAvailability(pb)
       setOnsite(Array.isArray(on) ? on : [])
       setHistory(Array.isArray(hist) ? hist : [])
     } catch { /* ignore */ }
@@ -174,10 +174,10 @@ export default function ParkingPage() {
   useEffect(() => { if (lotId) reload(lotId) }, [lotId, reload])
 
   useEffect(() => {
-    const days = parkboss?.daily || []
+    const days = tdxAvailability?.daily || []
     if (!days.length) return
-    setSelectedParkbossDate((prev) => (prev && days.some((day) => day.reportDate === prev) ? prev : days[0].reportDate))
-  }, [parkboss])
+    setSelectedTdxDate((prev) => (prev && days.some((day) => day.reportDate === prev) ? prev : days[0].reportDate))
+  }, [tdxAvailability])
 
   useEffect(() => {
     try {
@@ -963,32 +963,32 @@ export default function ParkingPage() {
     return summary
   }, [liveQuery.meta, liveQuery.plates, liveQuery.results])
 
-  const selectedParkbossDay = useMemo(
-    () => (parkboss?.daily || []).find((day) => day.reportDate === selectedParkbossDate) || null,
-    [parkboss, selectedParkbossDate]
+  const selectedTdxDay = useMemo(
+    () => (tdxAvailability?.daily || []).find((day) => day.reportDate === selectedTdxDate) || null,
+    [tdxAvailability, selectedTdxDate]
   )
 
-  const selectedParkbossTimeline = useMemo(
-    () => (parkboss?.timeline || []).filter((row) => {
-      if (!selectedParkbossDate) return true
+  const selectedTdxTimeline = useMemo(
+    () => (tdxAvailability?.timeline || []).filter((row) => {
+      if (!selectedTdxDate) return true
       const value = row.rawUpdatedAt || row.sampledAt || ''
-      return String(value).startsWith(selectedParkbossDate)
+      return String(value).startsWith(selectedTdxDate)
     }),
-    [parkboss, selectedParkbossDate]
+    [tdxAvailability, selectedTdxDate]
   )
 
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748b' }}>載入中…</div>
   }
 
-  const parkbossLatest = parkboss?.latest || null
-  const parkbossToday = parkboss?.daily?.find((day) => day.reportDate === new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })) || null
-  const displayTotalSpaces = parkbossLatest?.total ?? stats?.totalSpaces ?? 0
-  const displayAvailable = parkbossLatest?.available ?? stats?.available ?? 0
-  const displayOnsite = parkbossLatest?.occupied ?? stats?.onsite ?? 0
-  const util = parkbossLatest?.utilization ?? stats?.utilization ?? 0
-  const displayTodayEntries = parkbossToday?.entries ?? stats?.todayEntries ?? 0
-  const displayTodayExits = parkbossToday?.exits ?? stats?.todayExits ?? 0
+  const tdxLatest = tdxAvailability?.latest || null
+  const tdxToday = tdxAvailability?.daily?.find((day) => day.reportDate === new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })) || null
+  const displayTotalSpaces = tdxLatest?.total ?? stats?.totalSpaces ?? 0
+  const displayAvailable = tdxLatest?.available ?? stats?.available ?? 0
+  const displayOnsite = tdxLatest?.occupied ?? stats?.onsite ?? 0
+  const util = tdxLatest?.utilization ?? stats?.utilization ?? 0
+  const displayTodayEntries = tdxToday?.entries ?? stats?.todayEntries ?? 0
+  const displayTodayExits = tdxToday?.exits ?? stats?.todayExits ?? 0
   const displayTurnover = displayTotalSpaces ? Math.round((displayTodayEntries / displayTotalSpaces) * 100) / 100 : 0
 
   // 查詢時合併現場＋歷史用車牌過濾；否則顯示目前分頁
@@ -1020,8 +1020,8 @@ export default function ParkingPage() {
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '20px' }}>
         {/* 統計列 */}
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 22 }}>
-          <StatCard label="在場車輛" value={`${displayOnsite} / ${displayTotalSpaces}`} sub={`剩餘 ${displayAvailable} 格${parkbossLatest ? ' · ParkBoss' : ''}`} />
-          <StatCard label="車格使用率" value={`${util}%`} accent={util >= 90 ? '#dc2626' : util >= 70 ? '#d97706' : '#16a34a'} sub={parkbossLatest?.rawUpdatedAt ? `更新 ${parkbossLatest.rawUpdatedAt}` : '在場 ÷ 總車格'} />
+          <StatCard label="在場車輛" value={`${displayOnsite} / ${displayTotalSpaces}`} sub={`剩餘 ${displayAvailable} 格${tdxLatest ? ' · TDX 官方' : ''}`} />
+          <StatCard label="車格使用率" value={`${util}%`} accent={util >= 90 ? '#dc2626' : util >= 70 ? '#d97706' : '#16a34a'} sub={tdxLatest?.rawUpdatedAt ? `更新 ${tdxLatest.rawUpdatedAt}` : '在場 ÷ 總車格'} />
           <StatCard label="今日周轉率" value={displayTurnover} sub={`今日進場 ${displayTodayEntries} 車次`} />
           <StatCard label="現場待繳總額" value={money(stats?.dueTotal)} accent="#0369a1" sub={`${stats?.unpaidCount ?? 0} 台未繳`} />
           <StatCard label="今日已收營收" value={money(stats?.revenueToday)} sub={`今日出場 ${displayTodayExits} 台`} />
@@ -1034,23 +1034,23 @@ export default function ParkingPage() {
 
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>ParkBoss 3分鐘進出場</h2>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>TDX 官方剩餘車格</h2>
             <button type="button" onClick={() => reload(lotId)}
               style={{ padding: '8px 12px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
-              更新 ParkBoss
+              更新 TDX
             </button>
-            {parkboss?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{parkboss.fetchError}</span>}
+            {tdxAvailability?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.fetchError}</span>}
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
-            資料來源：ParkBoss 太平區-公所-育賢P。剩餘格下降視為進場、剩餘格上升視為出場；異常跳點不列入進出場。
+            資料來源：TDX 官方 OffStreet/ParkingAvailability/City/Taichung。剩餘格下降視為進場、剩餘格上升視為出場；異常跳點不列入進出場。
           </p>
-          {(parkboss?.daily || []).length ? (
+          {(tdxAvailability?.daily || []).length ? (
             <>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
-                {(parkboss?.daily || []).map((day) => {
-                  const active = selectedParkbossDate === day.reportDate
+                {(tdxAvailability?.daily || []).map((day) => {
+                  const active = selectedTdxDate === day.reportDate
                   return (
-                    <button key={day.reportDate} type="button" onClick={() => setSelectedParkbossDate(day.reportDate)}
+                    <button key={day.reportDate} type="button" onClick={() => setSelectedTdxDate(day.reportDate)}
                       style={{ flex: '0 0 auto', padding: '9px 14px', background: active ? '#0f172a' : '#f8fafc', color: active ? '#fff' : '#334155', border: active ? '1px solid #0f172a' : '1px solid #e2e8f0', borderRadius: 10, cursor: 'pointer', fontWeight: 800 }}>
                       {shortDate(day.reportDate)}
                       <span style={{ display: 'block', marginTop: 2, fontSize: 11, fontWeight: 600, color: active ? '#cbd5e1' : '#94a3b8' }}>進 {day.entries ?? 0} / 出 {day.exits ?? 0}</span>
@@ -1062,9 +1062,9 @@ export default function ParkingPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 680 }}>
                   <tbody>
                     {[
-                      ['進場車次', selectedParkbossDay?.entries ?? 0, '出場車次', selectedParkbossDay?.exits ?? 0],
-                      ['3分鐘樣本', selectedParkbossDay?.samples ?? 0, '平均使用率', selectedParkbossDay?.avgUtilization != null ? `${selectedParkbossDay.avgUtilization}%` : '-'],
-                      ['最後剩餘格', selectedParkbossDay?.lastAvailable ?? '-', '異常跳點', selectedParkbossDay?.anomalies ?? 0],
+                      ['進場車次', selectedTdxDay?.entries ?? 0, '出場車次', selectedTdxDay?.exits ?? 0],
+                      ['3分鐘樣本', selectedTdxDay?.samples ?? 0, '平均使用率', selectedTdxDay?.avgUtilization != null ? `${selectedTdxDay.avgUtilization}%` : '-'],
+                      ['最後剩餘格', selectedTdxDay?.lastAvailable ?? '-', '異常跳點', selectedTdxDay?.anomalies ?? 0],
                     ].map((r) => (
                       <tr key={r[0]} style={{ borderTop: '1px solid #e2e8f0' }}>
                         <th style={{ width: '25%', padding: '8px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>{r[0]}</th>
@@ -1073,10 +1073,10 @@ export default function ParkingPage() {
                         <td style={{ width: '25%', padding: '8px 10px', textAlign: 'right', fontWeight: 800 }}>{r[3]}</td>
                       </tr>
                     ))}
-                    {selectedParkbossDay?.note && (
+                    {selectedTdxDay?.note && (
                       <tr style={{ borderTop: '1px solid #e2e8f0' }}>
                         <th style={{ padding: '8px 10px', background: '#f1f5f9', textAlign: 'center', fontWeight: 800 }}>備註</th>
-                        <td colSpan={3} style={{ padding: '8px 10px', color: '#64748b' }}>{selectedParkbossDay.note}</td>
+                        <td colSpan={3} style={{ padding: '8px 10px', color: '#64748b' }}>{selectedTdxDay.note}</td>
                       </tr>
                     )}
                   </tbody>
@@ -1084,7 +1084,7 @@ export default function ParkingPage() {
               </div>
             </>
           ) : (
-            <div style={{ padding: 16, textAlign: 'center', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 10, marginBottom: 14 }}>尚未取得 ParkBoss 資料</div>
+            <div style={{ padding: 16, textAlign: 'center', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 10, marginBottom: 14 }}>尚未取得 TDX 官方剩餘車格資料</div>
           )}
           <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 760 }}>
@@ -1100,7 +1100,7 @@ export default function ParkingPage() {
                 </tr>
               </thead>
               <tbody>
-                {selectedParkbossTimeline.slice(0, 30).map((row) => (
+                {selectedTdxTimeline.slice(0, 30).map((row) => (
                   <tr key={`${row.rawUpdatedAt}-${row.available}`} style={{ borderTop: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{row.rawUpdatedAt}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{row.available}</td>
@@ -1111,7 +1111,7 @@ export default function ParkingPage() {
                     <td style={{ padding: '8px 10px', color: row.anomaly ? '#b45309' : '#64748b' }}>{row.anomaly ? '系統跳點已排除' : '正常'}</td>
                   </tr>
                 ))}
-                {!selectedParkbossTimeline.length && (
+                {!selectedTdxTimeline.length && (
                   <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積 3 分鐘快照，只有每日摘要</td></tr>
                 )}
               </tbody>
