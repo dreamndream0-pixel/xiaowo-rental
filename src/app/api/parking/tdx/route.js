@@ -9,6 +9,7 @@ const SOURCE = 'tdx-offstreet-taichung'
 const AVAILABILITY_CACHE_KEY = `${SOURCE}:availability`
 const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
 const CACHE_TTL_MS = 10 * 60 * 1000
+const EMPTY_CACHE_TTL_MS = 60 * 1000
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
 const TDX_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung?$top=10000&$format=JSON'
 const TDX_CARPARK_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark/City/Taichung?$top=10000&$format=JSON'
@@ -155,7 +156,9 @@ async function readCache(key) {
 
 function isFreshCache(cached) {
   if (!cached?.fetchedAt) return false
-  return Date.now() - new Date(cached.fetchedAt).getTime() < CACHE_TTL_MS
+  const hasItems = Array.isArray(cached.payload?.items) && cached.payload.items.length > 0
+  const ttl = hasItems ? CACHE_TTL_MS : EMPTY_CACHE_TTL_MS
+  return Date.now() - new Date(cached.fetchedAt).getTime() < ttl
 }
 
 async function writeCache(key, payload) {
@@ -358,6 +361,7 @@ export async function GET() {
       notice,
       fromCache: Boolean(availability?.fromCache || carParks?.fromCache),
       cacheTtlSeconds: CACHE_TTL_MS / 1000,
+      emptyCacheTtlSeconds: EMPTY_CACHE_TTL_MS / 1000,
       sourceUpdateTime: availability?.sourceUpdateTime || null,
     })
   } catch (error) {
