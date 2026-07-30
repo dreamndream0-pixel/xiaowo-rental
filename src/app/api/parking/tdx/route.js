@@ -7,13 +7,17 @@ export const maxDuration = 30
 
 const SOURCE = 'tdx-offstreet-taichung'
 const AVAILABILITY_CACHE_KEY = `${SOURCE}:availability`
+const FAVORITE_AVAILABILITY_CACHE_KEY = `${SOURCE}:favorite-availability`
 const SPOT_AVAILABILITY_CACHE_KEY = `${SOURCE}:spot-availability`
 const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
 const PARKING_SPACE_CACHE_KEY = `${SOURCE}:parking-spaces`
 const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
+const MANUAL_REFRESH_CACHE_KEY = `${SOURCE}:manual-refresh`
 const CACHE_TTL_MS = 10 * 60 * 1000
+const FAVORITE_CACHE_TTL_MS = 30 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
+const MANUAL_REFRESH_COOLDOWN_MS = 10 * 60 * 1000
 const PARSER_VERSION = 3
 const TDX_PAGE_SIZE = 1000
 const TDX_MAX_PAGES = 10
@@ -283,11 +287,11 @@ async function readCache(key) {
   }
 }
 
-function isFreshCache(cached) {
+function isFreshCache(cached, ttlMs = CACHE_TTL_MS) {
   if (!cached?.fetchedAt) return false
   if (cached.payload?.parserVersion !== PARSER_VERSION) return false
   const hasItems = Array.isArray(cached.payload?.items) && cached.payload.items.length > 0
-  const ttl = hasItems ? CACHE_TTL_MS : EMPTY_CACHE_TTL_MS
+  const ttl = hasItems ? ttlMs : EMPTY_CACHE_TTL_MS
   return Date.now() - new Date(cached.fetchedAt).getTime() < ttl
 }
 
@@ -328,9 +332,34 @@ async function assertNoRateLimitCooldown() {
   if (cooldown) throw new Error(cooldown.message)
 }
 
-async function fetchTdxAvailability({ skipCache = false } = {}) {
-  const cached = await readCache(AVAILABILITY_CACHE_KEY)
-  if (!skipCache && isFreshCache(cached)) return { ...cached.payload, fromCache: true }
+async function readManualRefreshStatus() {
+  const cached = await readCache(MANUAL_REFRESH_CACHE_KEY)
+  const lastRefreshAt = cached?.payload?.lastRefreshAt ? new Date(cached.payload.lastRefreshAt) : null
+  if (!lastRefreshAt || Number.isNaN(lastRefreshAt.getTime())) return { allowed: true, lastRefreshAt: null, nextAllowedAt: null, waitSeconds: 0 }
+
+  const nextAllowedAt = new Date(lastRefreshAt.getTime() + MANUAL_REFRESH_COOLDOWN_MS)
+  const waitSeconds = Math.max(0, Math.ceil((nextAllowedAt.getTime() - Date.now()) / 1000))
+  return {
+    allowed: waitSeconds <= 0,
+    lastRefreshAt,
+    nextAllowedAt,
+    waitSeconds,
+  }
+}
+
+async function writeManualRefreshStatus() {
+  const now = new Date()
+  await writeCache(MANUAL_REFRESH_CACHE_KEY, {
+    parserVersion: PARSER_VERSION,
+    lastRefreshAt: now.toISOString(),
+    items: [{ status: 'manual-refresh' }],
+  })
+  return readManualRefreshStatus()
+}
+
+async function fetchTdxAvailability({ skipCache = false, cacheKey = AVAILABILITY_CACHE_KEY, cacheTtlMs = CACHE_TTL_MS } = {}) {
+  const cached = await readCache(cacheKey)
+  if (!skipCache && isFreshCache(cached, cacheTtlMs)) return { ...cached.payload, fromCache: true }
 
   await assertNoRateLimitCooldown()
   const token = await getTdxToken()
@@ -354,7 +383,7 @@ async function fetchTdxAvailability({ skipCache = false } = {}) {
     endpoint: 'ParkingAvailability',
     items: items.map(normalizeAvailability).filter((row) => row.carParkId && row.total > 0),
   }
-  await writeCache(AVAILABILITY_CACHE_KEY, payload)
+  await writeCache(cacheKey, payload)
   return payload
 }
 
@@ -550,14 +579,22 @@ function summarizeTimeline(timeline) {
 export async function GET(request) {
   try {
     await ensureParkingTables()
-    const skipCache = request?.nextUrl?.searchParams?.get('refresh') === '1'
+    const wantsRefresh = request?.nextUrl?.searchParams?.get('refresh') === '1'
     const debug = request?.nextUrl?.searchParams?.get('debug') === '1'
+    const selectedCarParkId = String(request?.nextUrl?.searchParams?.get('carParkId') || '').trim()
     const favorites = await readFavorites()
+    let manualRefresh = await readManualRefreshStatus()
+    const skipCache = wantsRefresh && manualRefresh.allowed
+    let manualRefreshNotice = null
+    if (wantsRefresh && !manualRefresh.allowed) {
+      manualRefreshNotice = `TDX 手動更新每 10 分鐘一次，請 ${manualRefresh.waitSeconds} 秒後再更新。`
+    }
 
     let latest = null
     let saved = false
     let fetchError = null
     let availability = null
+    let listAvailability = null
     let spotAvailability = null
     let carParks = null
     let parkingSpaces = null
@@ -567,19 +604,41 @@ export async function GET(request) {
     let fallbackNotice = null
 
     try {
-      availability = await fetchTdxAvailability({ skipCache })
+      listAvailability = await fetchTdxAvailability({
+        skipCache,
+        cacheKey: AVAILABILITY_CACHE_KEY,
+        cacheTtlMs: CACHE_TTL_MS,
+      })
+      if (favorites.length && skipCache) {
+        availability = listAvailability
+        await writeCache(FAVORITE_AVAILABILITY_CACHE_KEY, listAvailability)
+      } else {
+        availability = favorites.length
+          ? await fetchTdxAvailability({
+              skipCache: false,
+              cacheKey: FAVORITE_AVAILABILITY_CACHE_KEY,
+              cacheTtlMs: FAVORITE_CACHE_TTL_MS,
+            })
+          : listAvailability
+      }
+      if (wantsRefresh && skipCache && !availability.fromCache) manualRefresh = await writeManualRefreshStatus()
       const { tracked } = applyFavorites(availability.items || [], favorites)
-      latest = favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items)
+      latest = selectedCarParkId
+        ? (tracked.find((row) => String(row.carParkId) === selectedCarParkId) || listAvailability.items?.find((row) => String(row.carParkId) === selectedCarParkId) || null)
+        : (favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items))
       const snapshots = favorites.length ? tracked : (latest ? [latest] : [])
       const results = await Promise.all(snapshots.map((snapshot) => saveSnapshot(snapshot, favoriteSource(snapshot.carParkId))))
       saved = results.some(Boolean)
     } catch (error) {
       fetchError = error?.message || 'TDX 停車場剩餘格數抓取失敗'
-      const cached = await readCache(AVAILABILITY_CACHE_KEY)
+      const cached = await readCache(favorites.length ? FAVORITE_AVAILABILITY_CACHE_KEY : AVAILABILITY_CACHE_KEY)
       if (cached?.payload) {
         availability = { ...cached.payload, fromCache: true, stale: true }
+        listAvailability = listAvailability || availability
         const { tracked } = applyFavorites(availability.items || [], favorites)
-        latest = favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items || [])
+        latest = selectedCarParkId
+          ? (tracked.find((row) => String(row.carParkId) === selectedCarParkId) || listAvailability.items?.find((row) => String(row.carParkId) === selectedCarParkId) || null)
+          : (favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items || []))
         fallbackNotice = 'TDX 目前回應 429 限流，暫時顯示上次成功抓取的快取資料。'
       }
     }
@@ -630,7 +689,8 @@ export async function GET(request) {
       }
     }
 
-    const timelineSource = latest?.carParkId ? favoriteSource(latest.carParkId) : SOURCE
+    const timelineCarParkId = selectedCarParkId || latest?.carParkId || ''
+    const timelineSource = timelineCarParkId ? favoriteSource(timelineCarParkId) : SOURCE
     const rows = await db.$queryRaw`
       SELECT "sampledAt", "rawUpdatedAt", available, total, occupied, utilization
       FROM parking_occupancy_snapshots
@@ -642,17 +702,18 @@ export async function GET(request) {
       ? { ...latest, entries: 0, exits: 0, anomaly: false }
       : (timeline[timeline.length - 1] || null)
     const daily = summarizeTimeline(timeline)
-    const candidates = availability?.items?.length ? availability.items : (carParks?.items?.length ? carParks.items : (parkingSpaces?.items || []))
+    const candidateSource = listAvailability?.items?.length ? listAvailability : availability
+    const candidates = candidateSource?.items?.length ? candidateSource.items : (carParks?.items?.length ? carParks.items : (parkingSpaces?.items || []))
     const { tracked: trackedLots, hasFavorites } = applyFavorites(candidates, favorites)
     const lots = hasFavorites ? trackedLots : candidates
     const dataStatus = availability?.items?.length
       ? 'live'
       : (carParks?.items?.length || parkingSpaces?.items?.length ? 'carpark-list-only' : 'empty')
     const notice = dataStatus === 'live'
-      ? fallbackNotice
+      ? (manualRefreshNotice || fallbackNotice)
       : (dataStatus === 'carpark-list-only'
-        ? (fallbackNotice || 'TDX 台中路外停車場剩餘位目前回傳 0 筆，已改顯示官方停車場清單/車位數資料供查詢 ID。')
-        : (fallbackNotice || (isTdxRateLimitError({ message: fetchError })
+        ? (manualRefreshNotice || fallbackNotice || 'TDX 台中路外停車場剩餘位目前回傳 0 筆，已改顯示官方停車場清單/車位數資料供查詢 ID。')
+        : (manualRefreshNotice || fallbackNotice || (isTdxRateLimitError({ message: fetchError })
           ? 'TDX 目前回應 429 限流，請稍後再更新；系統已避免連續重試，防止額度繼續被消耗。'
           : 'TDX 台中路外停車場剩餘位、停車場清單與車位數資料目前都回傳 0 筆。')))
 
@@ -676,6 +737,14 @@ export async function GET(request) {
       candidates,
       favorites,
       trackedOnly: hasFavorites,
+      timelineCarParkId,
+      manualRefresh: {
+        allowed: manualRefresh.allowed,
+        waitSeconds: manualRefresh.waitSeconds,
+        lastRefreshAt: manualRefresh.lastRefreshAt?.toISOString?.() || null,
+        nextAllowedAt: manualRefresh.nextAllowedAt?.toISOString?.() || null,
+        cooldownSeconds: MANUAL_REFRESH_COOLDOWN_MS / 1000,
+      },
       count: availability?.count || 0,
       carParkCount: carParks?.count || 0,
       parkingSpaceCount: parkingSpaces?.count || 0,
@@ -683,6 +752,8 @@ export async function GET(request) {
       notice,
       fromCache: Boolean(availability?.fromCache || carParks?.fromCache || parkingSpaces?.fromCache),
       cacheTtlSeconds: CACHE_TTL_MS / 1000,
+      favoriteCacheTtlSeconds: FAVORITE_CACHE_TTL_MS / 1000,
+      manualRefreshCooldownSeconds: MANUAL_REFRESH_COOLDOWN_MS / 1000,
       emptyCacheTtlSeconds: EMPTY_CACHE_TTL_MS / 1000,
       diagnostics: {
         availability: {

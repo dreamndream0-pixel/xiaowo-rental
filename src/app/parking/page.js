@@ -105,6 +105,7 @@ export default function ParkingPage() {
   const [tdxSearch, setTdxSearch] = useState('')
   const [tdxFavoriteSaving, setTdxFavoriteSaving] = useState('')
   const [selectedTdxDate, setSelectedTdxDate] = useState('')
+  const [selectedTdxCarParkId, setSelectedTdxCarParkId] = useState('')
   const [onsite, setOnsite] = useState([])
   const [history, setHistory] = useState([])
   const [tab, setTab] = useState('onsite')
@@ -160,7 +161,13 @@ export default function ParkingPage() {
   // 重新載入某停車場的資料
   const reload = useCallback(async (id, options = {}) => {
     if (!id) return
-    const tdxUrl = options.forceTdxRefresh ? `/api/parking/tdx?refresh=1&ts=${Date.now()}` : '/api/parking/tdx'
+    const tdxParams = new URLSearchParams()
+    if (options.forceTdxRefresh) {
+      tdxParams.set('refresh', '1')
+      tdxParams.set('ts', String(Date.now()))
+    }
+    if (selectedTdxCarParkId) tdxParams.set('carParkId', selectedTdxCarParkId)
+    const tdxUrl = `/api/parking/tdx${tdxParams.toString() ? `?${tdxParams.toString()}` : ''}`
     if (options.showTdxStatus) setTdxRefreshing(true)
     try {
       const [s, on, hist, pb] = await Promise.all([
@@ -182,7 +189,7 @@ export default function ParkingPage() {
     finally {
       if (options.showTdxStatus) setTdxRefreshing(false)
     }
-  }, [])
+  }, [selectedTdxCarParkId])
 
   useEffect(() => { if (lotId) reload(lotId) }, [lotId, reload])
 
@@ -191,6 +198,15 @@ export default function ParkingPage() {
     if (!days.length) return
     setSelectedTdxDate((prev) => (prev && days.some((day) => day.reportDate === prev) ? prev : days[0].reportDate))
   }, [tdxAvailability])
+
+  useEffect(() => {
+    const favorites = tdxAvailability?.favorites || []
+    if (!favorites.length) {
+      setSelectedTdxCarParkId('')
+      return
+    }
+    setSelectedTdxCarParkId((prev) => (prev && favorites.some((fav) => fav.carParkId === prev) ? prev : favorites[0].carParkId))
+  }, [tdxAvailability?.favorites])
 
   useEffect(() => {
     try {
@@ -1052,6 +1068,10 @@ export default function ParkingPage() {
 
   const tdxLatest = tdxAvailability?.latest || null
   const tdxToday = tdxAvailability?.daily?.find((day) => day.reportDate === new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })) || null
+  const selectedTdxFavorite = (tdxAvailability?.favorites || []).find((fav) => fav.carParkId === selectedTdxCarParkId) || null
+  const selectedTdxLive = (tdxAvailability?.lots || []).find((row) => row.carParkId === selectedTdxCarParkId) || tdxLatest
+  const manualRefreshWait = Number(tdxAvailability?.manualRefresh?.waitSeconds || 0)
+  const manualRefreshAllowed = tdxAvailability?.manualRefresh?.allowed !== false
   const displayTotalSpaces = tdxLatest?.total ?? stats?.totalSpaces ?? 0
   const displayAvailable = tdxLatest?.available ?? stats?.available ?? 0
   const displayOnsite = tdxLatest?.occupied ?? stats?.onsite ?? 0
@@ -1104,14 +1124,15 @@ export default function ParkingPage() {
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>TDX 官方剩餘車格</h2>
-            <button type="button" disabled={tdxRefreshing} onClick={() => reload(lotId, { showTdxStatus: true })}
-              style={{ padding: '8px 12px', background: tdxRefreshing ? '#94a3b8' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: tdxRefreshing ? 'wait' : 'pointer', fontSize: 13, fontWeight: 700 }}>
-              {tdxRefreshing ? '更新中…' : '更新 TDX'}
+            <button type="button" disabled={tdxRefreshing || !manualRefreshAllowed} onClick={() => reload(lotId, { showTdxStatus: true, forceTdxRefresh: true })}
+              style={{ padding: '8px 12px', background: tdxRefreshing || !manualRefreshAllowed ? '#94a3b8' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: tdxRefreshing || !manualRefreshAllowed ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700 }}>
+              {tdxRefreshing ? '更新中…' : manualRefreshAllowed ? '更新 TDX' : `等待 ${manualRefreshWait} 秒`}
             </button>
             {tdxAvailability?.checkedAt && (
               <span style={{ fontSize: 12, color: '#64748b' }}>
                 最後檢查 {new Date(tdxAvailability.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}
                 {tdxAvailability.fromCache ? ' · 快取' : ' · 即時'}
+                {tdxAvailability.favoriteCacheTtlSeconds ? ` · 收藏 ${tdxAvailability.favoriteCacheTtlSeconds} 秒快取` : ''}
               </span>
             )}
             {tdxAvailability?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.fetchError}</span>}
@@ -1119,7 +1140,7 @@ export default function ParkingPage() {
             {tdxAvailability?.parkingSpaceFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.parkingSpaceFetchError}</span>}
           </div>
           <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b' }}>
-            資料來源：TDX 官方 OffStreet/ParkingAvailability/City/Taichung。剩餘格下降視為進場、剩餘格上升視為出場；異常跳點不列入進出場。
+            資料來源：TDX 官方 OffStreet/ParkingAvailability/City/Taichung。收藏停車場每 30 秒檢查一次；手動更新每 10 分鐘一次。剩餘格下降視為進場、剩餘格上升視為出場；異常跳點不列入進出場。
           </p>
           {tdxAvailability?.notice && (
             <div style={{ padding: 12, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>
@@ -1168,7 +1189,7 @@ export default function ParkingPage() {
             )}
             {(tdxAvailability?.favorites || []).length > 0 ? (
               <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10, background: '#fff' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 820 }}>
                   <thead>
                     <tr style={{ background: '#f1f5f9', color: '#334155', textAlign: 'left' }}>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>停車場</th>
@@ -1176,6 +1197,7 @@ export default function ParkingPage() {
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>剩餘格</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>總格數</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>更新時間</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>紀錄</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}></th>
                     </tr>
                   </thead>
@@ -1183,12 +1205,18 @@ export default function ParkingPage() {
                     {(tdxAvailability.favorites || []).map((fav) => {
                       const live = (tdxAvailability.lots || []).find((row) => row.carParkId === fav.carParkId)
                       return (
-                        <tr key={fav.carParkId} style={{ borderTop: '1px solid #f1f5f9' }}>
+                        <tr key={fav.carParkId} style={{ borderTop: '1px solid #f1f5f9', background: selectedTdxCarParkId === fav.carParkId ? '#f0fdf4' : '#fff' }}>
                           <td style={{ padding: '8px 10px', fontWeight: 800 }}>{live?.name || fav.name}</td>
                           <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{fav.carParkId}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 900, color: live?.available === 0 ? '#dc2626' : '#15803d' }}>{live?.available ?? '-'}</td>
                           <td style={{ padding: '8px 10px', textAlign: 'right' }}>{live?.total ?? '-'}</td>
                           <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{live?.rawUpdatedAt || '尚未取得'}</td>
+                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                            <button type="button" onClick={() => setSelectedTdxCarParkId(fav.carParkId)}
+                              style={{ padding: '6px 9px', border: selectedTdxCarParkId === fav.carParkId ? '1px solid #15803d' : '1px solid #cbd5e1', borderRadius: 8, background: selectedTdxCarParkId === fav.carParkId ? '#15803d' : '#fff', color: selectedTdxCarParkId === fav.carParkId ? '#fff' : '#0f172a', fontWeight: 800, cursor: 'pointer' }}>
+                              {selectedTdxCarParkId === fav.carParkId ? '查看中' : '查看紀錄'}
+                            </button>
+                          </td>
                           <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                             <button type="button" onClick={() => removeTdxFavorite(fav.carParkId)}
                               disabled={tdxFavoriteSaving === fav.carParkId}
@@ -1208,6 +1236,25 @@ export default function ParkingPage() {
               </div>
             )}
           </div>
+          {selectedTdxCarParkId && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 14 }}>
+              <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc' }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>目前查看紀錄</div>
+                <div style={{ fontWeight: 900 }}>{selectedTdxLive?.name || selectedTdxFavorite?.name || selectedTdxCarParkId}</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{selectedTdxCarParkId}</div>
+              </div>
+              <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>最新剩餘格</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: selectedTdxLive?.available === 0 ? '#dc2626' : '#15803d' }}>{selectedTdxLive?.available ?? '-'}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>總格數 {selectedTdxLive?.total ?? '-'}</div>
+              </div>
+              <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>最新資料時間</div>
+                <div style={{ fontWeight: 900 }}>{selectedTdxLive?.rawUpdatedAt || '尚未取得'}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>每筆 TDX 更新會寫入系統紀錄</div>
+              </div>
+            </div>
+          )}
           {(tdxAvailability?.daily || []).length ? (
             <>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
@@ -1227,7 +1274,7 @@ export default function ParkingPage() {
                   <tbody>
                     {[
                       ['進場車次', selectedTdxDay?.entries ?? 0, '出場車次', selectedTdxDay?.exits ?? 0],
-                      ['3分鐘樣本', selectedTdxDay?.samples ?? 0, '平均使用率', selectedTdxDay?.avgUtilization != null ? `${selectedTdxDay.avgUtilization}%` : '-'],
+                      ['紀錄筆數', selectedTdxDay?.samples ?? 0, '平均使用率', selectedTdxDay?.avgUtilization != null ? `${selectedTdxDay.avgUtilization}%` : '-'],
                       ['最後剩餘格', selectedTdxDay?.lastAvailable ?? '-', '異常跳點', selectedTdxDay?.anomalies ?? 0],
                     ].map((r) => (
                       <tr key={r[0]} style={{ borderTop: '1px solid #e2e8f0' }}>
@@ -1290,7 +1337,7 @@ export default function ParkingPage() {
                 </tr>
               </thead>
               <tbody>
-                {selectedTdxTimeline.slice(0, 30).map((row) => (
+                {selectedTdxTimeline.map((row) => (
                   <tr key={`${row.rawUpdatedAt}-${row.available}`} style={{ borderTop: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{row.rawUpdatedAt}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{row.available}</td>
@@ -1302,7 +1349,7 @@ export default function ParkingPage() {
                   </tr>
                 ))}
                 {!selectedTdxTimeline.length && (
-                  <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積 3 分鐘快照，只有每日摘要</td></tr>
+                  <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積剩餘車位紀錄，只有每日摘要</td></tr>
                 )}
               </tbody>
             </table>
