@@ -18,7 +18,7 @@ const FAVORITE_CACHE_TTL_MS = 30 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
 const MANUAL_REFRESH_COOLDOWN_MS = 10 * 60 * 1000
-const PARSER_VERSION = 3
+const PARSER_VERSION = 4
 const TDX_PAGE_SIZE = 1000
 const TDX_MAX_PAGES = 10
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
@@ -100,12 +100,74 @@ function normalizeCarParkName(value) {
   return value.Zh_tw || value.ZhTw || value.zh_tw || value.En || value.en || ''
 }
 
+const CAR_SPACE_TYPES = new Set([1, 5, 6, 7, 8, 9, 11, 13, 15, 17, 19, 21, 23, 24, 25, 26, 27, 28, 29])
+const MOTOR_SPACE_TYPES = new Set([2, 3, 10, 12, 14, 16, 18, 20, 22])
+
+function summarizeSpaceTypes(rows) {
+  const summary = {
+    carAvailable: null,
+    carTotal: null,
+    carOccupied: null,
+    motorAvailable: null,
+    motorTotal: null,
+    motorOccupied: null,
+  }
+  const totals = {
+    carAvailable: 0,
+    carTotal: 0,
+    motorAvailable: 0,
+    motorTotal: 0,
+  }
+  let hasCar = false
+  let hasMotor = false
+  let hasCarAvailable = false
+  let hasMotorAvailable = false
+
+  for (const row of rows || []) {
+    const type = Number(row.SpaceType)
+    const total = Number(row.NumberOfSpaces ?? 0)
+    const available = Number(row.AvailableSpaces ?? -1)
+    if (CAR_SPACE_TYPES.has(type)) {
+      hasCar = true
+      totals.carTotal += total
+      if (available >= 0) {
+        hasCarAvailable = true
+        totals.carAvailable += available
+      }
+    }
+    if (MOTOR_SPACE_TYPES.has(type)) {
+      hasMotor = true
+      totals.motorTotal += total
+      if (available >= 0) {
+        hasMotorAvailable = true
+        totals.motorAvailable += available
+      }
+    }
+  }
+
+  if (hasCar) {
+    summary.carTotal = totals.carTotal
+    summary.carAvailable = hasCarAvailable ? totals.carAvailable : null
+    summary.carOccupied = hasCarAvailable ? Math.max(0, totals.carTotal - totals.carAvailable) : null
+  }
+  if (hasMotor) {
+    summary.motorTotal = totals.motorTotal
+    summary.motorAvailable = hasMotorAvailable ? totals.motorAvailable : null
+    summary.motorOccupied = hasMotorAvailable ? Math.max(0, totals.motorTotal - totals.motorAvailable) : null
+  }
+  return summary
+}
+
 function normalizeAvailability(item) {
   const total = Number(item.TotalSpaces ?? 0)
   const available = Number(item.AvailableSpaces ?? -1)
   const occupied = total > 0 && available >= 0 ? Math.max(0, total - available) : 0
   const utilization = total > 0 && available >= 0 ? Math.round((occupied / total) * 1000) / 10 : 0
   const dataTime = item.DataCollectTime || item.UpdateTime || item.SrcUpdateTime || new Date().toISOString()
+  const detailRows = Array.isArray(item.Availabilities) && item.Availabilities.length
+    ? item.Availabilities
+    : (Array.isArray(item.AreaAvailabilities) ? item.AreaAvailabilities : [])
+  const spaceSummary = summarizeSpaceTypes(detailRows)
   return {
     carParkId: item.CarParkID,
     name: normalizeCarParkName(item.CarParkName),
@@ -113,6 +175,7 @@ function normalizeAvailability(item) {
     total,
     occupied,
     utilization,
+    ...spaceSummary,
     serviceStatus: item.ServiceStatus,
     fullStatus: item.FullStatus,
     chargeStatus: item.ChargeStatus,
@@ -146,6 +209,7 @@ function normalizeParkingSpace(item) {
   const spaces = Array.isArray(item.Spaces) ? item.Spaces : []
   const totalFromSpaces = spaces.reduce((sum, row) => sum + Number(row.NumberOfSpaces || 0), 0)
   const total = Number(item.TotalSpaces ?? totalFromSpaces ?? 0)
+  const spaceSummary = summarizeSpaceTypes(spaces)
   return {
     carParkId: item.CarParkID,
     name: normalizeCarParkName(item.CarParkName),
@@ -153,6 +217,7 @@ function normalizeParkingSpace(item) {
     total,
     occupied: null,
     utilization: null,
+    ...spaceSummary,
     serviceStatus: null,
     fullStatus: null,
     chargeStatus: null,
@@ -526,12 +591,18 @@ async function saveSnapshot(snapshot, source = SOURCE) {
     LIMIT 1
   `
   if (existing.length) return false
+  const carAvailable = snapshot.carAvailable ?? null
+  const carTotal = snapshot.carTotal ?? null
+  const carOccupied = snapshot.carOccupied ?? null
+  const motorAvailable = snapshot.motorAvailable ?? null
+  const motorTotal = snapshot.motorTotal ?? null
+  const motorOccupied = snapshot.motorOccupied ?? null
 
   await db.$executeRaw`
     INSERT INTO parking_occupancy_snapshots
-      (id, source, "sampledAt", "rawUpdatedAt", available, total, occupied, utilization)
+      (id, source, "sampledAt", "rawUpdatedAt", available, total, occupied, utilization, "carAvailable", "carTotal", "carOccupied", "motorAvailable", "motorTotal", "motorOccupied")
     VALUES
-      (${crypto.randomUUID()}, ${source}, CAST(${sampledAt} AS TIMESTAMPTZ), ${rawUpdatedAt}, ${snapshot.available}, ${snapshot.total}, ${snapshot.occupied}, ${snapshot.utilization})
+      (${crypto.randomUUID()}, ${source}, CAST(${sampledAt} AS TIMESTAMPTZ), ${rawUpdatedAt}, ${snapshot.available}, ${snapshot.total}, ${snapshot.occupied}, ${snapshot.utilization}, ${carAvailable}, ${carTotal}, ${carOccupied}, ${motorAvailable}, ${motorTotal}, ${motorOccupied})
   `
   return true
 }
@@ -550,6 +621,12 @@ function buildTimeline(rows) {
       total: row.total,
       occupied: row.occupied,
       utilization: row.utilization,
+      carAvailable: row.carAvailable,
+      carTotal: row.carTotal,
+      carOccupied: row.carOccupied,
+      motorAvailable: row.motorAvailable,
+      motorTotal: row.motorTotal,
+      motorOccupied: row.motorOccupied,
       entries: !prev || anomaly ? 0 : Math.max(0, -diff),
       exits: !prev || anomaly ? 0 : Math.max(0, diff),
       anomaly,
@@ -692,7 +769,7 @@ export async function GET(request) {
     const timelineCarParkId = selectedCarParkId || latest?.carParkId || ''
     const timelineSource = timelineCarParkId ? favoriteSource(timelineCarParkId) : SOURCE
     const rows = await db.$queryRaw`
-      SELECT "sampledAt", "rawUpdatedAt", available, total, occupied, utilization
+      SELECT "sampledAt", "rawUpdatedAt", available, total, occupied, utilization, "carAvailable", "carTotal", "carOccupied", "motorAvailable", "motorTotal", "motorOccupied"
       FROM parking_occupancy_snapshots
       WHERE source = ${timelineSource}
       ORDER BY "sampledAt" ASC

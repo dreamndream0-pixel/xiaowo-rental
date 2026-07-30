@@ -8,6 +8,11 @@ const fmtTime = (d) =>
 
 const money = (n) => `$${(n || 0).toLocaleString('zh-TW')}`
 
+const spacePair = (available, total) => {
+  if (available == null && total == null) return '-'
+  return `${available ?? '-'} / ${total ?? '-'}`
+}
+
 const shortDate = (date) => {
   const [, m, d] = String(date || '').split('-')
   return m && d ? `${Number(m)}/${Number(d)}` : date
@@ -1173,7 +1178,9 @@ export default function ParkingPage() {
                   <div key={row.carParkId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ fontWeight: 800, color: '#0f172a' }}>{row.name || row.carParkId}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>{row.carParkId} · 剩餘 {row.available ?? '-'} / {row.total ?? '-'} 格</div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                        {row.carParkId} · 汽車 {spacePair(row.carAvailable, row.carTotal)} · 機車 {spacePair(row.motorAvailable, row.motorTotal)} · 總 {spacePair(row.available, row.total)}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -1189,12 +1196,13 @@ export default function ParkingPage() {
             )}
             {(tdxAvailability?.favorites || []).length > 0 ? (
               <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10, background: '#fff' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 820 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 960 }}>
                   <thead>
                     <tr style={{ background: '#f1f5f9', color: '#334155', textAlign: 'left' }}>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>停車場</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>ID</th>
-                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>剩餘格</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>汽車格</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>機車格</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>總格數</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>更新時間</th>
                       <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>紀錄</th>
@@ -1208,8 +1216,9 @@ export default function ParkingPage() {
                         <tr key={fav.carParkId} style={{ borderTop: '1px solid #f1f5f9', background: selectedTdxCarParkId === fav.carParkId ? '#f0fdf4' : '#fff' }}>
                           <td style={{ padding: '8px 10px', fontWeight: 800 }}>{live?.name || fav.name}</td>
                           <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{fav.carParkId}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 900, color: live?.available === 0 ? '#dc2626' : '#15803d' }}>{live?.available ?? '-'}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{live?.total ?? '-'}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 900, color: live?.carAvailable === 0 ? '#dc2626' : '#15803d' }}>{spacePair(live?.carAvailable, live?.carTotal)}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 900, color: live?.motorAvailable === 0 ? '#dc2626' : '#15803d' }}>{spacePair(live?.motorAvailable, live?.motorTotal)}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{spacePair(live?.available, live?.total)}</td>
                           <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{live?.rawUpdatedAt || '尚未取得'}</td>
                           <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
                             <button type="button" onClick={() => setSelectedTdxCarParkId(fav.carParkId)}
@@ -1244,7 +1253,17 @@ export default function ParkingPage() {
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{selectedTdxCarParkId}</div>
               </div>
               <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>最新剩餘格</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>汽車格</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: selectedTdxLive?.carAvailable === 0 ? '#dc2626' : '#15803d' }}>{selectedTdxLive?.carAvailable ?? '-'}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>總格數 {selectedTdxLive?.carTotal ?? '-'}</div>
+              </div>
+              <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>機車格</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: selectedTdxLive?.motorAvailable === 0 ? '#dc2626' : '#15803d' }}>{selectedTdxLive?.motorAvailable ?? '-'}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>總格數 {selectedTdxLive?.motorTotal ?? '-'}</div>
+              </div>
+              <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>全部車格</div>
                 <div style={{ fontSize: 24, fontWeight: 900, color: selectedTdxLive?.available === 0 ? '#dc2626' : '#15803d' }}>{selectedTdxLive?.available ?? '-'}</div>
                 <div style={{ fontSize: 12, color: '#64748b' }}>總格數 {selectedTdxLive?.total ?? '-'}</div>
               </div>
@@ -1324,10 +1343,12 @@ export default function ParkingPage() {
             </div>
           )}
           <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 760 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 920 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', color: '#334155', textAlign: 'left' }}>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>更新時間</th>
+                  <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>汽車格</th>
+                  <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>機車格</th>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>剩餘格</th>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>在場</th>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>使用率</th>
@@ -1340,6 +1361,8 @@ export default function ParkingPage() {
                 {selectedTdxTimeline.map((row) => (
                   <tr key={`${row.rawUpdatedAt}-${row.available}`} style={{ borderTop: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{row.rawUpdatedAt}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{spacePair(row.carAvailable, row.carTotal)}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{spacePair(row.motorAvailable, row.motorTotal)}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{row.available}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{row.occupied}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800 }}>{row.utilization}%</td>
@@ -1349,7 +1372,7 @@ export default function ParkingPage() {
                   </tr>
                 ))}
                 {!selectedTdxTimeline.length && (
-                  <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積剩餘車位紀錄，只有每日摘要</td></tr>
+                  <tr><td colSpan={9} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積剩餘車位紀錄，只有每日摘要</td></tr>
                 )}
               </tbody>
             </table>

@@ -84,6 +84,12 @@ export async function ensureParkingTables() {
     `)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_time_idx ON parking_occupancy_snapshots (source, "sampledAt")`)
     await db.$queryRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_raw_idx ON parking_occupancy_snapshots (source, "rawUpdatedAt")`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "carAvailable" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "carTotal" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "carOccupied" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "motorAvailable" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "motorTotal" INTEGER`)
+    await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "motorOccupied" INTEGER`)
     await db.$queryRawUnsafe(`
       CREATE TABLE IF NOT EXISTS parking_tdx_cache (
         key          TEXT PRIMARY KEY,
