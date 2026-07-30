@@ -91,6 +91,13 @@ export async function ensureParkingTables() {
         "fetchedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `)
+    await db.$queryRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS parking_tdx_favorites (
+        "carParkId"  TEXT PRIMARY KEY,
+        name         TEXT NOT NULL,
+        "createdAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `)
   } catch (e) {
     console.error('ensureParkingTables error:', e?.message)
   }

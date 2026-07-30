@@ -417,12 +417,37 @@ function selectPrimaryAvailability(items) {
   return items.find((row) => row.available >= 0) || items[0] || null
 }
 
-async function saveSnapshot(snapshot) {
+async function readFavorites() {
+  try {
+    return await db.$queryRaw`
+      SELECT "carParkId", name, "createdAt"
+      FROM parking_tdx_favorites
+      ORDER BY "createdAt" ASC
+    `
+  } catch {
+    return []
+  }
+}
+
+function favoriteSource(carParkId) {
+  return `${SOURCE}:${carParkId}`
+}
+
+function applyFavorites(items, favorites) {
+  const favoriteIds = new Set((favorites || []).map((row) => String(row.carParkId)))
+  if (!favoriteIds.size) return { tracked: items, hasFavorites: false }
+  return {
+    tracked: items.filter((row) => favoriteIds.has(String(row.carParkId))),
+    hasFavorites: true,
+  }
+}
+
+async function saveSnapshot(snapshot, source = SOURCE) {
   if (!snapshot) return false
   const rawUpdatedAt = `${snapshot.carParkId}:${snapshot.rawUpdatedAt}`
   const existing = await db.$queryRaw`
     SELECT id FROM parking_occupancy_snapshots
-    WHERE source = ${SOURCE} AND "rawUpdatedAt" = ${rawUpdatedAt}
+    WHERE source = ${source} AND "rawUpdatedAt" = ${rawUpdatedAt}
     LIMIT 1
   `
   if (existing.length) return false
@@ -431,7 +456,7 @@ async function saveSnapshot(snapshot) {
     INSERT INTO parking_occupancy_snapshots
       (id, source, "sampledAt", "rawUpdatedAt", available, total, occupied, utilization)
     VALUES
-      (${crypto.randomUUID()}, ${SOURCE}, ${snapshot.sampledAt}, ${rawUpdatedAt}, ${snapshot.available}, ${snapshot.total}, ${snapshot.occupied}, ${snapshot.utilization})
+      (${crypto.randomUUID()}, ${source}, ${snapshot.sampledAt}, ${rawUpdatedAt}, ${snapshot.available}, ${snapshot.total}, ${snapshot.occupied}, ${snapshot.utilization})
   `
   return true
 }
@@ -481,6 +506,7 @@ export async function GET(request) {
     await ensureParkingTables()
     const skipCache = request?.nextUrl?.searchParams?.get('refresh') === '1'
     const debug = request?.nextUrl?.searchParams?.get('debug') === '1'
+    const favorites = await readFavorites()
 
     let latest = null
     let saved = false
@@ -496,14 +522,18 @@ export async function GET(request) {
 
     try {
       availability = await fetchTdxAvailability({ skipCache })
-      latest = selectPrimaryAvailability(availability.items)
-      saved = await saveSnapshot(latest)
+      const { tracked } = applyFavorites(availability.items || [], favorites)
+      latest = favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items)
+      const snapshots = favorites.length ? tracked : (latest ? [latest] : [])
+      const results = await Promise.all(snapshots.map((snapshot) => saveSnapshot(snapshot, favoriteSource(snapshot.carParkId))))
+      saved = results.some(Boolean)
     } catch (error) {
       fetchError = error?.message || 'TDX 停車場剩餘格數抓取失敗'
       const cached = await readCache(AVAILABILITY_CACHE_KEY)
       if (cached?.payload) {
         availability = { ...cached.payload, fromCache: true, stale: true }
-        latest = selectPrimaryAvailability(availability.items || [])
+        const { tracked } = applyFavorites(availability.items || [], favorites)
+        latest = favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items || [])
         fallbackNotice = 'TDX 目前回應 429 限流，暫時顯示上次成功抓取的快取資料。'
       }
     }
@@ -554,10 +584,11 @@ export async function GET(request) {
       }
     }
 
+    const timelineSource = latest?.carParkId ? favoriteSource(latest.carParkId) : SOURCE
     const rows = await db.$queryRaw`
       SELECT "sampledAt", "rawUpdatedAt", available, total, occupied, utilization
       FROM parking_occupancy_snapshots
-      WHERE source = ${SOURCE}
+      WHERE source = ${timelineSource}
       ORDER BY "sampledAt" ASC
     `
     const timeline = buildTimeline(rows)
@@ -565,7 +596,9 @@ export async function GET(request) {
       ? { ...latest, entries: 0, exits: 0, anomaly: false }
       : (timeline[timeline.length - 1] || null)
     const daily = summarizeTimeline(timeline)
-    const lots = availability?.items?.length ? availability.items : (carParks?.items?.length ? carParks.items : (parkingSpaces?.items || []))
+    const candidates = availability?.items?.length ? availability.items : (carParks?.items?.length ? carParks.items : (parkingSpaces?.items || []))
+    const { tracked: trackedLots, hasFavorites } = applyFavorites(candidates, favorites)
+    const lots = hasFavorites ? trackedLots : candidates
     const dataStatus = availability?.items?.length
       ? 'live'
       : (carParks?.items?.length || parkingSpaces?.items?.length ? 'carpark-list-only' : 'empty')
@@ -594,6 +627,9 @@ export async function GET(request) {
       daily: daily.sort((a, b) => b.reportDate.localeCompare(a.reportDate)),
       timeline: timeline.slice(-2500).reverse(),
       lots,
+      candidates,
+      favorites,
+      trackedOnly: hasFavorites,
       count: availability?.count || 0,
       carParkCount: carParks?.count || 0,
       parkingSpaceCount: parkingSpaces?.count || 0,

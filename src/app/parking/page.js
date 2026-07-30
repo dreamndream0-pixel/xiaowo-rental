@@ -102,6 +102,8 @@ export default function ParkingPage() {
   const [stats, setStats] = useState(null)
   const [tdxAvailability, setTdxAvailability] = useState(null)
   const [tdxRefreshing, setTdxRefreshing] = useState(false)
+  const [tdxSearch, setTdxSearch] = useState('')
+  const [tdxFavoriteSaving, setTdxFavoriteSaving] = useState('')
   const [selectedTdxDate, setSelectedTdxDate] = useState('')
   const [onsite, setOnsite] = useState([])
   const [history, setHistory] = useState([])
@@ -988,6 +990,62 @@ export default function ParkingPage() {
     [tdxAvailability, selectedTdxDate]
   )
 
+  const tdxCandidateResults = useMemo(() => {
+    const q = tdxSearch.trim().toLowerCase()
+    if (!q) return []
+    const favorites = new Set((tdxAvailability?.favorites || []).map((row) => String(row.carParkId)))
+    return (tdxAvailability?.candidates || [])
+      .filter((row) => !favorites.has(String(row.carParkId)))
+      .filter((row) => {
+        const haystack = `${row.carParkId || ''} ${row.name || ''}`.toLowerCase()
+        return haystack.includes(q)
+      })
+      .slice(0, 12)
+  }, [tdxAvailability, tdxSearch])
+
+  const addTdxFavorite = async (row) => {
+    if (!row?.carParkId) return
+    setTdxFavoriteSaving(row.carParkId)
+    try {
+      const res = await fetch('/api/parking/tdx/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ carParkId: row.carParkId, name: row.name || row.carParkId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        flash(data.error || '加入收藏失敗')
+        return
+      }
+      setTdxSearch('')
+      flash('已加入收藏停車場')
+      await reload(lotId, { showTdxStatus: true })
+    } catch {
+      flash('加入收藏失敗')
+    } finally {
+      setTdxFavoriteSaving('')
+    }
+  }
+
+  const removeTdxFavorite = async (carParkId) => {
+    if (!carParkId) return
+    setTdxFavoriteSaving(carParkId)
+    try {
+      const res = await fetch(`/api/parking/tdx/favorites?carParkId=${encodeURIComponent(carParkId)}`, { method: 'DELETE' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        flash(data.error || '移除收藏失敗')
+        return
+      }
+      flash('已移除收藏停車場')
+      await reload(lotId, { showTdxStatus: true })
+    } catch {
+      flash('移除收藏失敗')
+    } finally {
+      setTdxFavoriteSaving('')
+    }
+  }
+
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748b' }}>載入中…</div>
   }
@@ -1077,6 +1135,79 @@ export default function ParkingPage() {
               ))}
             </div>
           )}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12, marginBottom: 14, background: '#f8fafc' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+              <strong style={{ fontSize: 14 }}>收藏追蹤停車場</strong>
+              <span style={{ fontSize: 12, color: '#64748b' }}>只紀錄你加入收藏的 TDX 停車場</span>
+            </div>
+            <input
+              value={tdxSearch}
+              onChange={(e) => setTdxSearch(e.target.value)}
+              placeholder="搜尋停車場名稱或 ID，例如 01P0C0001E / 自由一期"
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, marginBottom: tdxCandidateResults.length ? 8 : 0 }}
+            />
+            {tdxCandidateResults.length > 0 && (
+              <div style={{ display: 'grid', gap: 6, marginBottom: 10 }}>
+                {tdxCandidateResults.map((row) => (
+                  <div key={row.carParkId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 800, color: '#0f172a' }}>{row.name || row.carParkId}</div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>{row.carParkId} · 剩餘 {row.available ?? '-'} / {row.total ?? '-'} 格</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={tdxFavoriteSaving === row.carParkId}
+                      onClick={() => addTdxFavorite(row)}
+                      style={{ padding: '7px 10px', border: 'none', borderRadius: 9, background: '#15803d', color: '#fff', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      加入
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(tdxAvailability?.favorites || []).length > 0 ? (
+              <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10, background: '#fff' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9', color: '#334155', textAlign: 'left' }}>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>停車場</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>ID</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>剩餘格</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>總格數</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>更新時間</th>
+                      <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(tdxAvailability.favorites || []).map((fav) => {
+                      const live = (tdxAvailability.lots || []).find((row) => row.carParkId === fav.carParkId)
+                      return (
+                        <tr key={fav.carParkId} style={{ borderTop: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px 10px', fontWeight: 800 }}>{live?.name || fav.name}</td>
+                          <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{fav.carParkId}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 900, color: live?.available === 0 ? '#dc2626' : '#15803d' }}>{live?.available ?? '-'}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>{live?.total ?? '-'}</td>
+                          <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{live?.rawUpdatedAt || '尚未取得'}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                            <button type="button" onClick={() => removeTdxFavorite(fav.carParkId)}
+                              disabled={tdxFavoriteSaving === fav.carParkId}
+                              style={{ padding: '6px 9px', border: '1px solid #fecaca', borderRadius: 8, background: '#fff', color: '#dc2626', fontWeight: 800, cursor: 'pointer' }}>
+                              移除
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ padding: 12, color: '#94a3b8', background: '#fff', border: '1px dashed #cbd5e1', borderRadius: 10, textAlign: 'center' }}>
+                尚未收藏停車場，請先搜尋並加入。未收藏前系統仍會顯示 TDX 第一筆作為預覽。
+              </div>
+            )}
+          </div>
           {(tdxAvailability?.daily || []).length ? (
             <>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
