@@ -13,7 +13,8 @@ const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
 const PARKING_SPACE_CACHE_KEY = `${SOURCE}:parking-spaces`
 const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const MANUAL_REFRESH_CACHE_KEY = `${SOURCE}:manual-refresh`
-const CACHE_TTL_MS = 10 * 60 * 1000
+const SNAPSHOT_INTERVAL_MS = 30 * 1000
+const CACHE_TTL_MS = SNAPSHOT_INTERVAL_MS
 const FAVORITE_CACHE_TTL_MS = 30 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
@@ -584,13 +585,15 @@ function applyFavorites(items, favorites) {
 async function saveSnapshot(snapshot, source = SOURCE) {
   if (!snapshot) return false
   const rawUpdatedAt = `${snapshot.carParkId}:${snapshot.rawUpdatedAt}`
-  const sampledAt = new Date(snapshot.sampledAt || Date.now()).toISOString()
-  const existing = await db.$queryRaw`
+  const sampledAt = new Date().toISOString()
+  const latest = await db.$queryRaw`
     SELECT id FROM parking_occupancy_snapshots
-    WHERE source = ${source} AND "rawUpdatedAt" = ${rawUpdatedAt}
+    WHERE source = ${source}
+      AND "sampledAt" > NOW() - (${SNAPSHOT_INTERVAL_MS / 1000} * INTERVAL '1 second')
+    ORDER BY "sampledAt" DESC
     LIMIT 1
   `
-  if (existing.length) return false
+  if (latest.length) return false
   const carAvailable = snapshot.carAvailable ?? null
   const carTotal = snapshot.carTotal ?? null
   const carOccupied = snapshot.carOccupied ?? null

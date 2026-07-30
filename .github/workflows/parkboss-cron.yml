@@ -5,11 +5,21 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
+concurrency:
+  group: parkboss-snapshot-cron
+  cancel-in-progress: true
+
 jobs:
   ping-parkboss:
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
-      - name: Store ParkBoss snapshot
+      - name: Store ParkBoss snapshots every 30 seconds
         run: |
-          curl --fail --silent --show-error --retry 3 --retry-delay 10 \
-            "https://xiaowo-rental.vercel.app/api/parking/parkboss?source=github-cron"
+          for i in {1..10}; do
+            curl --fail --silent --show-error --retry 3 --retry-delay 10 \
+              "https://xiaowo-rental.vercel.app/api/parking/parkboss?source=github-cron"
+            if [ "$i" -lt 10 ]; then
+              sleep 30
+            fi
+          done

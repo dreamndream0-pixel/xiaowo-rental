@@ -6,6 +6,18 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 const fmtTime = (d) =>
   d ? new Date(d).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—'
 
+const fmtDateTimeSeconds = (d) =>
+  d ? new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date(d)).replace('T', ' ') : '—'
+
 const money = (n) => `$${(n || 0).toLocaleString('zh-TW')}`
 
 const spacePair = (available, total) => {
@@ -1005,8 +1017,8 @@ export default function ParkingPage() {
   const selectedTdxTimeline = useMemo(
     () => (tdxAvailability?.timeline || []).filter((row) => {
       if (!selectedTdxDate) return true
-      const value = row.rawUpdatedAt || row.sampledAt || ''
-      return String(value).startsWith(selectedTdxDate)
+      const value = row.sampledAt || row.rawUpdatedAt || ''
+      return fmtDateTimeSeconds(value).startsWith(selectedTdxDate)
     }),
     [tdxAvailability, selectedTdxDate]
   )
@@ -1343,10 +1355,11 @@ export default function ParkingPage() {
             </div>
           )}
           <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 920 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 1040 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', color: '#334155', textAlign: 'left' }}>
-                  <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>更新時間</th>
+                  <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>紀錄時間</th>
+                  <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>來源更新</th>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>汽車格</th>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>機車格</th>
                   <th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>剩餘格</th>
@@ -1359,8 +1372,9 @@ export default function ParkingPage() {
               </thead>
               <tbody>
                 {selectedTdxTimeline.map((row) => (
-                  <tr key={`${row.rawUpdatedAt}-${row.available}`} style={{ borderTop: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{row.rawUpdatedAt}</td>
+                  <tr key={`${row.sampledAt || row.rawUpdatedAt}-${row.available}`} style={{ borderTop: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{fmtDateTimeSeconds(row.sampledAt)}</td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#64748b' }}>{row.rawUpdatedAt || '—'}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{spacePair(row.carAvailable, row.carTotal)}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{spacePair(row.motorAvailable, row.motorTotal)}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{row.available}</td>
@@ -1372,7 +1386,7 @@ export default function ParkingPage() {
                   </tr>
                 ))}
                 {!selectedTdxTimeline.length && (
-                  <tr><td colSpan={9} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積剩餘車位紀錄，只有每日摘要</td></tr>
+                  <tr><td colSpan={10} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>此日期尚未累積剩餘車位紀錄，只有每日摘要</td></tr>
                 )}
               </tbody>
             </table>
