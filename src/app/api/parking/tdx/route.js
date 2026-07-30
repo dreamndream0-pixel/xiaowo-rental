@@ -202,6 +202,13 @@ function normalizeSpotAvailabilityGroups(items, sourceUpdateTime) {
   }).filter((row) => row.carParkId && row.total > 0)
 }
 
+function getTdxItems(data, ...keys) {
+  for (const key of ['Items', ...keys]) {
+    if (Array.isArray(data?.[key])) return data[key]
+  }
+  return []
+}
+
 async function fetchTdxJson(url, token) {
   const res = await fetch(url, {
     cache: 'no-store',
@@ -296,7 +303,7 @@ async function fetchTdxAvailability({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = Array.isArray(data.Items) ? data.Items : []
+  const items = getTdxItems(data, 'ParkingAvailabilities')
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
@@ -324,7 +331,7 @@ async function fetchTdxSpotAvailability({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = Array.isArray(data.Items) ? data.Items : []
+  const items = getTdxItems(data, 'ParkingSpotAvailabilities')
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
@@ -352,7 +359,7 @@ async function fetchTdxCarParks({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = Array.isArray(data.Items) ? data.Items : []
+  const items = getTdxItems(data, 'CarParks')
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
@@ -378,7 +385,7 @@ async function fetchTdxParkingSpaces({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = Array.isArray(data.Items) ? data.Items : []
+  const items = getTdxItems(data, 'ParkingSpaces')
   const payload = {
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
