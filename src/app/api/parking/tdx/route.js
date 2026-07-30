@@ -14,16 +14,27 @@ const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const CACHE_TTL_MS = 10 * 60 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
-const PARSER_VERSION = 2
+const PARSER_VERSION = 3
+const TDX_PAGE_SIZE = 1000
+const TDX_MAX_PAGES = 10
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
-const TDX_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung?$top=1000&$format=JSON'
-const TDX_SPOT_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingSpotAvailability/City/Taichung?$top=1000&$format=JSON'
-const TDX_CARPARK_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark/City/Taichung?$top=1000&$format=JSON'
-const TDX_PARKING_SPACE_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingSpace/City/Taichung?$top=1000&$format=JSON'
+const TDX_AVAILABILITY_BASE_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung'
+const TDX_SPOT_AVAILABILITY_BASE_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingSpotAvailability/City/Taichung'
+const TDX_CARPARK_BASE_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark/City/Taichung'
+const TDX_PARKING_SPACE_BASE_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingSpace/City/Taichung'
+const TDX_AVAILABILITY_URL = buildTdxPageUrl(TDX_AVAILABILITY_BASE_URL)
+const TDX_SPOT_AVAILABILITY_URL = buildTdxPageUrl(TDX_SPOT_AVAILABILITY_BASE_URL)
+const TDX_CARPARK_URL = buildTdxPageUrl(TDX_CARPARK_BASE_URL)
+const TDX_PARKING_SPACE_URL = buildTdxPageUrl(TDX_PARKING_SPACE_BASE_URL)
 
 let cachedToken = null
 let cachedTokenExpiresAt = 0
 let memoryCache = new Map()
+
+function buildTdxPageUrl(baseUrl, skip = 0) {
+  const skipQuery = skip > 0 ? `&$skip=${skip}` : ''
+  return `${baseUrl}?$top=${TDX_PAGE_SIZE}${skipQuery}&$format=JSON`
+}
 
 function taipeiDate(value) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -222,6 +233,34 @@ async function fetchTdxJson(url, token) {
   return res.json()
 }
 
+async function fetchTdxPagedItems(baseUrl, token, ...itemKeys) {
+  const items = []
+  let sourceUpdateTime = null
+  let count = 0
+  let pagesFetched = 0
+
+  for (let page = 0; page < TDX_MAX_PAGES; page += 1) {
+    const skip = page * TDX_PAGE_SIZE
+    const data = await fetchTdxJson(buildTdxPageUrl(baseUrl, skip), token)
+    const pageItems = getTdxItems(data, ...itemKeys)
+    pagesFetched += 1
+
+    if (!sourceUpdateTime) sourceUpdateTime = data.SrcUpdateTime || data.UpdateTime || null
+    count = Math.max(count, Number(data.Count ?? 0))
+    items.push(...pageItems)
+
+    if (pageItems.length < TDX_PAGE_SIZE) break
+  }
+
+  return {
+    sourceUpdateTime,
+    count: count || items.length,
+    rawItemsLength: items.length,
+    pagesFetched,
+    items,
+  }
+}
+
 async function readCache(key) {
   const memory = memoryCache.get(key)
   if (memory) return memory
@@ -297,7 +336,7 @@ async function fetchTdxAvailability({ skipCache = false } = {}) {
   const token = await getTdxToken()
   let data
   try {
-    data = await fetchTdxJson(TDX_AVAILABILITY_URL, token)
+    data = await fetchTdxPagedItems(TDX_AVAILABILITY_BASE_URL, token, 'ParkingAvailabilities')
   } catch (error) {
     if (isTdxRateLimitError(error)) {
       const cooldown = await writeRateLimitCooldown()
@@ -305,12 +344,13 @@ async function fetchTdxAvailability({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = getTdxItems(data, 'ParkingAvailabilities')
+  const items = data.items
   const payload = {
     parserVersion: PARSER_VERSION,
-    sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
-    count: Number(data.Count ?? items.length),
-    rawItemsLength: items.length,
+    sourceUpdateTime: data.sourceUpdateTime,
+    count: Number(data.count ?? items.length),
+    rawItemsLength: data.rawItemsLength,
+    pagesFetched: data.pagesFetched,
     endpoint: 'ParkingAvailability',
     items: items.map(normalizeAvailability).filter((row) => row.carParkId && row.total > 0),
   }
@@ -326,7 +366,7 @@ async function fetchTdxSpotAvailability({ skipCache = false } = {}) {
   const token = await getTdxToken()
   let data
   try {
-    data = await fetchTdxJson(TDX_SPOT_AVAILABILITY_URL, token)
+    data = await fetchTdxPagedItems(TDX_SPOT_AVAILABILITY_BASE_URL, token, 'ParkingSpotAvailabilities')
   } catch (error) {
     if (isTdxRateLimitError(error)) {
       const cooldown = await writeRateLimitCooldown()
@@ -334,14 +374,15 @@ async function fetchTdxSpotAvailability({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = getTdxItems(data, 'ParkingSpotAvailabilities')
+  const items = data.items
   const payload = {
     parserVersion: PARSER_VERSION,
-    sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
-    count: Number(data.Count ?? items.length),
-    rawItemsLength: items.length,
+    sourceUpdateTime: data.sourceUpdateTime,
+    count: Number(data.count ?? items.length),
+    rawItemsLength: data.rawItemsLength,
+    pagesFetched: data.pagesFetched,
     endpoint: 'ParkingSpotAvailability',
-    items: normalizeSpotAvailabilityGroups(items, data.SrcUpdateTime || data.UpdateTime || null),
+    items: normalizeSpotAvailabilityGroups(items, data.sourceUpdateTime),
   }
   await writeCache(SPOT_AVAILABILITY_CACHE_KEY, payload)
   return payload
@@ -355,7 +396,7 @@ async function fetchTdxCarParks({ skipCache = false } = {}) {
   const token = await getTdxToken()
   let data
   try {
-    data = await fetchTdxJson(TDX_CARPARK_URL, token)
+    data = await fetchTdxPagedItems(TDX_CARPARK_BASE_URL, token, 'CarParks')
   } catch (error) {
     if (isTdxRateLimitError(error)) {
       const cooldown = await writeRateLimitCooldown()
@@ -363,11 +404,14 @@ async function fetchTdxCarParks({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = getTdxItems(data, 'CarParks')
+  const items = data.items
   const payload = {
     parserVersion: PARSER_VERSION,
-    sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
-    count: Number(data.Count ?? items.length),
+    sourceUpdateTime: data.sourceUpdateTime,
+    count: Number(data.count ?? items.length),
+    rawItemsLength: data.rawItemsLength,
+    pagesFetched: data.pagesFetched,
+    endpoint: 'CarPark',
     items: items.map(normalizeStaticCarPark).filter((row) => row.carParkId),
   }
   await writeCache(CARPARK_CACHE_KEY, payload)
@@ -382,7 +426,7 @@ async function fetchTdxParkingSpaces({ skipCache = false } = {}) {
   const token = await getTdxToken()
   let data
   try {
-    data = await fetchTdxJson(TDX_PARKING_SPACE_URL, token)
+    data = await fetchTdxPagedItems(TDX_PARKING_SPACE_BASE_URL, token, 'ParkingSpaces')
   } catch (error) {
     if (isTdxRateLimitError(error)) {
       const cooldown = await writeRateLimitCooldown()
@@ -390,12 +434,13 @@ async function fetchTdxParkingSpaces({ skipCache = false } = {}) {
     }
     throw error
   }
-  const items = getTdxItems(data, 'ParkingSpaces')
+  const items = data.items
   const payload = {
     parserVersion: PARSER_VERSION,
-    sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
-    count: Number(data.Count ?? items.length),
-    rawItemsLength: items.length,
+    sourceUpdateTime: data.sourceUpdateTime,
+    count: Number(data.count ?? items.length),
+    rawItemsLength: data.rawItemsLength,
+    pagesFetched: data.pagesFetched,
     endpoint: 'ParkingSpace',
     items: items.map(normalizeParkingSpace).filter((row) => row.carParkId),
   }
@@ -645,6 +690,7 @@ export async function GET(request) {
           count: availability?.count || 0,
           rawItemsLength: availability?.rawItemsLength || 0,
           normalizedItemsLength: availability?.items?.length || 0,
+          pagesFetched: availability?.pagesFetched || 0,
           fromCache: Boolean(availability?.fromCache),
         },
         ...(debug ? { spotAvailability: {
@@ -652,6 +698,7 @@ export async function GET(request) {
           count: spotAvailability?.count || 0,
           rawItemsLength: spotAvailability?.rawItemsLength || 0,
           normalizedItemsLength: spotAvailability?.items?.length || 0,
+          pagesFetched: spotAvailability?.pagesFetched || 0,
           fromCache: Boolean(spotAvailability?.fromCache),
         } } : {}),
         carParks: {
@@ -659,6 +706,7 @@ export async function GET(request) {
           count: carParks?.count || 0,
           rawItemsLength: carParks?.rawItemsLength || 0,
           normalizedItemsLength: carParks?.items?.length || 0,
+          pagesFetched: carParks?.pagesFetched || 0,
           fromCache: Boolean(carParks?.fromCache),
         },
         parkingSpaces: {
@@ -666,6 +714,7 @@ export async function GET(request) {
           count: parkingSpaces?.count || 0,
           rawItemsLength: parkingSpaces?.rawItemsLength || 0,
           normalizedItemsLength: parkingSpaces?.items?.length || 0,
+          pagesFetched: parkingSpaces?.pagesFetched || 0,
           fromCache: Boolean(parkingSpaces?.fromCache),
         },
       },
