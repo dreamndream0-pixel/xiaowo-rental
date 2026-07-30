@@ -14,6 +14,7 @@ const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const CACHE_TTL_MS = 10 * 60 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
+const PARSER_VERSION = 2
 const TDX_TOKEN_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token'
 const TDX_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingAvailability/City/Taichung?$top=1000&$format=JSON'
 const TDX_SPOT_AVAILABILITY_URL = 'https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/ParkingSpotAvailability/City/Taichung?$top=1000&$format=JSON'
@@ -245,6 +246,7 @@ async function readCache(key) {
 
 function isFreshCache(cached) {
   if (!cached?.fetchedAt) return false
+  if (cached.payload?.parserVersion !== PARSER_VERSION) return false
   const hasItems = Array.isArray(cached.payload?.items) && cached.payload.items.length > 0
   const ttl = hasItems ? CACHE_TTL_MS : EMPTY_CACHE_TTL_MS
   return Date.now() - new Date(cached.fetchedAt).getTime() < ttl
@@ -305,6 +307,7 @@ async function fetchTdxAvailability({ skipCache = false } = {}) {
   }
   const items = getTdxItems(data, 'ParkingAvailabilities')
   const payload = {
+    parserVersion: PARSER_VERSION,
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     rawItemsLength: items.length,
@@ -333,6 +336,7 @@ async function fetchTdxSpotAvailability({ skipCache = false } = {}) {
   }
   const items = getTdxItems(data, 'ParkingSpotAvailabilities')
   const payload = {
+    parserVersion: PARSER_VERSION,
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     rawItemsLength: items.length,
@@ -361,6 +365,7 @@ async function fetchTdxCarParks({ skipCache = false } = {}) {
   }
   const items = getTdxItems(data, 'CarParks')
   const payload = {
+    parserVersion: PARSER_VERSION,
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     items: items.map(normalizeStaticCarPark).filter((row) => row.carParkId),
@@ -387,6 +392,7 @@ async function fetchTdxParkingSpaces({ skipCache = false } = {}) {
   }
   const items = getTdxItems(data, 'ParkingSpaces')
   const payload = {
+    parserVersion: PARSER_VERSION,
     sourceUpdateTime: data.SrcUpdateTime || data.UpdateTime || null,
     count: Number(data.Count ?? items.length),
     rawItemsLength: items.length,
