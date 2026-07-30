@@ -445,6 +445,7 @@ function applyFavorites(items, favorites) {
 async function saveSnapshot(snapshot, source = SOURCE) {
   if (!snapshot) return false
   const rawUpdatedAt = `${snapshot.carParkId}:${snapshot.rawUpdatedAt}`
+  const sampledAt = new Date(snapshot.sampledAt || Date.now()).toISOString()
   const existing = await db.$queryRaw`
     SELECT id FROM parking_occupancy_snapshots
     WHERE source = ${source} AND "rawUpdatedAt" = ${rawUpdatedAt}
@@ -456,7 +457,7 @@ async function saveSnapshot(snapshot, source = SOURCE) {
     INSERT INTO parking_occupancy_snapshots
       (id, source, "sampledAt", "rawUpdatedAt", available, total, occupied, utilization)
     VALUES
-      (${crypto.randomUUID()}, ${source}, ${snapshot.sampledAt}, ${rawUpdatedAt}, ${snapshot.available}, ${snapshot.total}, ${snapshot.occupied}, ${snapshot.utilization})
+      (${crypto.randomUUID()}, ${source}, CAST(${sampledAt} AS TIMESTAMPTZ), ${rawUpdatedAt}, ${snapshot.available}, ${snapshot.total}, ${snapshot.occupied}, ${snapshot.utilization})
   `
   return true
 }
