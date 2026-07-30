@@ -566,6 +566,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       source: SOURCE,
+      checkedAt: new Date().toISOString(),
       url: TDX_AVAILABILITY_URL,
       spotAvailabilityUrl: TDX_SPOT_AVAILABILITY_URL,
       carParkUrl: TDX_CARPARK_URL,

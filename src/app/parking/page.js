@@ -101,6 +101,7 @@ export default function ParkingPage() {
   const [lotId, setLotId] = useState('')
   const [stats, setStats] = useState(null)
   const [tdxAvailability, setTdxAvailability] = useState(null)
+  const [tdxRefreshing, setTdxRefreshing] = useState(false)
   const [selectedTdxDate, setSelectedTdxDate] = useState('')
   const [onsite, setOnsite] = useState([])
   const [history, setHistory] = useState([])
@@ -158,6 +159,7 @@ export default function ParkingPage() {
   const reload = useCallback(async (id, options = {}) => {
     if (!id) return
     const tdxUrl = options.forceTdxRefresh ? `/api/parking/tdx?refresh=1&ts=${Date.now()}` : '/api/parking/tdx'
+    if (options.showTdxStatus) setTdxRefreshing(true)
     try {
       const [s, on, hist, pb] = await Promise.all([
         fetch(`/api/parking/stats?lotId=${id}`).then((r) => r.json()),
@@ -166,10 +168,18 @@ export default function ParkingPage() {
         fetch(tdxUrl).then((r) => r.json()).catch(() => null),
       ])
       setStats(s)
-      if (pb && !pb.error) setTdxAvailability(pb)
+      if (pb && !pb.error) {
+        setTdxAvailability(pb)
+        if (options.showTdxStatus) flash(pb.fromCache ? 'TDX 已讀取快取資料' : 'TDX 已完成即時檢查')
+      } else if (options.showTdxStatus) {
+        flash(pb?.error || 'TDX 檢查失敗')
+      }
       setOnsite(Array.isArray(on) ? on : [])
       setHistory(Array.isArray(hist) ? hist : [])
     } catch { /* ignore */ }
+    finally {
+      if (options.showTdxStatus) setTdxRefreshing(false)
+    }
   }, [])
 
   useEffect(() => { if (lotId) reload(lotId) }, [lotId, reload])
@@ -1036,10 +1046,16 @@ export default function ParkingPage() {
         <section style={{ background: '#fff', borderRadius: 16, padding: 18, marginBottom: 24, boxShadow: '0 2px 12px rgba(30,41,59,0.06)', border: '1px solid #eef1f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>TDX 官方剩餘車格</h2>
-            <button type="button" onClick={() => reload(lotId)}
-              style={{ padding: '8px 12px', background: '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
-              更新 TDX
+            <button type="button" disabled={tdxRefreshing} onClick={() => reload(lotId, { showTdxStatus: true })}
+              style={{ padding: '8px 12px', background: tdxRefreshing ? '#94a3b8' : '#0369a1', color: '#fff', border: 'none', borderRadius: 10, cursor: tdxRefreshing ? 'wait' : 'pointer', fontSize: 13, fontWeight: 700 }}>
+              {tdxRefreshing ? '更新中…' : '更新 TDX'}
             </button>
+            {tdxAvailability?.checkedAt && (
+              <span style={{ fontSize: 12, color: '#64748b' }}>
+                最後檢查 {new Date(tdxAvailability.checkedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}
+                {tdxAvailability.fromCache ? ' · 快取' : ' · 即時'}
+              </span>
+            )}
             {tdxAvailability?.fetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.fetchError}</span>}
             {tdxAvailability?.carParkFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.carParkFetchError}</span>}
             {tdxAvailability?.parkingSpaceFetchError && <span style={{ fontSize: 12, color: '#b45309' }}>{tdxAvailability.parkingSpaceFetchError}</span>}
