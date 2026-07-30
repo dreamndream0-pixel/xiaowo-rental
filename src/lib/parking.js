@@ -83,7 +83,21 @@ export async function ensureParkingTables() {
       )
     `)
     await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_time_idx ON parking_occupancy_snapshots (source, "sampledAt")`)
-    await db.$queryRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_raw_idx ON parking_occupancy_snapshots (source, "rawUpdatedAt")`)
+    await db.$queryRawUnsafe(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1
+          FROM pg_class c
+          JOIN pg_index i ON i.indexrelid = c.oid
+          WHERE c.relname = 'parking_occupancy_snapshots_source_raw_idx'
+            AND i.indisunique
+        ) THEN
+          DROP INDEX parking_occupancy_snapshots_source_raw_idx;
+        END IF;
+      END $$;
+    `)
+    await db.$queryRawUnsafe(`CREATE INDEX IF NOT EXISTS parking_occupancy_snapshots_source_raw_idx ON parking_occupancy_snapshots (source, "rawUpdatedAt")`)
     await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "carAvailable" INTEGER`)
     await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "carTotal" INTEGER`)
     await db.$queryRawUnsafe(`ALTER TABLE parking_occupancy_snapshots ADD COLUMN IF NOT EXISTS "carOccupied" INTEGER`)

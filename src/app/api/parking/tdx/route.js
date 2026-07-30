@@ -13,7 +13,8 @@ const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
 const PARKING_SPACE_CACHE_KEY = `${SOURCE}:parking-spaces`
 const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const MANUAL_REFRESH_CACHE_KEY = `${SOURCE}:manual-refresh`
-const CACHE_TTL_MS = 10 * 60 * 1000
+const SNAPSHOT_INTERVAL_MS = 30 * 1000
+const CACHE_TTL_MS = SNAPSHOT_INTERVAL_MS
 const FAVORITE_CACHE_TTL_MS = 30 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
@@ -584,13 +585,7 @@ function applyFavorites(items, favorites) {
 async function saveSnapshot(snapshot, source = SOURCE) {
   if (!snapshot) return false
   const rawUpdatedAt = `${snapshot.carParkId}:${snapshot.rawUpdatedAt}`
-  const sampledAt = new Date(snapshot.sampledAt || Date.now()).toISOString()
-  const existing = await db.$queryRaw`
-    SELECT id FROM parking_occupancy_snapshots
-    WHERE source = ${source} AND "rawUpdatedAt" = ${rawUpdatedAt}
-    LIMIT 1
-  `
-  if (existing.length) return false
+  const sampledAt = new Date().toISOString()
   const carAvailable = snapshot.carAvailable ?? null
   const carTotal = snapshot.carTotal ?? null
   const carOccupied = snapshot.carOccupied ?? null
@@ -716,6 +711,9 @@ export async function GET(request) {
         latest = selectedCarParkId
           ? (tracked.find((row) => String(row.carParkId) === selectedCarParkId) || listAvailability.items?.find((row) => String(row.carParkId) === selectedCarParkId) || null)
           : (favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items || []))
+        const snapshots = favorites.length ? tracked : (latest ? [latest] : [])
+        const results = await Promise.all(snapshots.map((snapshot) => saveSnapshot(snapshot, favoriteSource(snapshot.carParkId))))
+        saved = results.some(Boolean)
         fallbackNotice = 'TDX 目前回應 429 限流，暫時顯示上次成功抓取的快取資料。'
       }
     }
