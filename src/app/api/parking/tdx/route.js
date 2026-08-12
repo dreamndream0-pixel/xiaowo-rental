@@ -719,6 +719,9 @@ export async function GET(request) {
         latest = selectedCarParkId
           ? (tracked.find((row) => String(row.carParkId) === selectedCarParkId) || listAvailability.items?.find((row) => String(row.carParkId) === selectedCarParkId) || null)
           : (favorites.length ? (tracked[0] || null) : selectPrimaryAvailability(availability.items || []))
+        const snapshots = favorites.length ? tracked : (latest ? [latest] : [])
+        const results = await Promise.all(snapshots.map((snapshot) => saveSnapshot(snapshot, favoriteSource(snapshot.carParkId))))
+        saved = results.some(Boolean)
         fallbackNotice = 'TDX 目前回應 429 限流，暫時顯示上次成功抓取的快取資料。'
       }
     }
