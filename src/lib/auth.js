@@ -105,16 +105,9 @@ export const authOptions = {
       clientId:     process.env.LINE_CLIENT_ID     || '',
       clientSecret: process.env.LINE_CLIENT_SECRET || '',
       allowDangerousEmailAccountLinking: true,
-      // iOS 上若跳去 LINE App 驗證，會導回「預設瀏覽器(Safari)」而非發起登入的瀏覽器(Chrome)，
-      // 造成 state cookie 不在同一個 cookie jar → 「State cookie was missing」。
-      // 用 disable_auto_login / disable_ios_auto_login 讓 LINE 登入留在原瀏覽器內完成。
-      authorization: {
-        params: {
-          scope: 'openid profile',
-          disable_auto_login: 'true',
-          disable_ios_auto_login: 'true',
-        },
-      },
+      // 保留 LINE App 跳轉登入（app-to-app）。注意 iOS 驗證完會導回「系統預設瀏覽器」，
+      // 因此登入需在預設瀏覽器發起，state cookie 才會在同一 cookie jar
+      // （state/pkce/nonce 已設 SameSite=None; Secure 以支援跨站導回）。
       // LINE 預設 scope（openid profile）不回傳 email，而 User.email 為必填唯一鍵；
       // 用 line_<sub>@line.local 補一個唯一 email，並避免回傳 image 欄位
       profile(profile) {
