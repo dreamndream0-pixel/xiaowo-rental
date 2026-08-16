@@ -105,11 +105,17 @@ export const authOptions = {
       clientId:     process.env.LINE_CLIENT_ID     || '',
       clientSecret: process.env.LINE_CLIENT_SECRET || '',
       allowDangerousEmailAccountLinking: true,
-      // 保留 LINE App 跳轉登入（app-to-app）。iOS Safari 的防追蹤機制會在 LINE App
-      // 導回時丟掉 OAuth 的 state cookie（即使 SameSite=None）→「State cookie was missing」。
-      // 為了讓 App 跳轉在 iPhone 上可靠，LINE 這個 provider 不依賴 state/pkce/nonce cookie
-      // （checks: none）。代價是少了登入 CSRF 防護；LINE 為機密用戶端且走 HTTPS，風險有限。
-      checks: ['none'],
+      // iPhone 上「LINE App 跳轉登入」無法可靠運作：LINE 規定授權請求必須帶 state 參數，
+      // 但 iOS Safari 的防追蹤會在 App 導回時丟掉對應的 state cookie —— 兩者無法同時滿足
+      // （關掉 state 檢查 → LINE 回「'state' is not specified」；保留 → cookie 遺失）。
+      // 因此改為「不跳 App、在瀏覽器內完成 LINE 登入」：最穩定且維持完整安全檢查。
+      authorization: {
+        params: {
+          scope: 'openid profile',
+          disable_auto_login: 'true',
+          disable_ios_auto_login: 'true',
+        },
+      },
       // LINE 預設 scope（openid profile）不回傳 email，而 User.email 為必填唯一鍵；
       // 用 line_<sub>@line.local 補一個唯一 email，並避免回傳 image 欄位
       profile(profile) {
