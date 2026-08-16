@@ -21,7 +21,33 @@ function normalizeUserData(data = {}) {
   }
 }
 
+// 正式環境（HTTPS）用 Secure cookie；LINE 行動裝置登入會經由 LINE App 跨站導回，
+// 預設 SameSite=Lax 的 state/pkce/nonce cookie 不會被帶回 → 「State cookie was missing」。
+// 將這三個 OAuth 交握用的短期 cookie 設為 SameSite=None; Secure 以修正 LINE 登入。
+const useSecureCookies = process.env.NODE_ENV === 'production'
+const cookiePrefix = useSecureCookies ? '__Secure-' : ''
+const oauthFlowCookie = {
+  httpOnly: true,
+  sameSite: useSecureCookies ? 'none' : 'lax',
+  path: '/',
+  secure: useSecureCookies,
+}
+
 export const authOptions = {
+  cookies: {
+    state: {
+      name: `${cookiePrefix}next-auth.state`,
+      options: oauthFlowCookie,
+    },
+    pkceCodeVerifier: {
+      name: `${cookiePrefix}next-auth.pkce.code_verifier`,
+      options: oauthFlowCookie,
+    },
+    nonce: {
+      name: `${cookiePrefix}next-auth.nonce`,
+      options: oauthFlowCookie,
+    },
+  },
   adapter: {
     ...baseAdapter,
     createUser: data => db.user.create({ data: normalizeUserData(data) }),
