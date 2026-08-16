@@ -5,12 +5,12 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 
+// 我的帳號管理全部直接連到 linebot 會員中心（SSO 橋接）
 const MENU_ITEMS = [
-  { label: '我的帳號管理', href: '/account',           icon: '👤' },
-  { label: '我要刊登',     href: '/property/new',       icon: '🏠' },
-  { label: '我的收藏',     href: '/account?tab=favorites', icon: '❤️' },
-  { label: '瀏覽記錄',     href: '/account?tab=history',  icon: '👀' },
-  { label: '成為超級房東', href: '/account?super=1',    icon: '⭐', gold: true },
+  { label: '我的帳號管理', href: '/api/sso/linebot',               icon: '👤' },
+  { label: '我要刊登',     href: '/api/sso/linebot?mode=landlord', icon: '🏠' },
+  { label: '我的收藏',     href: '/api/sso/linebot?tab=favorites', icon: '❤️' },
+  { label: '瀏覽記錄',     href: '/api/sso/linebot?tab=history',   icon: '👀' },
 ]
 
 export default function Navbar({ initialLogoUrl = '' }) {
@@ -60,14 +60,14 @@ export default function Navbar({ initialLogoUrl = '' }) {
         ) : (
           /* ── 已登入：「我的」+ 漢堡選單 ── */
           <>
-            <Link href="/account" style={{
+            <a href="/api/sso/linebot" style={{
               padding: '7px 18px', borderRadius: 22,
               border: '1.5px solid var(--sage)',
               color: 'var(--sage-dark)', background: 'none',
               fontSize: 13, fontWeight: 700, textDecoration: 'none',
             }}>
               {session.user.name?.split(' ')[0] || '我的'}
-            </Link>
+            </a>
 
             {/* 漢堡按鈕 + dropdown */}
             <div ref={menuRef} style={{ position: 'relative' }}>
@@ -100,21 +100,20 @@ export default function Navbar({ initialLogoUrl = '' }) {
                   minWidth: 200, overflow: 'hidden', zIndex: 300,
                 }}>
                   {MENU_ITEMS.map(item => (
-                    <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{
+                    <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{
                       display: 'flex', alignItems: 'center', gap: 12,
                       padding: '13px 18px', textDecoration: 'none',
-                      color: item.gold ? '#B8860B' : 'var(--charcoal)',
-                      fontSize: 14, fontWeight: item.gold ? 700 : 500,
-                      background: item.gold ? '#FFFBF0' : 'white',
-                      borderTop: item.gold ? '1px solid #F5E9C6' : 'none',
+                      color: 'var(--charcoal)',
+                      fontSize: 14, fontWeight: 500,
+                      background: 'white',
                       transition: 'background 0.12s',
                     }}
-                      onMouseEnter={e => e.currentTarget.style.background = item.gold ? '#FEF3D0' : 'var(--oat-light)'}
-                      onMouseLeave={e => e.currentTarget.style.background = item.gold ? '#FFFBF0' : 'white'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--oat-light)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'white'}
                     >
                       <span style={{ fontSize: 16 }}>{item.icon}</span>
                       {item.label}
-                    </Link>
+                    </a>
                   ))}
                   <div style={{ borderTop: '1px solid var(--oat-mid)' }}>
                     <button onClick={() => { signOut(); setMenuOpen(false) }} style={{
