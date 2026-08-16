@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 const VIEW_WINDOW_SECONDS = 60 * 60 * 6
 
 export async function POST(request, { params }) {
   const id = params.id
+
+  // 記錄「會員個人瀏覽記錄」（每次瀏覽都更新時間，與下方全站計數的節流分開）
+  try {
+    const session = await getServerSession(authOptions)
+    if (session?.user?.id) {
+      await db.propertyView.upsert({
+        where: { userId_propertyId: { userId: session.user.id, propertyId: id } },
+        update: { viewedAt: new Date() },
+        create: { userId: session.user.id, propertyId: id },
+      })
+    }
+  } catch (_) { /* 表可能尚未建立或未登入，忽略不影響瀏覽計數 */ }
+
   const cookieName = `pv_${id}`
 
   if (request.cookies.get(cookieName)?.value === '1') {
