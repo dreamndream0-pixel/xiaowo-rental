@@ -1,41 +1,12 @@
 // src/instrumentation.js
-// Next.js instrumentation hook — runs once on server startup
-// Used to apply DB migrations that can't wait for prisma db push
+// Next.js instrumentation hook — 伺服器啟動時跑一次輕量遷移。
+// 實際邏輯集中在 lib/migrations.js（先檢查再改，避免每次都取表鎖造成 57014 timeout）。
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     try {
-      const { db } = await import('@/lib/db')
-
-      // 建立 communities 資料表（若不存在）
-      await db.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS communities (
-          id           TEXT PRIMARY KEY,
-          "ownerId"    TEXT NOT NULL,
-          name         TEXT NOT NULL,
-          description  TEXT NOT NULL DEFAULT '',
-          photos       TEXT NOT NULL DEFAULT '[]',
-          "mapUrl"     TEXT,
-          "createdAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          "updatedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `)
-
-      // 為 properties 加入 communityId 欄位（若不存在）
-      await db.$executeRawUnsafe(`
-        ALTER TABLE properties ADD COLUMN IF NOT EXISTS "communityId" TEXT REFERENCES communities(id)
-      `)
-
-      // 房東官網精選欄位（與主站 featured 分開）
-      await db.$executeRawUnsafe(`
-        ALTER TABLE properties ADD COLUMN IF NOT EXISTS "siteFeatured" BOOLEAN NOT NULL DEFAULT false
-      `)
-
-      // 社群媒體串接設定（房東一鍵發文用）
-      await db.$executeRawUnsafe(`
-        ALTER TABLE landlords ADD COLUMN IF NOT EXISTS "socialConfig" TEXT
-      `)
-
+      const { ensureMigrations } = await import('@/lib/migrations')
+      await ensureMigrations()
       console.log('[instrumentation] DB migration OK')
     } catch (e) {
       console.error('[instrumentation] DB migration error:', e.message)
