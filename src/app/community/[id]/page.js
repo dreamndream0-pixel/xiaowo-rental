@@ -1,30 +1,13 @@
 export const dynamic = 'force-dynamic'
 import { db } from '@/lib/db'
+import { ensureMigrations } from '@/lib/migrations'
 import { notFound } from 'next/navigation'
 import Navbar from '@/components/layout/NavbarWrapper'
 import Link from 'next/link'
 
-async function ensureTable() {
-  await db.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS communities (
-      id           TEXT PRIMARY KEY,
-      "ownerId"    TEXT NOT NULL,
-      name         TEXT NOT NULL,
-      description  TEXT NOT NULL DEFAULT '',
-      photos       TEXT NOT NULL DEFAULT '[]',
-      "mapUrl"     TEXT,
-      "createdAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      "updatedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `)
-  await db.$executeRawUnsafe(`
-    ALTER TABLE properties ADD COLUMN IF NOT EXISTS "communityId" TEXT REFERENCES communities(id)
-  `)
-}
-
 async function getCommunity(id) {
   try {
-    await ensureTable()
+    await ensureMigrations()
     const rows = await db.$queryRawUnsafe(
       `SELECT * FROM communities WHERE id = $1`, id
     )
