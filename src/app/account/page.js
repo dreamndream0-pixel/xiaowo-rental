@@ -1,54 +1,16 @@
 // src/app/account/page.js  (Server Component)
-import { getServerSession } from 'next-auth'
+// 「我的帳號管理」已整合到 linebot 會員中心：一律以 SSO 橋接導向 linebot。
+// 保留此路由是為了相容舊連結/書籤，以及房源編輯頁的 /account?mode=landlord 導向。
 import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
-import Navbar from '@/components/layout/NavbarWrapper'
-import UserDashboard from '@/components/account/UserDashboard'
 
 export const metadata = { title: '我的帳號 | 小蝸出租' }
 
 export default async function AccountPage({ searchParams }) {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login?callbackUrl=/account')
-
-  const [user, favCount, propCount] = await Promise.all([
-    db.user.findUnique({
-      where: { id: session.user.id },
-      select: { id: true, name: true, email: true, phone: true, avatar: true, createdAt: true },
-    }),
-    db.favorite.count({ where: { userId: session.user.id } }),
-    db.property.count({ where: { landlordId: session.user.id, deletedAt: null } }),
-  ])
-
-  // Check landlord linked status + fetch siteName server-side (avoid client flicker)
-  const realEmail = user?.email?.endsWith('@xiaowo.local') ? null : user?.email
-  let isLinkedLandlord = false
-  let landlordSiteName = ''
-  if (realEmail) {
-    try {
-      const landlordRow = await db.landlord.findUnique({
-        where: { email: realEmail },
-        select: { id: true, siteName: true },
-      })
-      isLinkedLandlord = !!landlordRow
-      landlordSiteName = landlordRow?.siteName || ''
-    } catch {}
-  }
-
-  return (
-    <>
-      <Navbar />
-      <UserDashboard
-        user={user}
-        favCount={favCount}
-        propCount={propCount}
-        initTab={searchParams?.tab || null}
-        initSuper={searchParams?.super === '1'}
-        initMode={searchParams?.mode || null}
-        initLinked={isLinkedLandlord}
-        initSiteName={landlordSiteName}
-      />
-    </>
-  )
+  const sp = searchParams || {}
+  const params = new URLSearchParams()
+  if (sp.tab) params.set('tab', String(sp.tab))
+  // 舊的「成為超級房東」(?super=1) 與房源編輯導向 → 一律進房東模式
+  if (sp.mode === 'landlord' || sp.super) params.set('mode', 'landlord')
+  const qs = params.toString()
+  redirect('/api/sso/linebot' + (qs ? `?${qs}` : ''))
 }

@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginClient() {
-  const router = useRouter()
   const params = useSearchParams()
-  const callbackUrl = params.get('callbackUrl') || '/account'
+  // 登入後直接橋接到 linebot 會員中心（租客模式），不再停留在前站會員頁
+  const callbackUrl = params.get('callbackUrl') || '/api/sso/linebot'
   const authError = params.get('error')
 
   const [tab, setTab] = useState('email')
@@ -32,7 +32,8 @@ export default function LoginClient() {
       setLoading(false)
       return
     }
-    router.push(callbackUrl)
+    // 用整頁導向，才能讓 /api/sso/linebot 的外部轉址（跳到 linebot）正常執行
+    window.location.href = callbackUrl
   }
 
   return (

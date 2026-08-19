@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 
 export default function RegisterForm() {
-  const router = useRouter()
   const [tab, setTab] = useState('phone')
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' })
   const [error, setError] = useState('')
@@ -55,7 +53,8 @@ export default function RegisterForm() {
       password: form.password,
       redirect: false,
     })
-    router.push('/account')
+    // 註冊登入後直接橋接到 linebot 會員中心（租客模式）
+    window.location.href = '/api/sso/linebot'
   }
 
   return (
@@ -104,8 +103,8 @@ export default function RegisterForm() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <OAuthBtn onClick={() => signIn('line', { callbackUrl: '/account' })} color="#06C755" textColor="white" icon="/auth-line.png" label="LINE 登入 / 註冊" />
-          <OAuthBtn onClick={() => signIn('google', { callbackUrl: '/account' })} color="white" textColor="#3d3d3d" border="#EDE8DF" icon="/auth-google.png" label="Google 登入 / 註冊" />
+          <OAuthBtn onClick={() => signIn('line', { callbackUrl: '/api/sso/linebot' })} color="#06C755" textColor="white" icon="/auth-line.png" label="LINE 登入 / 註冊" />
+          <OAuthBtn onClick={() => signIn('google', { callbackUrl: '/api/sso/linebot' })} color="white" textColor="#3d3d3d" border="#EDE8DF" icon="/auth-google.png" label="Google 登入 / 註冊" />
         </div>
 
         <p style={{ fontSize: 12, color: '#8A8A8A', textAlign: 'center', marginTop: 20 }}>

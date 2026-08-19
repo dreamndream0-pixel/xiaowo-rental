@@ -201,8 +201,24 @@ export default function UserDashboard({ user, favCount, propCount, initTab, init
         </div>
       </div>
 
+      {/* ── 新版會員中心（SSO 橋接到 linebot 後台）── */}
+      <div style={{ maxWidth: 780, margin: '-84px auto 0', padding: '0 16px', position: 'relative', zIndex: 2 }}>
+        <a href="/api/sso/linebot" style={{
+          display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none',
+          background: 'white', borderRadius: 16, padding: '14px 18px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.10)', border: '1px solid #EDE8DF', marginBottom: 16,
+        }}>
+          <span style={{ fontSize: 26 }}>🐌</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: 'block', fontWeight: 800, color: '#3A5740', fontSize: 15 }}>前往新版會員中心</span>
+            <span style={{ display: 'block', fontSize: 12, color: '#999', marginTop: 2 }}>收藏、租屋處與客服，整合在同一個後台</span>
+          </span>
+          <span style={{ color: '#C79A3B', fontWeight: 800, fontSize: 18 }}>→</span>
+        </a>
+      </div>
+
       {/* ── Main card (with slide animation) ── */}
-      <div style={{ maxWidth: 780, margin: '-64px auto 40px', padding: '0 16px' }}>
+      <div style={{ maxWidth: 780, margin: '0 auto 40px', padding: '0 16px' }}>
         <div style={{
           background: 'white', borderRadius: 22, boxShadow: '0 4px 32px rgba(0,0,0,0.10)',
           overflow: 'hidden',
