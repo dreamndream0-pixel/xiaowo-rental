@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { GoogleMap, InfoWindow, MarkerF, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, MarkerF, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PROPERTY_TYPE_LABELS } from '@/types'
 
 const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
 const TAIWAN_BOUNDS = {
@@ -106,6 +107,16 @@ function markerDotIcon(property, selected) {
     strokeColor: '#ffffff',
     strokeWeight: 2,
   }
+}
+
+function statusText(property) {
+  if (property.status === 'COMING_SOON') return '即將釋出'
+  if (property.status === 'AVAILABLE') return '可承租'
+  return property.status || ''
+}
+
+function coverImage(property) {
+  return property.coverUrl || property.images?.[0]?.url || null
 }
 
 export default function ListingsMapInner({ properties, selectedId, onSelect }) {
@@ -277,19 +288,47 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
       })}
 
       {activePopup && (
-        <InfoWindow position={activePopup.mapPosition} onCloseClick={() => setPopupId(null)}>
-          <div className="map-popup-card">
-            {(activePopup.coverUrl || activePopup.images?.[0]?.url) && (
-              <img src={activePopup.coverUrl || activePopup.images?.[0]?.url} alt={activePopup.title} />
-            )}
-            <div>
-              <strong>{activePopup.title}</strong>
-              <span>{activePopup.city}{activePopup.district}</span>
-              <b>{priceLabel(activePopup)} / 月</b>
-              <Link href={`/property/${activePopup.id}`}>查看房源</Link>
+        <OverlayViewF
+          position={activePopup.mapPosition}
+          mapPaneName={OVERLAY_MOUSE_TARGET}
+          getPixelPositionOffset={(width, height) => ({
+            x: -(width / 2),
+            y: -(height + 24),
+          })}
+        >
+          <article className="map-property-popover">
+            <button
+              type="button"
+              className="map-property-popover-close"
+              aria-label="關閉房源卡片"
+              onClick={() => setPopupId(null)}
+            >
+              ×
+            </button>
+            <Link href={`/property/${activePopup.id}`} className="map-property-popover-image">
+              {coverImage(activePopup) ? (
+                <img src={coverImage(activePopup)} alt={activePopup.title} />
+              ) : (
+                <span>無照片</span>
+              )}
+              <em>{statusText(activePopup)}</em>
+            </Link>
+            <div className="map-property-popover-body">
+              <div className="map-property-popover-kicker">
+                <span>{PROPERTY_TYPE_LABELS[activePopup.type] || activePopup.type || '房源'}</span>
+                {activePopup.featured && <span>精選</span>}
+              </div>
+              <Link href={`/property/${activePopup.id}`} className="map-property-popover-title">
+                {activePopup.title}
+              </Link>
+              <div className="map-property-popover-location">{activePopup.city}{activePopup.district}</div>
+              <div className="map-property-popover-footer">
+                <strong>{priceLabel(activePopup)} / 月</strong>
+                <Link href={`/property/${activePopup.id}`}>查看房源</Link>
+              </div>
             </div>
-          </div>
-        </InfoWindow>
+          </article>
+        </OverlayViewF>
       )}
     </GoogleMap>
   )
