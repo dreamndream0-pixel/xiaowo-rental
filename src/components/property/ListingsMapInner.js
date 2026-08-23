@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { GoogleMap, InfoWindow, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, InfoWindow, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
@@ -112,7 +112,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
           <OverlayViewF
             key={property.id}
             position={getPosition(property)}
-            mapPaneName={OverlayViewF.OVERLAY_MOUSE_TARGET}
+            mapPaneName={OVERLAY_MOUSE_TARGET}
           >
             <button
               type="button"
