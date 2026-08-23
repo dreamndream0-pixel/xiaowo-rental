@@ -102,7 +102,7 @@ async function PropertiesSection({ searchParams }) {
           <a href={viewHref(searchParams, 'map')} className={isMapView ? 'is-active' : ''}>地圖找房</a>
         </div>
       </div>
-      {isMapView ? <MapListingsView properties={properties} total={total} /> : <PropertyGrid properties={properties} />}
+      {isMapView ? <MapListingsView properties={properties} total={total} searchParams={searchParams} /> : <PropertyGrid properties={properties} />}
       {!isMapView && totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
           {Array.from({ length: totalPages }, (_, i) => (
@@ -154,14 +154,20 @@ function PropertySkeleton() {
 }
 
 export default function ListingsPage({ searchParams }) {
+  const isMapView = searchParams?.view === 'map'
+
   return (
     <>
       <Navbar />
       <main className="section-wrap">
-        <div style={{ marginBottom: 20 }}>
-          <SearchBar initialParams={searchParams} />
-        </div>
-        <FilterBar />
+        {!isMapView && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <SearchBar initialParams={searchParams} />
+            </div>
+            <FilterBar />
+          </>
+        )}
 
         {/* Suspense：搜尋欄瞬間顯示，房源卡串流載入 */}
         <Suspense fallback={<PropertySkeleton />}>
