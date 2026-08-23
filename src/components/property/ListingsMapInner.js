@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { GoogleMap, InfoWindow, MarkerF, useJsApiLoader } from '@react-google-maps/api'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { GoogleMap, InfoWindow, MarkerF, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
 const TAIWAN_BOUNDS = {
@@ -42,31 +42,15 @@ function priceLabel(property) {
   return `NT$ ${Number(property.price || 0).toLocaleString()}`
 }
 
-function markerLabel(property) {
-  return `${property.featured ? '★ ' : ''}${priceLabel(property)}`
-}
-
-function markerIcon(property, selected) {
-  const label = markerLabel(property)
-  const width = Math.max(96, Math.min(156, 44 + label.length * 7))
-  const height = 34
-  const bg = property.status === 'COMING_SOON' ? '#C9913A' : selected ? '#3A5740' : '#4E7153'
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + 8}" viewBox="0 0 ${width} ${height + 8}">
-      <filter id="s" x="-20%" y="-30%" width="140%" height="160%">
-        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#2E2D2A" flood-opacity=".28"/>
-      </filter>
-      <g filter="url(#s)">
-        <rect x="2" y="2" width="${width - 4}" height="${height}" rx="17" fill="${bg}" stroke="#fff" stroke-width="3"/>
-        <path d="M${width / 2 - 6} ${height - 1} L${width / 2} ${height + 7} L${width / 2 + 6} ${height - 1}" fill="${bg}" stroke="#fff" stroke-width="2"/>
-      </g>
-    </svg>`
-
+function markerDotIcon(property, selected) {
+  const color = property.status === 'COMING_SOON' ? '#C9913A' : selected ? '#3A5740' : '#4E7153'
   return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new window.google.maps.Size(width, height + 8),
-    anchor: new window.google.maps.Point(width / 2, height + 8),
-    labelOrigin: new window.google.maps.Point(width / 2, 19),
+    path: window.google.maps.SymbolPath.CIRCLE,
+    scale: selected ? 7 : 6,
+    fillColor: color,
+    fillOpacity: 1,
+    strokeColor: '#ffffff',
+    strokeWeight: 2,
   }
 }
 
@@ -205,23 +189,37 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
       {mapped.map(property => {
         const selected = property.id === selectedId
         return (
-          <MarkerF
-            key={property.id}
-            position={property.mapPosition}
-            icon={markerIcon(property, selected)}
-            label={{
-              text: markerLabel(property),
-              color: '#ffffff',
-              fontSize: '12px',
-              fontWeight: '800',
-            }}
-            optimized={false}
-            zIndex={selected ? 20 : 10}
-            onClick={() => {
-              onSelect(property.id)
-              setPopupId(property.id)
-            }}
-          />
+          <Fragment key={property.id}>
+            <MarkerF
+              position={property.mapPosition}
+              icon={markerDotIcon(property, selected)}
+              zIndex={selected ? 20 : 10}
+              onClick={() => {
+                onSelect(property.id)
+                setPopupId(property.id)
+              }}
+            />
+            <OverlayViewF
+              position={property.mapPosition}
+              mapPaneName={OVERLAY_MOUSE_TARGET}
+              getPixelPositionOffset={(width, height) => ({
+                x: -(width / 2),
+                y: -(height + 12),
+              })}
+            >
+              <button
+                type="button"
+                className={`google-price-marker ${selected ? 'is-selected' : ''} ${property.status === 'COMING_SOON' ? 'is-soon' : ''}`}
+                onClick={() => {
+                  onSelect(property.id)
+                  setPopupId(property.id)
+                }}
+              >
+                {property.featured && <span>★</span>}
+                {priceLabel(property)}
+              </button>
+            </OverlayViewF>
+          </Fragment>
         )
       })}
 
