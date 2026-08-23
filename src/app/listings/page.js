@@ -89,7 +89,7 @@ function SearchControls({ searchParams, total }) {
         <Link href="/" className="map-back-button" aria-label="返回首頁">‹</Link>
         <div className="map-area-pill">
           <strong>{resultTitle(searchParams)}</strong>
-          <span>共 {Number(total || 0).toLocaleString()} 筆</span>
+          <span>{resultLabel(searchParams, total)}</span>
         </div>
         <span aria-hidden="true" />
       </div>
@@ -107,7 +107,7 @@ function SearchControls({ searchParams, total }) {
         <details className="merged-control-card">
           <summary>
             <span>篩選條件</span>
-            <b>標籤、排序</b>
+            <b>標籤、排序與條件</b>
           </summary>
           <div className="merged-control-body">
             <FilterBar />
@@ -155,7 +155,7 @@ export default function ListingsPage({ searchParams }) {
   return (
     <>
       <Navbar />
-      <main className="section-wrap">
+      <main className="section-wrap listings-map-main">
         <Suspense fallback={<PropertySkeleton />}>
           <PropertiesSection searchParams={searchParams} />
         </Suspense>

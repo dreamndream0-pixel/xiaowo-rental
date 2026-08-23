@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 
-const INITIAL_VISIBLE_COUNT = 12
-const LOAD_MORE_COUNT = 12
+const INITIAL_VISIBLE_COUNT = 10
+const LOAD_MORE_COUNT = 10
 
 function coverImage(property) {
   return property.images?.[0]?.url ?? property.coverUrl ?? null
@@ -23,7 +23,7 @@ function tagNames(property) {
 
 function MapSheetCard({ property }) {
   const image = coverImage(property)
-  const tags = tagNames(property).slice(0, 4)
+  const tags = tagNames(property).slice(0, 5)
 
   return (
     <Link href={`/property/${property.id}`} className="map-sheet-card">
@@ -45,7 +45,7 @@ function MapSheetCard({ property }) {
         )}
         <div className="map-sheet-card-footer">
           <span>NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
-          <b>查看</b>
+          <b>查看房源</b>
         </div>
       </div>
     </Link>
@@ -72,8 +72,8 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
     const delta = event.clientY - dragRef.current.startY
     dragRef.current.deltaY = delta
     const bounded = expanded
-      ? Math.max(0, Math.min(260, delta))
-      : Math.min(0, Math.max(-260, delta))
+      ? Math.max(0, Math.min(320, delta))
+      : Math.min(0, Math.max(-320, delta))
     setDragY(bounded)
     event.preventDefault()
   }
@@ -84,8 +84,8 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
     dragRef.current.active = false
     setDragY(0)
     ignoreClickRef.current = Math.abs(delta) > 8
-    if (!expanded && delta < -32) onToggle()
-    if (expanded && delta > 32) onToggle()
+    if (!expanded && delta < -26) onToggle()
+    if (expanded && delta > 26) onToggle()
   }
 
   const handleClick = () => {
@@ -119,7 +119,7 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
         onPointerMove={moveDrag}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        aria-label="切換房源列表高度"
+        aria-label="展開或收合房源清單"
       >
         <span className="map-results-sheet-handle" aria-hidden="true">
           <span />
@@ -129,6 +129,7 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
           <span>{expanded ? subtitle : '上拉查看此區域房源'}</span>
         </span>
       </button>
+
       <div className="map-results-sheet-grid" onScroll={handleListScroll}>
         {visibleProperties.length ? visibleProperties.map(property => (
           <MapSheetCard key={property.id} property={property} />
