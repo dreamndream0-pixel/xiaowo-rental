@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import PropertyCard from './PropertyCard'
 
 function toCardProperty(property) {
@@ -16,9 +17,59 @@ function toCardProperty(property) {
 }
 
 export default function MapResultsSheet({ properties = [], total = 0, expanded, onToggle }) {
+  const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
+  const ignoreClickRef = useRef(false)
+  const [dragY, setDragY] = useState(0)
+
+  const beginDrag = event => {
+    dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const moveDrag = event => {
+    if (!dragRef.current.active) return
+    const delta = event.clientY - dragRef.current.startY
+    dragRef.current.deltaY = delta
+    const bounded = expanded
+      ? Math.max(0, Math.min(220, delta))
+      : Math.min(0, Math.max(-220, delta))
+    setDragY(bounded)
+    event.preventDefault()
+  }
+
+  const endDrag = () => {
+    if (!dragRef.current.active) return
+    const delta = dragRef.current.deltaY
+    dragRef.current.active = false
+    setDragY(0)
+    ignoreClickRef.current = Math.abs(delta) > 8
+    if (!expanded && delta < -36) onToggle()
+    if (expanded && delta > 36) onToggle()
+  }
+
+  const handleClick = () => {
+    if (ignoreClickRef.current) {
+      ignoreClickRef.current = false
+      return
+    }
+    onToggle()
+  }
+
   return (
-    <section className={`map-results-sheet ${expanded ? 'is-expanded' : ''}`}>
-      <button type="button" className="map-results-sheet-handle" onClick={onToggle} aria-label="切換房源列表高度">
+    <section
+      className={`map-results-sheet ${expanded ? 'is-expanded' : ''}`}
+      style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
+    >
+      <button
+        type="button"
+        className="map-results-sheet-handle"
+        onClick={handleClick}
+        onPointerDown={beginDrag}
+        onPointerMove={moveDrag}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        aria-label="切換房源列表高度"
+      >
         <span />
       </button>
       <div className="map-results-sheet-title">

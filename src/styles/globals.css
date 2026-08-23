@@ -159,20 +159,20 @@ body {
 }
 
 .merged-control-card summary::after {
-  content: '⌄';
+  content: '\2304';
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background: var(--sage-bg);
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
   color: var(--sage-dark);
   text-align: center;
-  line-height: 28px;
+  line-height: 1;
   font-weight: 900;
 }
 
 .merged-control-card[open] summary::after {
-  content: '⌃';
+  content: '\2303';
 }
 
 .merged-control-card summary span,
@@ -273,6 +273,8 @@ body {
   background: white;
   box-shadow: var(--shadow-md);
   overflow: hidden;
+  transition: transform 0.18s ease, margin 0.18s ease;
+  will-change: transform;
 }
 
 .map-results-sheet-handle {
@@ -284,6 +286,8 @@ body {
   border: 0;
   background: white;
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
 }
 
 .map-results-sheet-handle span {
@@ -614,20 +618,20 @@ body {
 }
 
 .map-condition-card summary::after {
-  content: '⌄';
+  content: '\2304';
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: var(--sage-bg);
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
   color: var(--sage-dark);
   text-align: center;
-  line-height: 24px;
+  line-height: 1;
   font-weight: 900;
 }
 
 .map-condition-card[open] summary::after {
-  content: '⌃';
+  content: '\2303';
 }
 
 .map-condition-card summary span {
@@ -1211,6 +1215,10 @@ body {
 }
 
 @media (max-width: 640px) {
+  .section-wrap:has(.merged-map-topbar) {
+    padding-top: 8px;
+  }
+
   .merged-results-header {
     display: none;
   }
@@ -1236,18 +1244,18 @@ body {
   }
 
   .merged-control-card[open] summary::after {
-    content: '×';
+    content: '\00d7';
     position: fixed;
-    right: 34px;
-    top: 208px;
+    right: 28px;
+    top: 190px;
     z-index: 980;
-    width: 38px;
-    height: 38px;
+    width: auto;
+    height: auto;
     background: transparent;
     color: var(--charcoal);
     font-size: 28px;
     font-weight: 300;
-    line-height: 34px;
+    line-height: 1;
   }
 
   .merged-control-card[open] summary span,
@@ -1280,7 +1288,7 @@ body {
     position: fixed;
     left: 16px;
     right: 16px;
-    top: 190px;
+    top: 174px;
     bottom: 76px;
     z-index: 960;
     max-height: none;
@@ -1298,7 +1306,7 @@ body {
   .merged-map-topbar {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
     gap: 8px;
-    margin: -2px 0 10px;
+    margin: 0 0 10px;
   }
 
   .map-back-button {
@@ -1331,8 +1339,8 @@ body {
   }
 
   .merged-map-panel .map-listings-map {
-    height: 62vh;
-    min-height: 430px;
+    height: 66vh;
+    min-height: 460px;
     border-left: 0;
     border-right: 0;
     border-radius: 0;
@@ -1357,6 +1365,7 @@ body {
     border-bottom: 0;
     border-radius: 28px 28px 0 0;
     box-shadow: 0 -14px 34px rgba(46,45,42,0.16);
+    touch-action: pan-y;
   }
 
   .map-results-sheet-title {
@@ -1368,6 +1377,7 @@ body {
     max-height: 288px;
     overflow: hidden;
     padding: 0 16px 18px;
+    overscroll-behavior: contain;
   }
 
   .map-results-sheet.is-expanded .map-results-sheet-grid {
