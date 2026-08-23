@@ -4,7 +4,6 @@ import Providers from './providers'
 import PageProgress from '@/components/layout/PageProgress'
 import ButtonEffects from '@/components/layout/ButtonEffects'
 import EmojiIconRuntime from '@/components/layout/EmojiIconRuntime'
-import 'leaflet/dist/leaflet.css'
 import '../styles/globals.css'
 
 const notoSansTC = Noto_Sans_TC({

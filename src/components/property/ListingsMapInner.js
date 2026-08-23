@@ -1,86 +1,149 @@
 'use client'
 
-import { useEffect } from 'react'
 import Link from 'next/link'
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
-import L from 'leaflet'
+import { GoogleMap, InfoWindow, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-const TAIWAN_CENTER = [23.6978, 120.9605]
+const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
 
-function FitBounds({ properties, selectedId }) {
-  const map = useMap()
-
-  useEffect(() => {
-    const selected = selectedId ? properties.find(p => p.id === selectedId) : null
-    if (selected) {
-      map.flyTo([Number(selected.lat), Number(selected.lng)], 16, { duration: 0.45 })
-      return
-    }
-
-    const points = properties
-      .filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
-      .map(p => [Number(p.lat), Number(p.lng)])
-
-    if (points.length === 1) {
-      map.setView(points[0], 15)
-    } else if (points.length > 1) {
-      map.fitBounds(points, { padding: [32, 32], maxZoom: 15 })
-    }
-  }, [map, properties, selectedId])
-
-  return null
+const mapOptions = {
+  fullscreenControl: false,
+  mapTypeControl: false,
+  streetViewControl: false,
+  clickableIcons: false,
+  gestureHandling: 'greedy',
+  styles: [
+    { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit.station', stylers: [{ visibility: 'simplified' }] },
+  ],
 }
 
-function markerIcon(property, selected) {
-  const isComingSoon = property.status === 'COMING_SOON'
-  const price = Number(property.price || 0).toLocaleString()
-  return L.divIcon({
-    className: '',
-    html: `
-      <div class="map-price-marker ${selected ? 'is-selected' : ''} ${isComingSoon ? 'is-soon' : ''}">
-        ${property.featured ? '<span class="map-marker-star">★</span>' : ''}
-        <span>NT$ ${price}</span>
-      </div>
-    `,
-    iconSize: [92, 34],
-    iconAnchor: [46, 17],
-  })
+function getPosition(property) {
+  return { lat: Number(property.lat), lng: Number(property.lng) }
+}
+
+function priceLabel(property) {
+  return `NT$ ${Number(property.price || 0).toLocaleString()}`
 }
 
 export default function ListingsMapInner({ properties, selectedId, onSelect }) {
-  const mapped = properties.filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)))
-  const center = mapped[0] ? [Number(mapped[0].lat), Number(mapped[0].lng)] : TAIWAN_CENTER
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const mapRef = useRef(null)
+  const [popupId, setPopupId] = useState(null)
+
+  const mapped = useMemo(
+    () => properties.filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))),
+    [properties]
+  )
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'xiaowo-google-maps',
+    googleMapsApiKey: apiKey || '',
+    language: 'zh-TW',
+    region: 'TW',
+  })
+
+  const fitBounds = useCallback(() => {
+    const map = mapRef.current
+    if (!map || !window.google || mapped.length === 0) return
+
+    if (mapped.length === 1) {
+      map.setCenter(getPosition(mapped[0]))
+      map.setZoom(15)
+      return
+    }
+
+    const bounds = new window.google.maps.LatLngBounds()
+    mapped.forEach(property => bounds.extend(getPosition(property)))
+    map.fitBounds(bounds, 60)
+  }, [mapped])
+
+  useEffect(() => {
+    if (!mapRef.current || !window.google) return
+    const selected = selectedId ? mapped.find(p => p.id === selectedId) : null
+    if (selected) {
+      mapRef.current.panTo(getPosition(selected))
+      mapRef.current.setZoom(Math.max(mapRef.current.getZoom() || 14, 15))
+      setPopupId(selected.id)
+    }
+  }, [mapped, selectedId])
+
+  if (!apiKey) {
+    return (
+      <div className="listings-map-loading">
+        <div>
+          <strong>尚未設定 Google Maps API Key</strong>
+          <span>請在 Vercel 新增 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 後重新部署。</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="listings-map-loading">
+        <div>
+          <strong>Google 地圖載入失敗</strong>
+          <span>請確認 API Key、網域限制與 Maps JavaScript API 是否啟用。</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isLoaded) return <div className="listings-map-loading">Google 地圖載入中</div>
+
+  const activePopup = popupId ? mapped.find(p => p.id === popupId) : null
 
   return (
-    <MapContainer center={center} zoom={mapped[0] ? 14 : 7} scrollWheelZoom className="listings-map-canvas">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <FitBounds properties={mapped} selectedId={selectedId} />
+    <GoogleMap
+      mapContainerClassName="listings-map-canvas"
+      center={mapped[0] ? getPosition(mapped[0]) : TAIWAN_CENTER}
+      zoom={mapped[0] ? 14 : 7}
+      options={mapOptions}
+      onLoad={map => {
+        mapRef.current = map
+        fitBounds()
+      }}
+    >
       {mapped.map(property => {
         const selected = property.id === selectedId
+        const isComingSoon = property.status === 'COMING_SOON'
         return (
-          <Marker
+          <OverlayViewF
             key={property.id}
-            position={[Number(property.lat), Number(property.lng)]}
-            icon={markerIcon(property, selected)}
-            eventHandlers={{ click: () => onSelect(property.id) }}
+            position={getPosition(property)}
+            mapPaneName={OverlayViewF.OVERLAY_MOUSE_TARGET}
           >
-            <Popup>
-              <div className="map-popup-card">
-                {property.coverUrl && <img src={property.coverUrl} alt={property.title} />}
-                <div>
-                  <strong>{property.title}</strong>
-                  <span>{property.city}{property.district}</span>
-                  <b>NT$ {Number(property.price || 0).toLocaleString()} / 月</b>
-                  <Link href={`/property/${property.id}`}>查看房源</Link>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
+            <button
+              type="button"
+              className={`google-price-marker ${selected ? 'is-selected' : ''} ${isComingSoon ? 'is-soon' : ''}`}
+              onClick={() => {
+                onSelect(property.id)
+                setPopupId(property.id)
+              }}
+            >
+              {property.featured && <span>★</span>}
+              {priceLabel(property)}
+            </button>
+          </OverlayViewF>
         )
       })}
-    </MapContainer>
+
+      {activePopup && (
+        <InfoWindow position={getPosition(activePopup)} onCloseClick={() => setPopupId(null)}>
+          <div className="map-popup-card">
+            {(activePopup.coverUrl || activePopup.images?.[0]?.url) && (
+              <img src={activePopup.coverUrl || activePopup.images?.[0]?.url} alt={activePopup.title} />
+            )}
+            <div>
+              <strong>{activePopup.title}</strong>
+              <span>{activePopup.city}{activePopup.district}</span>
+              <b>{priceLabel(activePopup)} / 月</b>
+              <Link href={`/property/${activePopup.id}`}>查看房源</Link>
+            </div>
+          </div>
+        </InfoWindow>
+      )}
+    </GoogleMap>
   )
 }

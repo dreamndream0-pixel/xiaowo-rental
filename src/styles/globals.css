@@ -315,6 +315,26 @@ body {
   color: var(--gray-mid);
   font-size: 14px;
   font-weight: 800;
+  padding: 24px;
+  text-align: center;
+}
+
+.listings-map-loading strong,
+.listings-map-loading span {
+  display: block;
+}
+
+.listings-map-loading strong {
+  color: var(--charcoal);
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.listings-map-loading span {
+  color: var(--gray-mid);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.7;
 }
 
 .map-price-marker {
@@ -347,6 +367,43 @@ body {
 .map-marker-star {
   color: #ffe08a;
   font-size: 12px;
+}
+
+.google-price-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 84px;
+  height: 32px;
+  padding: 0 11px;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--sage-dark);
+  color: white;
+  box-shadow: 0 6px 18px rgba(46,45,42,0.24);
+  cursor: pointer;
+  font-family: var(--font-latin), sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+}
+
+.google-price-marker.is-soon {
+  background: var(--honey);
+}
+
+.google-price-marker.is-selected {
+  background: var(--sage-deep);
+  transform: translate(-50%, -100%) scale(1.08);
+  box-shadow: 0 8px 24px rgba(46,45,42,0.34);
+  z-index: 2;
+}
+
+.google-price-marker span {
+  color: #ffe08a;
 }
 
 .map-popup-card {
