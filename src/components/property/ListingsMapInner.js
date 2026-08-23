@@ -5,6 +5,12 @@ import { GoogleMap, InfoWindow, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoad
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
+const TAIWAN_BOUNDS = {
+  minLat: 21.8,
+  maxLat: 25.4,
+  minLng: 119.2,
+  maxLng: 122.2,
+}
 
 const mapOptions = {
   fullscreenControl: false,
@@ -22,6 +28,16 @@ function getPosition(property) {
   return { lat: Number(property.lat), lng: Number(property.lng) }
 }
 
+function isTaiwanPosition(position) {
+  return Number.isFinite(position.lat) && Number.isFinite(position.lng) &&
+    position.lat >= TAIWAN_BOUNDS.minLat && position.lat <= TAIWAN_BOUNDS.maxLat &&
+    position.lng >= TAIWAN_BOUNDS.minLng && position.lng <= TAIWAN_BOUNDS.maxLng
+}
+
+function addressQuery(property) {
+  return [property.city, property.district, property.address].filter(Boolean).join('')
+}
+
 function priceLabel(property) {
   return `NT$ ${Number(property.price || 0).toLocaleString()}`
 }
@@ -30,11 +46,19 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
   const [popupId, setPopupId] = useState(null)
+  const [resolvedPositions, setResolvedPositions] = useState({})
 
-  const mapped = useMemo(
-    () => properties.filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))),
-    [properties]
-  )
+  const getResolvedPosition = useCallback((property) => {
+    if (resolvedPositions[property.id]) return resolvedPositions[property.id]
+    const stored = getPosition(property)
+    return isTaiwanPosition(stored) ? stored : null
+  }, [resolvedPositions])
+
+  const mapped = useMemo(() => {
+    return properties
+      .map(property => ({ ...property, mapPosition: getResolvedPosition(property) }))
+      .filter(property => property.mapPosition)
+  }, [properties, getResolvedPosition])
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'xiaowo-google-maps',
@@ -48,13 +72,13 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
     if (!map || !window.google || mapped.length === 0) return
 
     if (mapped.length === 1) {
-      map.setCenter(getPosition(mapped[0]))
+      map.setCenter(mapped[0].mapPosition)
       map.setZoom(15)
       return
     }
 
     const bounds = new window.google.maps.LatLngBounds()
-    mapped.forEach(property => bounds.extend(getPosition(property)))
+    mapped.forEach(property => bounds.extend(property.mapPosition))
     map.fitBounds(bounds, 60)
   }, [mapped])
 
@@ -62,11 +86,58 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
     if (!mapRef.current || !window.google) return
     const selected = selectedId ? mapped.find(p => p.id === selectedId) : null
     if (selected) {
-      mapRef.current.panTo(getPosition(selected))
+      mapRef.current.panTo(selected.mapPosition)
       mapRef.current.setZoom(Math.max(mapRef.current.getZoom() || 14, 15))
       setPopupId(selected.id)
     }
   }, [mapped, selectedId])
+
+  useEffect(() => {
+    if (!isLoaded || !window.google) return
+
+    const missing = properties.filter(property => {
+      if (resolvedPositions[property.id]) return false
+      if (!addressQuery(property)) return false
+      return true
+    })
+    if (!missing.length) return
+
+    let cancelled = false
+    const geocoder = new window.google.maps.Geocoder()
+
+    async function resolveAddresses() {
+      const next = {}
+      for (const property of missing.slice(0, 80)) {
+        const query = addressQuery(property)
+        try {
+          const result = await geocoder.geocode({
+            address: query,
+            region: 'TW',
+            componentRestrictions: { country: 'TW' },
+          })
+          const location = result.results?.[0]?.geometry?.location
+          if (location) {
+            const position = { lat: location.lat(), lng: location.lng() }
+            if (isTaiwanPosition(position)) next[property.id] = position
+          }
+        } catch (_) {
+          const stored = getPosition(property)
+          if (isTaiwanPosition(stored)) next[property.id] = stored
+        }
+        await new Promise(resolve => setTimeout(resolve, 80))
+      }
+      if (!cancelled && Object.keys(next).length) {
+        setResolvedPositions(prev => ({ ...prev, ...next }))
+      }
+    }
+
+    resolveAddresses()
+    return () => { cancelled = true }
+  }, [isLoaded, properties, resolvedPositions])
+
+  useEffect(() => {
+    fitBounds()
+  }, [fitBounds])
 
   if (!apiKey) {
     return (
@@ -95,9 +166,9 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
   const activePopup = popupId ? mapped.find(p => p.id === popupId) : null
 
   return (
-    <GoogleMap
+      <GoogleMap
       mapContainerClassName="listings-map-canvas"
-      center={mapped[0] ? getPosition(mapped[0]) : TAIWAN_CENTER}
+      center={mapped[0]?.mapPosition || TAIWAN_CENTER}
       zoom={mapped[0] ? 14 : 7}
       options={mapOptions}
       onLoad={map => {
@@ -111,7 +182,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
         return (
           <OverlayViewF
             key={property.id}
-            position={getPosition(property)}
+            position={property.mapPosition}
             mapPaneName={OVERLAY_MOUSE_TARGET}
           >
             <button
@@ -130,7 +201,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
       })}
 
       {activePopup && (
-        <InfoWindow position={getPosition(activePopup)} onCloseClick={() => setPopupId(null)}>
+        <InfoWindow position={activePopup.mapPosition} onCloseClick={() => setPopupId(null)}>
           <div className="map-popup-card">
             {(activePopup.coverUrl || activePopup.images?.[0]?.url) && (
               <img src={activePopup.coverUrl || activePopup.images?.[0]?.url} alt={activePopup.title} />
