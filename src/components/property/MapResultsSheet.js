@@ -52,7 +52,7 @@ function MapSheetCard({ property }) {
   )
 }
 
-export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', expanded, onToggle }) {
+export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', selectedMode = false, expanded, onToggle }) {
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const [dragY, setDragY] = useState(0)
@@ -122,7 +122,7 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
 
   return (
     <section
-      className={`map-results-sheet ${expanded ? 'is-expanded' : ''}`}
+      className={`map-results-sheet ${expanded ? 'is-expanded' : ''} ${selectedMode ? 'is-selected-mode' : ''}`}
       style={dragY ? { '--sheet-offset': `${dragY}px` } : undefined}
     >
       <button
@@ -139,7 +139,7 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
           <span />
         </span>
         <span className="map-results-sheet-title">
-          <strong>{Number(total || properties.length).toLocaleString()} 間房源</strong>
+          <strong>{selectedMode ? '已選取房源' : `${Number(total || properties.length).toLocaleString()} 間房源`}</strong>
           <span>{expanded ? subtitle : '上拉查看此區域房源'}</span>
         </span>
       </button>

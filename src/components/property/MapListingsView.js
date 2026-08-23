@@ -18,13 +18,15 @@ function canShowOnMap(property) {
 export default function MapListingsView({ properties = [], total = 0 }) {
   const mappedCount = useMemo(() => properties.filter(canShowOnMap).length, [properties])
   const [selectedId, setSelectedId] = useState(properties[0]?.id || null)
+  const [selectedProperty, setSelectedProperty] = useState(null)
   const [sheetExpanded, setSheetExpanded] = useState(false)
   const [visibleProperties, setVisibleProperties] = useState(null)
-  const sheetProperties = visibleProperties ?? properties
+  const sheetProperties = selectedProperty ? [selectedProperty] : (visibleProperties ?? properties)
 
   useEffect(() => {
     setVisibleProperties(null)
     setSelectedId(properties[0]?.id || null)
+    setSelectedProperty(null)
     setSheetExpanded(false)
   }, [properties])
 
@@ -41,17 +43,26 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           onSelect={setSelectedId}
           onPreviewProperty={property => {
             setSelectedId(property.id)
+            setSelectedProperty(property)
             setSheetExpanded(true)
           }}
-          onVisiblePropertiesChange={setVisibleProperties}
+          onVisiblePropertiesChange={nextProperties => {
+            setVisibleProperties(nextProperties)
+            if (selectedProperty && !nextProperties.some(property => property.id === selectedProperty.id)) {
+              setSelectedProperty(null)
+            }
+          }}
         />
       </div>
       <MapResultsSheet
         properties={sheetProperties}
         total={sheetProperties.length}
-        subtitle={visibleProperties ? '目前地圖範圍內' : '目前搜尋條件'}
+        subtitle={selectedProperty ? '點卡片查看完整房源資訊' : (visibleProperties ? '目前地圖範圍內' : '目前搜尋條件')}
+        selectedMode={Boolean(selectedProperty)}
         expanded={sheetExpanded}
-        onToggle={() => setSheetExpanded(value => !value)}
+        onToggle={() => {
+          setSheetExpanded(value => !value)
+        }}
       />
     </section>
   )

@@ -96,6 +96,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.section-wrap.listings-map-main {
+  padding-top: 16px;
+  padding-bottom: 0;
+}
+
 /* listings map view */
 .listings-view-switch {
   display: inline-flex;
@@ -1511,8 +1516,8 @@ body {
 
 @media (max-width: 640px) {
   .listings-map-main {
-    padding-top: 8px;
-    padding-bottom: 0;
+    max-width: none;
+    padding: 0 16px 0 !important;
     overflow: hidden;
     overscroll-behavior: none;
   }
@@ -1530,7 +1535,7 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     overflow: visible;
-    margin: 0 0 16px;
+    margin: 0 0 10px;
     padding: 0;
   }
 
@@ -1608,7 +1613,7 @@ body {
   .merged-map-topbar {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
     gap: 8px;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
   }
 
   .map-back-button {
@@ -1622,7 +1627,7 @@ body {
   }
 
   .map-area-pill {
-    padding: 11px 14px;
+    padding: 9px 14px;
   }
 
   .map-area-pill strong {
@@ -1631,9 +1636,9 @@ body {
 
   .merged-map-panel {
     position: relative;
-    height: calc(100vh - 250px);
-    height: calc(100svh - 250px);
-    min-height: 430px;
+    height: calc(100vh - 190px);
+    height: calc(100svh - 190px);
+    min-height: 520px;
     margin-left: -16px;
     margin-right: -16px;
     margin-bottom: 0;
@@ -1687,6 +1692,11 @@ body {
     transform: translateY(var(--sheet-offset, 0px));
   }
 
+  .map-results-sheet.is-selected-mode.is-expanded {
+    height: auto;
+    max-height: min(78%, 520px);
+  }
+
   .map-results-sheet-header {
     min-height: 30px;
     touch-action: none;
@@ -1729,6 +1739,11 @@ body {
     padding-bottom: 12px;
   }
 
+  .map-results-sheet.is-selected-mode .map-results-sheet-grid {
+    flex: 0 0 auto;
+    padding-bottom: 16px;
+  }
+
   .map-selected-card {
     display: none;
   }
@@ -1746,6 +1761,11 @@ body {
     gap: 12px;
     padding: 10px;
     border-radius: 18px;
+  }
+
+  .map-results-sheet.is-selected-mode .map-sheet-card {
+    grid-template-columns: 144px minmax(0, 1fr);
+    margin-bottom: 0;
   }
 
   .map-sheet-card-image {
