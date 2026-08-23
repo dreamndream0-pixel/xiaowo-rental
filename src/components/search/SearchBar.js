@@ -128,6 +128,15 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
     cursor: 'pointer', fontFamily: 'inherit', fontWeight: active ? 700 : 400,
     transition: 'all 0.15s', whiteSpace: 'nowrap',
   })
+  const confirmRowSt = {
+    display: 'flex', justifyContent: 'flex-end',
+    paddingTop: 14, marginTop: 14, borderTop: '1px solid var(--oat-mid)',
+  }
+  const confirmBtnSt = {
+    minWidth: 88, padding: '8px 18px', borderRadius: 12,
+    border: 'none', background: 'var(--sage)', color: 'white',
+    cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', fontWeight: 800,
+  }
 
   return (
     <div ref={containerRef} style={{ background: 'white', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', width: '100%' }}>
@@ -203,6 +212,9 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
                   )
                 })}
               </div>
+              <div style={confirmRowSt}>
+                <button type="button" onClick={doSearch} style={confirmBtnSt}>確認</button>
+              </div>
             </div>
           )}
         </div>
@@ -263,6 +275,9 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
                   })}
                 </div>
               </div>
+              <div style={confirmRowSt}>
+                <button type="button" onClick={doSearch} style={confirmBtnSt}>確認</button>
+              </div>
             </div>
           )}
         </div>
@@ -297,6 +312,9 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
                     </button>
                   )
                 })}
+              </div>
+              <div style={confirmRowSt}>
+                <button type="button" onClick={doSearch} style={confirmBtnSt}>確認</button>
               </div>
             </div>
           )}
