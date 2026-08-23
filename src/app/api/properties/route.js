@@ -26,6 +26,8 @@ function toPropertyCard(p) {
     featured:         p.featured,
     city:             p.city,
     district:         p.district,
+    lat:              p.lat,
+    lng:              p.lng,
     size:             p.size,
     price:            p.price,
     coverUrl:         p.images?.[0]?.url ?? null,

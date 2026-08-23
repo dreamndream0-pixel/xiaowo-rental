@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import PropertyGrid from '@/components/property/PropertyGrid'
+import MapListingsView from '@/components/property/MapListingsView'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
@@ -18,7 +19,8 @@ async function getProperties(searchParams) {
     page = 1,
   } = searchParams
 
-  const limit  = 20
+  const isMapView = searchParams.view === 'map'
+  const limit  = isMapView ? 80 : 20
   const offset = (Number(page) - 1) * limit
 
   const where = {
@@ -63,8 +65,21 @@ async function getProperties(searchParams) {
 }
 
 // 房源列表（非同步，Suspense 串流）
+function viewHref(searchParams, view) {
+  const params = new URLSearchParams()
+  Object.entries(searchParams || {}).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return
+    if (key === 'page' || key === 'view') return
+    params.set(key, String(value))
+  })
+  if (view === 'map') params.set('view', 'map')
+  const query = params.toString()
+  return `/listings${query ? `?${query}` : ''}`
+}
+
 async function PropertiesSection({ searchParams }) {
   const { properties, total, page, totalPages } = await getProperties(searchParams)
+  const isMapView = searchParams.view === 'map'
   const hasSearch = !!(
     searchParams.city || searchParams.district || searchParams.keyword ||
     searchParams.type || searchParams.tags ||
@@ -82,9 +97,13 @@ async function PropertiesSection({ searchParams }) {
             {label ? `${label}・` : ''}共 {total} 筆
           </span>
         </div>
+        <div className="listings-view-switch" aria-label="房源檢視模式">
+          <a href={viewHref(searchParams, 'list')} className={!isMapView ? 'is-active' : ''}>列表找房</a>
+          <a href={viewHref(searchParams, 'map')} className={isMapView ? 'is-active' : ''}>地圖找房</a>
+        </div>
       </div>
-      <PropertyGrid properties={properties} />
-      {totalPages > 1 && (
+      {isMapView ? <MapListingsView properties={properties} total={total} /> : <PropertyGrid properties={properties} />}
+      {!isMapView && totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
           {Array.from({ length: totalPages }, (_, i) => (
             <a key={i}
