@@ -12,6 +12,39 @@ const TAIWAN_BOUNDS = {
   maxLng: 122.2,
 }
 
+const AREA_CENTERS = {
+  台中市: { lat: 24.1477, lng: 120.6736 },
+  台中市中區: { lat: 24.1417, lng: 120.6806 },
+  台中市東區: { lat: 24.1371, lng: 120.6978 },
+  台中市南區: { lat: 24.1210, lng: 120.6654 },
+  台中市西區: { lat: 24.1437, lng: 120.6637 },
+  台中市北區: { lat: 24.1586, lng: 120.6818 },
+  台中市北屯區: { lat: 24.1840, lng: 120.6860 },
+  台中市西屯區: { lat: 24.1813, lng: 120.6399 },
+  台中市南屯區: { lat: 24.1394, lng: 120.6435 },
+  台中市太平區: { lat: 24.1265, lng: 120.7184 },
+  台中市大里區: { lat: 24.0996, lng: 120.6779 },
+  台中市霧峰區: { lat: 24.0615, lng: 120.6995 },
+  台中市烏日區: { lat: 24.1045, lng: 120.6236 },
+  台中市豐原區: { lat: 24.2521, lng: 120.7224 },
+  台中市后里區: { lat: 24.3093, lng: 120.7104 },
+  台中市石岡區: { lat: 24.2749, lng: 120.7786 },
+  台中市東勢區: { lat: 24.2586, lng: 120.8280 },
+  台中市和平區: { lat: 24.2827, lng: 121.1400 },
+  台中市新社區: { lat: 24.2340, lng: 120.8095 },
+  台中市潭子區: { lat: 24.2117, lng: 120.7030 },
+  台中市大雅區: { lat: 24.2252, lng: 120.6506 },
+  台中市神岡區: { lat: 24.2578, lng: 120.6735 },
+  台中市大肚區: { lat: 24.1537, lng: 120.5421 },
+  台中市沙鹿區: { lat: 24.2370, lng: 120.5610 },
+  台中市龍井區: { lat: 24.2006, lng: 120.5459 },
+  台中市梧棲區: { lat: 24.2542, lng: 120.5312 },
+  台中市清水區: { lat: 24.2686, lng: 120.5740 },
+  台中市大甲區: { lat: 24.3451, lng: 120.6244 },
+  台中市外埔區: { lat: 24.3321, lng: 120.6542 },
+  台中市大安區: { lat: 24.3460, lng: 120.5860 },
+}
+
 const mapOptions = {
   fullscreenControl: false,
   mapTypeControl: false,
@@ -24,7 +57,7 @@ const mapOptions = {
   ],
 }
 
-function getPosition(property) {
+function getStoredPosition(property) {
   return { lat: Number(property.lat), lng: Number(property.lng) }
 }
 
@@ -36,6 +69,27 @@ function isTaiwanPosition(position) {
 
 function addressQuery(property) {
   return [property.city, property.district, property.address].filter(Boolean).join('')
+}
+
+function stableOffset(id = '') {
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0
+  const angle = Math.abs(hash % 360) * Math.PI / 180
+  const ring = 0.002 + (Math.abs(hash) % 5) * 0.0012
+  return { lat: Math.sin(angle) * ring, lng: Math.cos(angle) * ring }
+}
+
+function fallbackPosition(property) {
+  const base = AREA_CENTERS[`${property.city || ''}${property.district || ''}`] || AREA_CENTERS[property.city]
+  if (!base) return null
+  const offset = stableOffset(property.id)
+  return { lat: base.lat + offset.lat, lng: base.lng + offset.lng }
+}
+
+function getInitialPosition(property) {
+  const stored = getStoredPosition(property)
+  if (isTaiwanPosition(stored)) return stored
+  return fallbackPosition(property)
 }
 
 function priceLabel(property) {
@@ -61,9 +115,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
   const [resolvedPositions, setResolvedPositions] = useState({})
 
   const getResolvedPosition = useCallback((property) => {
-    if (resolvedPositions[property.id]) return resolvedPositions[property.id]
-    const stored = getPosition(property)
-    return isTaiwanPosition(stored) ? stored : null
+    return resolvedPositions[property.id] || getInitialPosition(property)
   }, [resolvedPositions])
 
   const mapped = useMemo(() => {
@@ -109,6 +161,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
 
     const missing = properties.filter(property => {
       if (resolvedPositions[property.id]) return false
+      if (isTaiwanPosition(getStoredPosition(property))) return false
       return !!addressQuery(property)
     })
     if (!missing.length) return
@@ -131,8 +184,8 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
             if (isTaiwanPosition(position)) next[property.id] = position
           }
         } catch (_) {
-          const stored = getPosition(property)
-          if (isTaiwanPosition(stored)) next[property.id] = stored
+          const fallback = getInitialPosition(property)
+          if (fallback) next[property.id] = fallback
         }
         await new Promise(resolve => setTimeout(resolve, 80))
       }
@@ -154,7 +207,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
       <div className="listings-map-loading">
         <div>
           <strong>尚未設定 Google Maps API Key</strong>
-          <span>請在 Vercel 新增 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 後重新部署。</span>
+          <span>請到 Vercel 新增 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 後重新部署。</span>
         </div>
       </div>
     )

@@ -27,6 +27,12 @@ function propertyImage(property) {
   return property.images?.[0]?.url ?? property.coverUrl ?? null
 }
 
+function canShowOnMap(property) {
+  const lat = Number(property.lat)
+  const lng = Number(property.lng)
+  return (Number.isFinite(lat) && Number.isFinite(lng)) || Boolean(property.city || property.district || property.address)
+}
+
 function MapListCard({ property, active, onSelect, cardRef }) {
   const image = propertyImage(property)
 
@@ -61,7 +67,7 @@ function MapListCard({ property, active, onSelect, cardRef }) {
 
 export default function MapListingsView({ properties = [], total = 0 }) {
   const mappedCount = useMemo(
-    () => properties.filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))).length,
+    () => properties.filter(canShowOnMap).length,
     [properties]
   )
   const [selectedId, setSelectedId] = useState(properties[0]?.id || null)
@@ -89,7 +95,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
         </div>
         {mappedCount < properties.length && (
           <div className="map-listings-note">
-            有 {properties.length - mappedCount} 間房源尚未設定座標，會保留在列表但不顯示在地圖上。
+            有 {properties.length - mappedCount} 間房源缺少可定位的縣市、行政區或地址，暫不顯示在地圖。
           </div>
         )}
         <div className="map-listings-scroll">

@@ -388,7 +388,7 @@ body {
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
-  transform: translate(-50%, -100%);
+  transform: none;
 }
 
 .google-price-marker.is-soon {
@@ -397,7 +397,7 @@ body {
 
 .google-price-marker.is-selected {
   background: var(--sage-deep);
-  transform: translate(-50%, -100%) scale(1.08);
+  transform: scale(1.08);
   box-shadow: 0 8px 24px rgba(46,45,42,0.34);
   z-index: 2;
 }
