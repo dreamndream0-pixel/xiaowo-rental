@@ -18,7 +18,7 @@ async function getProperties(searchParams) {
     minPrice = 0, maxPrice = 999999,
   } = searchParams
 
-  const limit = 500
+  const limit = 120
 
   const where = {
     deletedAt: null,

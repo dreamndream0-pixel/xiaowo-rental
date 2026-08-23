@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
+
+const INITIAL_VISIBLE_COUNT = 12
+const LOAD_MORE_COUNT = 12
 
 function coverImage(property) {
   return property.images?.[0]?.url ?? property.coverUrl ?? null
@@ -20,7 +23,7 @@ function tagNames(property) {
 
 function MapSheetCard({ property }) {
   const image = coverImage(property)
-  const tags = tagNames(property).slice(0, 5)
+  const tags = tagNames(property).slice(0, 4)
 
   return (
     <Link href={`/property/${property.id}`} className="map-sheet-card">
@@ -53,6 +56,11 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const [dragY, setDragY] = useState(0)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COUNT)
+  }, [properties])
 
   const beginDrag = event => {
     dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
@@ -88,6 +96,16 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
     onToggle()
   }
 
+  const handleListScroll = event => {
+    const element = event.currentTarget
+    const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 180
+    if (nearBottom) {
+      setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))
+    }
+  }
+
+  const visibleProperties = properties.slice(0, visibleCount)
+
   return (
     <section
       className={`map-results-sheet ${expanded ? 'is-expanded' : ''}`}
@@ -111,11 +129,14 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
           <span>{expanded ? subtitle : '上拉查看此區域房源'}</span>
         </span>
       </button>
-      <div className="map-results-sheet-grid">
-        {properties.length ? properties.map(property => (
+      <div className="map-results-sheet-grid" onScroll={handleListScroll}>
+        {visibleProperties.length ? visibleProperties.map(property => (
           <MapSheetCard key={property.id} property={property} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
+        )}
+        {visibleCount < properties.length && (
+          <div className="map-results-sheet-more">繼續上滑載入更多</div>
         )}
       </div>
     </section>

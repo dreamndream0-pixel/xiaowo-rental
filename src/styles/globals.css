@@ -463,6 +463,14 @@ body {
   text-align: center;
 }
 
+.map-results-sheet-more {
+  padding: 12px;
+  color: var(--gray-mid);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .map-preview-card {
   position: absolute;
   left: 24px;
@@ -1505,6 +1513,10 @@ body {
   .section-wrap:has(.merged-map-topbar) {
     padding-top: 8px;
     padding-bottom: 0;
+  }
+
+  .section-wrap:has(.merged-map-topbar) + footer {
+    display: none;
   }
 
   .merged-results-header {
