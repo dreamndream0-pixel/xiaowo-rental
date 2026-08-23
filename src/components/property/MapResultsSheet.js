@@ -58,7 +58,7 @@ export default function MapResultsSheet({ properties = [], total = 0, expanded, 
   return (
     <section
       className={`map-results-sheet ${expanded ? 'is-expanded' : ''}`}
-      style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
+      style={dragY ? { '--sheet-offset': `${dragY}px` } : undefined}
     >
       <button
         type="button"

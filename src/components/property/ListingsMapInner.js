@@ -1,9 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { GoogleMap, MarkerF, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { PROPERTY_TYPE_LABELS } from '@/types'
 
 const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
 const TAIWAN_BOUNDS = {
@@ -109,20 +107,10 @@ function markerDotIcon(property, selected) {
   }
 }
 
-function statusText(property) {
-  if (property.status === 'COMING_SOON') return '即將釋出'
-  if (property.status === 'AVAILABLE') return '可承租'
-  return property.status || ''
-}
-
-function coverImage(property) {
-  return property.coverUrl || property.images?.[0]?.url || null
-}
 
 export default function ListingsMapInner({ properties, selectedId, onSelect, onPreviewProperty }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
-  const [popupId, setPopupId] = useState(null)
   const [resolvedPositions, setResolvedPositions] = useState({})
 
   const getResolvedPosition = useCallback((property) => {
@@ -163,7 +151,6 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
     if (selected) {
       mapRef.current.panTo(selected.mapPosition)
       mapRef.current.setZoom(Math.max(mapRef.current.getZoom() || 14, 15))
-      setPopupId(selected.id)
     }
   }, [mapped, selectedId])
 
@@ -237,15 +224,9 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
 
   if (!isLoaded) return <div className="listings-map-loading">Google 地圖載入中</div>
 
-  const activePopup = popupId ? mapped.find(p => p.id === popupId) : null
   const openProperty = (property) => {
     onSelect(property.id)
-    if (onPreviewProperty) {
-      setPopupId(null)
-      onPreviewProperty(property)
-    } else {
-      setPopupId(property.id)
-    }
+    onPreviewProperty?.(property)
   }
 
   return (
@@ -289,50 +270,6 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
           </Fragment>
         )
       })}
-
-      {activePopup && (
-        <OverlayViewF
-          position={activePopup.mapPosition}
-          mapPaneName={OVERLAY_MOUSE_TARGET}
-          getPixelPositionOffset={(width, height) => ({
-            x: -(width / 2),
-            y: -(height + 24),
-          })}
-        >
-          <article className="map-property-popover">
-            <button
-              type="button"
-              className="map-property-popover-close"
-              aria-label="關閉房源卡片"
-              onClick={() => setPopupId(null)}
-            >
-              ×
-            </button>
-            <Link href={`/property/${activePopup.id}`} className="map-property-popover-image">
-              {coverImage(activePopup) ? (
-                <img src={coverImage(activePopup)} alt={activePopup.title} />
-              ) : (
-                <span>無照片</span>
-              )}
-              <em>{statusText(activePopup)}</em>
-            </Link>
-            <div className="map-property-popover-body">
-              <div className="map-property-popover-kicker">
-                <span>{PROPERTY_TYPE_LABELS[activePopup.type] || activePopup.type || '房源'}</span>
-                {activePopup.featured && <span>精選</span>}
-              </div>
-              <Link href={`/property/${activePopup.id}`} className="map-property-popover-title">
-                {activePopup.title}
-              </Link>
-              <div className="map-property-popover-location">{activePopup.city}{activePopup.district}</div>
-              <div className="map-property-popover-footer">
-                <strong>{priceLabel(activePopup)} / 月</strong>
-                <Link href={`/property/${activePopup.id}`}>查看房源</Link>
-              </div>
-            </div>
-          </article>
-        </OverlayViewF>
-      )}
     </GoogleMap>
   )
 }
