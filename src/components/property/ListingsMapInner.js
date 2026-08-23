@@ -42,9 +42,13 @@ function priceLabel(property) {
   return `NT$ ${Number(property.price || 0).toLocaleString()}`
 }
 
+function markerLabel(property) {
+  return `${property.featured ? '★ ' : ''}${priceLabel(property)}`
+}
+
 function markerIcon(property, selected) {
-  const label = `${property.featured ? '★ ' : ''}${priceLabel(property)}`
-  const width = Math.max(94, Math.min(150, 42 + label.length * 7))
+  const label = markerLabel(property)
+  const width = Math.max(96, Math.min(156, 44 + label.length * 7))
   const height = 34
   const bg = property.status === 'COMING_SOON' ? '#C9913A' : selected ? '#3A5740' : '#4E7153'
   const svg = `
@@ -56,13 +60,13 @@ function markerIcon(property, selected) {
         <rect x="2" y="2" width="${width - 4}" height="${height}" rx="17" fill="${bg}" stroke="#fff" stroke-width="3"/>
         <path d="M${width / 2 - 6} ${height - 1} L${width / 2} ${height + 7} L${width / 2 + 6} ${height - 1}" fill="${bg}" stroke="#fff" stroke-width="2"/>
       </g>
-      <text x="${width / 2}" y="23" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="800" fill="#fff">${label}</text>
     </svg>`
 
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
     scaledSize: new window.google.maps.Size(width, height + 8),
     anchor: new window.google.maps.Point(width / 2, height + 8),
+    labelOrigin: new window.google.maps.Point(width / 2, 19),
   }
 }
 
@@ -205,6 +209,13 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
             key={property.id}
             position={property.mapPosition}
             icon={markerIcon(property, selected)}
+            label={{
+              text: markerLabel(property),
+              color: '#ffffff',
+              fontSize: '12px',
+              fontWeight: '800',
+            }}
+            optimized={false}
             zIndex={selected ? 20 : 10}
             onClick={() => {
               onSelect(property.id)
