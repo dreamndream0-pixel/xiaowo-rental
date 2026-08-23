@@ -114,6 +114,7 @@ export default function MapResultsSheet({
 }) {
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
+  const gridRef = useRef(null)
   const [dragY, setDragY] = useState(0)
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
 
@@ -134,6 +135,15 @@ export default function MapResultsSheet({
       document.body.style.overscrollBehavior = previousOverscroll
     }
   }, [level])
+
+  useEffect(() => {
+    const element = gridRef.current
+    if (!element || level === 'collapsed') return
+    const needsMore = element.scrollHeight <= element.clientHeight + 24
+    if (needsMore) {
+      setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))
+    }
+  }, [level, visibleCount, properties.length])
 
   const beginDrag = (event) => {
     dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
@@ -176,7 +186,7 @@ export default function MapResultsSheet({
 
   const handleListScroll = (event) => {
     const element = event.currentTarget
-    const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 180
+    const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 120
     if (nearBottom) {
       setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))
     }
@@ -215,7 +225,7 @@ export default function MapResultsSheet({
         </button>
       )}
 
-      <div className="map-results-sheet-grid" onScroll={handleListScroll}>
+      <div className="map-results-sheet-grid" ref={gridRef} onScroll={handleListScroll}>
         {selectedMode && visibleProperties[0] ? (
           <SelectedMapCard property={visibleProperties[0]} onClose={onClearSelected} />
         ) : visibleProperties.length ? visibleProperties.map(property => (
@@ -224,7 +234,13 @@ export default function MapResultsSheet({
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
         )}
         {visibleCount < properties.length && (
-          <div className="map-results-sheet-more">繼續上滑載入更多</div>
+          <button
+            type="button"
+            className="map-results-sheet-more"
+            onClick={() => setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))}
+          >
+            繼續上滑載入更多
+          </button>
         )}
       </div>
     </section>

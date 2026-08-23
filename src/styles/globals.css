@@ -469,8 +469,14 @@ body {
 }
 
 .map-results-sheet-more {
+  display: block;
+  width: 100%;
   padding: 12px;
+  border: 0;
+  background: transparent;
   color: var(--gray-mid);
+  cursor: pointer;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 800;
   text-align: center;
@@ -2416,6 +2422,14 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .listings-map-main {
     padding: 0 14px 0 !important;
+    height: calc(100svh - 80px) !important;
+    overflow: hidden !important;
+  }
+
+  html:has(.listings-map-main),
+  body:has(.listings-map-main) {
+    height: 100%;
+    overflow: hidden;
   }
 
   .merged-map-topbar {
@@ -2478,9 +2492,9 @@ a { color: inherit; }
   }
 
   .merged-map-panel {
-    height: calc(100vh - 142px) !important;
-    height: calc(100svh - 142px) !important;
-    min-height: 520px !important;
+    height: calc(100vh - 214px) !important;
+    height: calc(100svh - 214px) !important;
+    min-height: 360px !important;
     margin-left: -14px !important;
     margin-right: -14px !important;
   }
@@ -2568,6 +2582,10 @@ a { color: inherit; }
   }
 
   .map-results-sheet-grid {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
     padding: 0 14px 14px !important;
   }
 
@@ -2577,29 +2595,43 @@ a { color: inherit; }
   }
 
   .map-results-sheet.is-full .map-results-sheet-grid {
+    height: calc(100% - 10px) !important;
     padding-bottom: 76px !important;
   }
 
   .map-sheet-card {
     grid-template-columns: 128px minmax(0, 1fr) !important;
-    min-height: 154px !important;
+    min-height: 158px !important;
     gap: 12px !important;
     padding: 10px !important;
+    overflow: hidden !important;
+    align-items: stretch !important;
   }
 
   .map-sheet-card-image {
     height: 126px !important;
   }
 
+  .map-sheet-card-body {
+    display: flex !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+  }
+
   .map-sheet-card-footer {
     justify-content: flex-end !important;
-    margin-top: 8px !important;
+    margin-top: auto !important;
+    padding-top: 8px !important;
+    width: 100% !important;
   }
 
   .map-sheet-card-footer span {
     margin-left: auto !important;
+    max-width: 100% !important;
     text-align: right !important;
-    font-size: 18px !important;
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
   }
 
   .map-results-sheet:not(.is-full) .map-return-button {
@@ -2607,10 +2639,15 @@ a { color: inherit; }
   }
 
   .property-back-button {
-    left: 14px !important;
-    top: 78px !important;
-    width: 38px !important;
-    height: 38px !important;
+    left: 16px !important;
+    top: 84px !important;
+    width: 40px !important;
+    height: 40px !important;
+    border: 0 !important;
+    background: rgba(70, 72, 68, 0.46) !important;
+    color: white !important;
     font-size: 28px !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.18) !important;
   }
 }
