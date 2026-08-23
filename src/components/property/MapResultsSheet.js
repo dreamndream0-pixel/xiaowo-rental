@@ -1,19 +1,52 @@
 'use client'
 
+import Link from 'next/link'
 import { useRef, useState } from 'react'
-import PropertyCard from './PropertyCard'
+import { PROPERTY_TYPE_LABELS } from '@/types'
 
-function toCardProperty(property) {
-  return {
-    ...property,
-    coverUrl: property.images?.[0]?.url ?? property.coverUrl ?? null,
-    tags: property.tags?.map(t => typeof t === 'string' ? t : t.name) ?? [],
-    landlordName: property.owner?.siteName || property.owner?.name || property.landlordName || property.landlord?.name,
-    landlordHandle: property.owner?.id ? null : property.landlordHandle || property.landlord?.handle || null,
-    landlordSiteId: property.owner?.id || property.landlordSiteId || null,
-    landlordAvatar: property.owner?.avatar || property.landlordAvatar || property.landlord?.avatar,
-    landlordVerified: property.landlord?.verified || property.landlordVerified || false,
-  }
+function coverImage(property) {
+  return property.images?.[0]?.url ?? property.coverUrl ?? null
+}
+
+function statusText(property) {
+  if (property.status === 'COMING_SOON') return '即將釋出'
+  if (property.status === 'AVAILABLE') return '可租'
+  return property.status || ''
+}
+
+function tagNames(property) {
+  return property.tags?.map(tag => typeof tag === 'string' ? tag : tag.name).filter(Boolean) ?? []
+}
+
+function MapSheetCard({ property }) {
+  const image = coverImage(property)
+  const tags = tagNames(property).slice(0, 5)
+
+  return (
+    <Link href={`/property/${property.id}`} className="map-sheet-card">
+      <div className="map-sheet-card-image">
+        {image ? <img src={image} alt={property.title} /> : <span>無照片</span>}
+        <em>{statusText(property)}</em>
+      </div>
+      <div className="map-sheet-card-body">
+        <div className="map-sheet-card-meta">
+          <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
+          {property.size ? <span>{property.size} 坪</span> : null}
+        </div>
+        <strong>{property.title}</strong>
+        <p>{property.city}{property.district}</p>
+        {tags.length > 0 && (
+          <div className="map-sheet-card-tags">
+            {tags.map(tag => <span key={tag}>{tag}</span>)}
+          </div>
+        )}
+        <div className="map-sheet-card-footer">
+          <span>NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
+          <b>查看</b>
+        </div>
+      </div>
+    </Link>
+  )
 }
 
 export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', expanded, onToggle }) {
@@ -80,11 +113,7 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
       </button>
       <div className="map-results-sheet-grid">
         {properties.length ? properties.map(property => (
-          <PropertyCard
-            key={property.id}
-            detailHref={`/property/${property.id}`}
-            property={toCardProperty(property)}
-          />
+          <MapSheetCard key={property.id} property={property} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
         )}

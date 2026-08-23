@@ -16,11 +16,9 @@ async function getProperties(searchParams) {
   const {
     city, district, keyword, type, landlord, tags,
     minPrice = 0, maxPrice = 999999,
-    page = 1,
   } = searchParams
 
-  const limit = 40
-  const offset = (Number(page) - 1) * limit
+  const limit = 500
 
   const where = {
     deletedAt: null,
@@ -54,7 +52,6 @@ async function getProperties(searchParams) {
         tags: true,
       },
       orderBy: [{ boostPlan: 'desc' }, { featured: 'desc' }, { createdAt: 'desc' }],
-      skip: offset,
       take: limit,
     }),
     db.property.count({ where }),
@@ -63,8 +60,6 @@ async function getProperties(searchParams) {
   return {
     properties: await attachAvailableFrom(db, properties),
     total,
-    page: Number(page),
-    totalPages: Math.ceil(total / limit),
   }
 }
 
@@ -85,17 +80,6 @@ function resultLabel(searchParams, total) {
     searchParams.keyword,
   ].filter(Boolean)
   return `${parts.join(' · ') || '全部房源'} · 共 ${Number(total || 0).toLocaleString()} 筆`
-}
-
-function pageHref(searchParams, page) {
-  const params = new URLSearchParams()
-  Object.entries(searchParams || {}).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') return
-    if (key === 'page' || key === 'view') return
-    params.set(key, String(value))
-  })
-  params.set('page', String(page))
-  return `/listings?${params.toString()}`
 }
 
 function SearchControls({ searchParams, total }) {
@@ -135,26 +119,12 @@ function SearchControls({ searchParams, total }) {
 }
 
 async function PropertiesSection({ searchParams }) {
-  const { properties, total, page, totalPages } = await getProperties(searchParams)
-  const hasSearch = Boolean(
-    searchParams.city || searchParams.district || searchParams.keyword ||
-    searchParams.type || searchParams.tags ||
-    Number(searchParams.minPrice) > 0 || Number(searchParams.maxPrice) < 999999
-  )
+  const { properties, total } = await getProperties(searchParams)
 
   return (
     <>
       <SearchControls searchParams={searchParams} total={total} />
       <MapListingsView properties={properties} total={total} />
-      {totalPages > 1 && (
-        <div className="pagination-row">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <a key={i} href={pageHref(searchParams, i + 1)} className={i + 1 === page ? 'is-active' : ''}>
-              {i + 1}
-            </a>
-          ))}
-        </div>
-      )}
     </>
   )
 }
