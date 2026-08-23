@@ -9,7 +9,7 @@ import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
-export const metadata = { title: '全部房源' }
+export const metadata = { title: '搜尋房源' }
 export const dynamic = 'force-dynamic'
 
 async function getProperties(searchParams) {
@@ -19,28 +19,27 @@ async function getProperties(searchParams) {
     page = 1,
   } = searchParams
 
-  const isMapView = searchParams.view === 'map'
-  const limit  = isMapView ? 80 : 20
+  const limit = 40
   const offset = (Number(page) - 1) * limit
 
   const where = {
     deletedAt: null,
-    status:    { in: ['AVAILABLE', 'COMING_SOON'] },
-    ...(city     && { city }),
+    status: { in: ['AVAILABLE', 'COMING_SOON'] },
+    ...(city && { city }),
     ...(district && { district: { in: district.split(',') } }),
-    ...(type     && { type: { in: type.split(',') } }),
+    ...(type && { type: { in: type.split(',') } }),
     ...(landlord && { ownerId: landlord }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
     ...(tags && { tags: { some: { name: { in: tags.split(',') } } } }),
     ...(keyword && {
       OR: [
-        { title:       { contains: keyword, mode: 'insensitive' } },
+        { title: { contains: keyword, mode: 'insensitive' } },
         { description: { contains: keyword, mode: 'insensitive' } },
-        { city:        { contains: keyword, mode: 'insensitive' } },
-        { district:    { contains: keyword, mode: 'insensitive' } },
-        { address:     { contains: keyword, mode: 'insensitive' } },
-        { amenities:   { some: { name: { contains: keyword, mode: 'insensitive' } } } },
-        { tags:        { some: { name: { contains: keyword, mode: 'insensitive' } } } },
+        { city: { contains: keyword, mode: 'insensitive' } },
+        { district: { contains: keyword, mode: 'insensitive' } },
+        { address: { contains: keyword, mode: 'insensitive' } },
+        { amenities: { some: { name: { contains: keyword, mode: 'insensitive' } } } },
+        { tags: { some: { name: { contains: keyword, mode: 'insensitive' } } } },
       ],
     }),
   }
@@ -50,9 +49,9 @@ async function getProperties(searchParams) {
       where,
       include: {
         landlord: { select: { id: true, name: true, handle: true, avatar: true, verified: true } },
-        owner:    { select: { id: true, name: true, siteName: true, avatar: true } },
-        images:   { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 },
-        tags:     true,
+        owner: { select: { id: true, name: true, siteName: true, avatar: true } },
+        images: { orderBy: [{ isCover: 'desc' }, { order: 'asc' }], take: 1 },
+        tags: true,
       },
       orderBy: [{ boostPlan: 'desc' }, { featured: 'desc' }, { createdAt: 'desc' }],
       skip: offset,
@@ -61,65 +60,91 @@ async function getProperties(searchParams) {
     db.property.count({ where }),
   ])
 
-  return { properties: await attachAvailableFrom(db, properties), total, page: Number(page), totalPages: Math.ceil(total / limit) }
+  return {
+    properties: await attachAvailableFrom(db, properties),
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  }
 }
 
-// 房源列表（非同步，Suspense 串流）
-function viewHref(searchParams, view) {
+function cleanList(value) {
+  return String(value || '').split(',').filter(Boolean)
+}
+
+function resultLabel(searchParams, total) {
+  const parts = [
+    searchParams.city,
+    cleanList(searchParams.district).join('、'),
+    searchParams.keyword,
+  ].filter(Boolean)
+  return `${parts.join(' · ') || '全部房源'} · 共 ${Number(total || 0).toLocaleString()} 筆`
+}
+
+function pageHref(searchParams, page) {
   const params = new URLSearchParams()
   Object.entries(searchParams || {}).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return
     if (key === 'page' || key === 'view') return
     params.set(key, String(value))
   })
-  if (view === 'map') params.set('view', 'map')
-  const query = params.toString()
-  return `/listings${query ? `?${query}` : ''}`
+  params.set('page', String(page))
+  return `/listings?${params.toString()}`
+}
+
+function SearchControls({ searchParams }) {
+  return (
+    <div className="merged-search-controls">
+      <details className="merged-control-card">
+        <summary>
+          <span>搜尋條件</span>
+          <b>關鍵字、地區、租金、房型</b>
+        </summary>
+        <div className="merged-control-body">
+          <SearchBar initialParams={searchParams} />
+        </div>
+      </details>
+      <details className="merged-control-card">
+        <summary>
+          <span>篩選條件</span>
+          <b>標籤、排序、更多條件</b>
+        </summary>
+        <div className="merged-control-body">
+          <FilterBar />
+        </div>
+      </details>
+    </div>
+  )
 }
 
 async function PropertiesSection({ searchParams }) {
   const { properties, total, page, totalPages } = await getProperties(searchParams)
-  const isMapView = searchParams.view === 'map'
-  const hasSearch = !!(
+  const hasSearch = Boolean(
     searchParams.city || searchParams.district || searchParams.keyword ||
     searchParams.type || searchParams.tags ||
     Number(searchParams.minPrice) > 0 || Number(searchParams.maxPrice) < 999999
   )
-  const label = [searchParams.city, searchParams.district?.replace(/,/g, '、'), searchParams.keyword]
-    .filter(Boolean).join(' · ')
 
   return (
     <>
-      <div className="section-header" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+      <div className="section-header merged-results-header">
+        <div>
           <h1 className="section-title-main">{hasSearch ? '搜尋房源' : '全部房源'}</h1>
-          <span style={{ fontSize: 13, color: 'var(--gray-light)', fontFamily: 'Montserrat,sans-serif' }}>
-            {label ? `${label}・` : ''}共 {total} 筆
-          </span>
-        </div>
-        <div className="listings-view-switch" aria-label="房源檢視模式">
-          <a href={viewHref(searchParams, 'list')} className={!isMapView ? 'is-active' : ''}>列表找房</a>
-          <a href={viewHref(searchParams, 'map')} className={isMapView ? 'is-active' : ''}>地圖找房</a>
+          <span>{resultLabel(searchParams, total)}</span>
         </div>
       </div>
-      {isMapView ? <MapListingsView properties={properties} total={total} searchParams={searchParams} /> : <PropertyGrid properties={properties} />}
-      {!isMapView && totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
+      <MapListingsView properties={properties} />
+      <div className="merged-list-header">
+        <strong>列表房源</strong>
+        <span>點卡片可查看完整房源資訊</span>
+      </div>
+      <PropertyGrid properties={properties} />
+      {totalPages > 1 && (
+        <div className="pagination-row">
           {Array.from({ length: totalPages }, (_, i) => (
-            <a key={i}
-              href={`/listings?page=${i + 1}&${new URLSearchParams({
-                ...(searchParams.city     && { city: searchParams.city }),
-                ...(searchParams.district && { district: searchParams.district }),
-                ...(searchParams.keyword  && { keyword: searchParams.keyword }),
-                ...(searchParams.type     && { type: searchParams.type }),
-              }).toString()}`}
-              style={{
-                padding: '8px 16px', borderRadius: 12,
-                background: i + 1 === page ? 'var(--sage)' : 'white',
-                color: i + 1 === page ? 'white' : 'var(--gray-mid)',
-                border: '1.5px solid var(--oat-mid)',
-                fontWeight: i + 1 === page ? 700 : 400,
-              }}>{i + 1}</a>
+            <a key={i} href={pageHref(searchParams, i + 1)} className={i + 1 === page ? 'is-active' : ''}>
+              {i + 1}
+            </a>
           ))}
         </div>
       )}
@@ -127,7 +152,6 @@ async function PropertiesSection({ searchParams }) {
   )
 }
 
-// 讀取中骨架
 function PropertySkeleton() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
@@ -143,9 +167,6 @@ function PropertySkeleton() {
             <div style={{ height: 18, background: 'var(--oat-mid)', borderRadius: 6, marginBottom: 6, width: '80%' }} />
             <div style={{ height: 14, background: 'var(--oat-mid)', borderRadius: 6, width: '50%' }} />
           </div>
-          <div style={{ padding: '0 18px 14px', borderTop: '1px solid var(--oat-mid)', paddingTop: 12 }}>
-            <div style={{ height: 14, background: 'var(--oat-mid)', borderRadius: 6, width: '40%' }} />
-          </div>
         </div>
       ))}
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
@@ -154,22 +175,11 @@ function PropertySkeleton() {
 }
 
 export default function ListingsPage({ searchParams }) {
-  const isMapView = searchParams?.view === 'map'
-
   return (
     <>
       <Navbar />
       <main className="section-wrap">
-        {!isMapView && (
-          <>
-            <div style={{ marginBottom: 20 }}>
-              <SearchBar initialParams={searchParams} />
-            </div>
-            <FilterBar />
-          </>
-        )}
-
-        {/* Suspense：搜尋欄瞬間顯示，房源卡串流載入 */}
+        <SearchControls searchParams={searchParams} />
         <Suspense fallback={<PropertySkeleton />}>
           <PropertiesSection searchParams={searchParams} />
         </Suspense>

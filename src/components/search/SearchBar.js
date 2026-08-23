@@ -92,7 +92,6 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
     if (rentMin > 0)     params.set('minPrice', rentMin)
     if (rentMax < 50000) params.set('maxPrice', rentMax)
     if (tags.length > 0) params.set('tags', tags.join(','))
-    if (initialParams.view === 'map') params.set('view', 'map')
     setActivePopover(null)
     router.push(`${searchBase}?${params.toString()}`)
   }

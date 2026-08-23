@@ -127,6 +127,177 @@ body {
   color: white;
 }
 
+.merged-search-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.merged-control-card {
+  min-width: 0;
+  border: 1px solid var(--oat-mid);
+  border-radius: 22px;
+  background: white;
+  box-shadow: var(--shadow-sm);
+  overflow: visible;
+}
+
+.merged-control-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.merged-control-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.merged-control-card summary::after {
+  content: '⌄';
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--sage-bg);
+  color: var(--sage-dark);
+  text-align: center;
+  line-height: 28px;
+  font-weight: 900;
+}
+
+.merged-control-card[open] summary::after {
+  content: '⌃';
+}
+
+.merged-control-card summary span,
+.merged-control-card summary b {
+  display: block;
+  min-width: 0;
+}
+
+.merged-control-card summary span {
+  color: var(--charcoal);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.merged-control-card summary b {
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--gray-mid);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merged-control-body {
+  padding: 0 14px 14px;
+}
+
+.merged-control-body > div {
+  box-shadow: none !important;
+  border: 1px solid var(--oat-mid);
+}
+
+.merged-results-header {
+  margin-bottom: 16px;
+}
+
+.merged-results-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.merged-results-header span {
+  color: var(--gray-light);
+  font-family: var(--font-latin), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.merged-map-panel {
+  margin-bottom: 28px;
+}
+
+.merged-map-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.merged-map-meta strong {
+  color: var(--charcoal);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.merged-map-meta span,
+.merged-list-header span {
+  color: var(--gray-mid);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.merged-map-panel .map-listings-map {
+  position: relative;
+  top: auto;
+  height: min(64vh, 620px);
+  min-height: 440px;
+}
+
+.merged-list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+.merged-list-header strong {
+  color: var(--charcoal);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.pagination-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--oat-mid);
+  border-radius: 12px;
+  background: white;
+  color: var(--gray-mid);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pagination-row a.is-active {
+  background: var(--sage);
+  color: white;
+}
+
 .map-listings-shell {
   display: grid;
   grid-template-columns: minmax(330px, 420px) minmax(0, 1fr);
@@ -663,6 +834,80 @@ body {
 }
 
 @media (max-width: 640px) {
+  .merged-search-controls {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin: 0 -16px 20px;
+    padding: 0 16px 2px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .merged-control-card {
+    flex: 0 0 86%;
+    border-radius: 18px;
+    scroll-snap-align: start;
+  }
+
+  .merged-control-card summary {
+    min-height: 54px;
+    padding: 12px 14px;
+  }
+
+  .merged-control-card summary span {
+    font-size: 14px;
+  }
+
+  .merged-control-card summary b {
+    max-width: 54%;
+    font-size: 12px;
+  }
+
+  .merged-control-body {
+    padding: 0 10px 10px;
+  }
+
+  .merged-results-header {
+    margin-bottom: 12px;
+  }
+
+  .merged-results-header > div {
+    display: block;
+  }
+
+  .merged-results-header span {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .merged-map-panel {
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-bottom: 22px;
+  }
+
+  .merged-map-meta {
+    padding: 0 16px;
+  }
+
+  .merged-map-panel .map-listings-map {
+    height: 48vh;
+    min-height: 340px;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .merged-list-header {
+    display: block;
+  }
+
+  .merged-list-header span {
+    display: block;
+    margin-top: 4px;
+  }
+
   .section-wrap:has(.map-results-page) {
     padding-left: 0;
     padding-right: 0;
