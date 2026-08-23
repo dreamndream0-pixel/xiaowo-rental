@@ -62,6 +62,20 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
     setVisibleCount(INITIAL_VISIBLE_COUNT)
   }, [properties])
 
+  useEffect(() => {
+    if (!expanded) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    const previousOverscroll = document.body.style.overscrollBehavior
+    document.body.style.overflow = 'hidden'
+    document.body.style.overscrollBehavior = 'none'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.body.style.overscrollBehavior = previousOverscroll
+    }
+  }, [expanded])
+
   const beginDrag = event => {
     dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
     event.currentTarget.setPointerCapture?.(event.pointerId)

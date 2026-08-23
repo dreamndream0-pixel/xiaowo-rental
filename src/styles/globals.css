@@ -1513,6 +1513,8 @@ body {
   .listings-map-main {
     padding-top: 8px;
     padding-bottom: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   .listings-map-main + footer {
@@ -1629,8 +1631,8 @@ body {
 
   .merged-map-panel {
     position: relative;
-    height: 62vh;
-    height: 62svh;
+    height: calc(100vh - 250px);
+    height: calc(100svh - 250px);
     min-height: 430px;
     margin-left: -16px;
     margin-right: -16px;
@@ -1677,11 +1679,17 @@ body {
     border-radius: 26px 26px 0 0;
     box-shadow: 0 -14px 34px rgba(46,45,42,0.16);
     transform: translateY(calc(100% - 30px + var(--sheet-offset, 0px)));
-    touch-action: none;
+    touch-action: auto;
+    overscroll-behavior: contain;
   }
 
   .map-results-sheet.is-expanded {
     transform: translateY(var(--sheet-offset, 0px));
+  }
+
+  .map-results-sheet-header {
+    min-height: 30px;
+    touch-action: none;
   }
 
   .map-results-sheet-title {
@@ -1705,8 +1713,10 @@ body {
     grid-template-columns: minmax(0, 1fr);
     max-height: none;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 0 16px 12px;
     overscroll-behavior: contain;
+    touch-action: pan-y;
   }
 
   .map-results-sheet:not(.is-expanded) .map-results-sheet-grid {
