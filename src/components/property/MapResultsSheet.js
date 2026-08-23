@@ -52,7 +52,37 @@ function MapSheetCard({ property }) {
   )
 }
 
-export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', selectedMode = false, expanded, onToggle }) {
+function SelectedMapCard({ property, onClose }) {
+  const image = coverImage(property)
+  const tags = tagNames(property).slice(0, 3)
+
+  return (
+    <article className="map-selected-sheet-card">
+      <div className="map-selected-sheet-image">
+        {image ? <img src={image} alt={property.title} /> : <span>無照片</span>}
+        <em>{statusText(property)}</em>
+        <button type="button" onClick={onClose} aria-label="關閉房源卡">×</button>
+      </div>
+      <div className="map-selected-sheet-body">
+        <div className="map-selected-sheet-tags">
+          <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
+          {property.featured ? <span>精選</span> : null}
+          {tags.map(tag => <span key={tag}>{tag}</span>)}
+        </div>
+        <Link href={`/property/${property.id}`} className="map-selected-sheet-title">
+          {property.title}
+        </Link>
+        <p>{property.city}{property.district}</p>
+        <div className="map-selected-sheet-footer">
+          <strong>NT$ {Number(property.price || 0).toLocaleString()} / 月</strong>
+          <Link href={`/property/${property.id}`}>查看房源</Link>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', selectedMode = false, expanded, onToggle, onClearSelected }) {
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const [dragY, setDragY] = useState(0)
@@ -145,7 +175,9 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
       </button>
 
       <div className="map-results-sheet-grid" onScroll={handleListScroll}>
-        {visibleProperties.length ? visibleProperties.map(property => (
+        {selectedMode && visibleProperties[0] ? (
+          <SelectedMapCard property={visibleProperties[0]} onClose={onClearSelected} />
+        ) : visibleProperties.length ? visibleProperties.map(property => (
           <MapSheetCard key={property.id} property={property} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>

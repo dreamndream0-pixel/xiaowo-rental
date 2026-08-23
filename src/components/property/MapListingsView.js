@@ -48,9 +48,6 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           }}
           onVisiblePropertiesChange={nextProperties => {
             setVisibleProperties(nextProperties)
-            if (selectedProperty && !nextProperties.some(property => property.id === selectedProperty.id)) {
-              setSelectedProperty(null)
-            }
           }}
         />
       </div>
@@ -60,6 +57,10 @@ export default function MapListingsView({ properties = [], total = 0 }) {
         subtitle={selectedProperty ? '點卡片查看完整房源資訊' : (visibleProperties ? '目前地圖範圍內' : '目前搜尋條件')}
         selectedMode={Boolean(selectedProperty)}
         expanded={sheetExpanded}
+        onClearSelected={() => {
+          setSelectedProperty(null)
+          setSheetExpanded(false)
+        }}
         onToggle={() => {
           setSheetExpanded(value => !value)
         }}

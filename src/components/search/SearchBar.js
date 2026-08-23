@@ -93,7 +93,13 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
     if (rentMax < 50000) params.set('maxPrice', rentMax)
     if (tags.length > 0) params.set('tags', tags.join(','))
     setActivePopover(null)
-    router.push(`${searchBase}?${params.toString()}`)
+    const target = `${searchBase}${params.toString() ? `?${params.toString()}` : ''}`
+    containerRef.current?.closest('details')?.removeAttribute('open')
+    if (window.location.pathname === searchBase && window.location.search === (params.toString() ? `?${params.toString()}` : '')) {
+      router.refresh()
+      return
+    }
+    window.location.assign(target)
   }
 
   // ── Shared styles ──────────────────────────────────
