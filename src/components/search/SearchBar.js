@@ -213,7 +213,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
                 })}
               </div>
               <div style={confirmRowSt}>
-                <button type="button" onClick={doSearch} style={confirmBtnSt}>確認</button>
+                <button type="button" onClick={() => setActivePopover(null)} style={confirmBtnSt}>確認</button>
               </div>
             </div>
           )}
@@ -276,7 +276,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
                 </div>
               </div>
               <div style={confirmRowSt}>
-                <button type="button" onClick={doSearch} style={confirmBtnSt}>確認</button>
+                <button type="button" onClick={() => setActivePopover(null)} style={confirmBtnSt}>確認</button>
               </div>
             </div>
           )}
@@ -314,7 +314,7 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
                 })}
               </div>
               <div style={confirmRowSt}>
-                <button type="button" onClick={doSearch} style={confirmBtnSt}>確認</button>
+                <button type="button" onClick={() => setActivePopover(null)} style={confirmBtnSt}>確認</button>
               </div>
             </div>
           )}

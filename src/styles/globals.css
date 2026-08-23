@@ -224,6 +224,15 @@ body {
   font-weight: 700;
 }
 
+.merged-map-topbar {
+  display: grid;
+  grid-template-columns: 46px minmax(220px, 430px) 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
 .merged-map-panel {
   margin-bottom: 28px;
 }
@@ -835,18 +844,18 @@ body {
 
 @media (max-width: 640px) {
   .merged-search-controls {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    overflow-x: auto;
-    margin: 0 -16px 20px;
-    padding: 0 16px 2px;
-    scroll-snap-type: x mandatory;
+    overflow: visible;
+    margin: 0 0 16px;
+    padding: 0;
   }
 
   .merged-control-card {
-    flex: 0 0 86%;
+    min-width: 0;
     border-radius: 18px;
-    scroll-snap-align: start;
+    position: relative;
   }
 
   .merged-control-card summary {
@@ -859,12 +868,39 @@ body {
   }
 
   .merged-control-card summary b {
-    max-width: 54%;
+    display: none;
     font-size: 12px;
   }
 
   .merged-control-body {
-    padding: 0 10px 10px;
+    padding: 0;
+  }
+
+  .merged-control-card[open]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    background: rgba(46,45,42,0.38);
+  }
+
+  .merged-control-card[open] .merged-control-body {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 50%;
+    z-index: 960;
+    max-height: 78vh;
+    overflow-y: auto;
+    padding: 14px;
+    border-radius: 28px;
+    background: white;
+    box-shadow: 0 24px 70px rgba(46,45,42,0.28);
+    transform: translateY(-50%);
+  }
+
+  .merged-control-card[open] .merged-control-body > div {
+    border: 0;
   }
 
   .merged-results-header {
@@ -878,6 +914,26 @@ body {
   .merged-results-header span {
     display: block;
     margin-top: 4px;
+  }
+
+  .merged-map-topbar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .map-back-button {
+    width: 40px;
+    height: 40px;
+    font-size: 28px;
+  }
+
+  .map-area-pill {
+    padding: 11px 14px;
+  }
+
+  .map-area-pill strong {
+    font-size: 15px;
   }
 
   .merged-map-panel {

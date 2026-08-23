@@ -1,5 +1,6 @@
 // src/app/listings/page.js
 import { Suspense } from 'react'
+import Link from 'next/link'
 import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import PropertyGrid from '@/components/property/PropertyGrid'
@@ -72,6 +73,12 @@ function cleanList(value) {
   return String(value || '').split(',').filter(Boolean)
 }
 
+function resultTitle(searchParams) {
+  const district = cleanList(searchParams.district)
+  const area = district[0] || searchParams.city || searchParams.keyword || '全部地區'
+  return `${area}的房源`
+}
+
 function resultLabel(searchParams, total) {
   const parts = [
     searchParams.city,
@@ -92,28 +99,39 @@ function pageHref(searchParams, page) {
   return `/listings?${params.toString()}`
 }
 
-function SearchControls({ searchParams }) {
+function SearchControls({ searchParams, total }) {
   return (
-    <div className="merged-search-controls">
-      <details className="merged-control-card">
-        <summary>
-          <span>搜尋條件</span>
-          <b>關鍵字、地區、租金、房型</b>
-        </summary>
-        <div className="merged-control-body">
-          <SearchBar initialParams={searchParams} />
+    <>
+      <div className="merged-map-topbar">
+        <Link href="/" className="map-back-button" aria-label="返回首頁">‹</Link>
+        <div className="map-area-pill">
+          <strong>{resultTitle(searchParams)}</strong>
+          <span>共 {Number(total || 0).toLocaleString()} 筆</span>
         </div>
-      </details>
-      <details className="merged-control-card">
-        <summary>
-          <span>篩選條件</span>
-          <b>標籤、排序、更多條件</b>
-        </summary>
-        <div className="merged-control-body">
-          <FilterBar />
-        </div>
-      </details>
-    </div>
+        <span aria-hidden="true" />
+      </div>
+
+      <div className="merged-search-controls">
+        <details className="merged-control-card">
+          <summary>
+            <span>搜尋條件</span>
+            <b>{resultTitle(searchParams)}</b>
+          </summary>
+          <div className="merged-control-body">
+            <SearchBar initialParams={searchParams} />
+          </div>
+        </details>
+        <details className="merged-control-card">
+          <summary>
+            <span>篩選條件</span>
+            <b>標籤、排序</b>
+          </summary>
+          <div className="merged-control-body">
+            <FilterBar />
+          </div>
+        </details>
+      </div>
+    </>
   )
 }
 
@@ -133,6 +151,7 @@ async function PropertiesSection({ searchParams }) {
           <span>{resultLabel(searchParams, total)}</span>
         </div>
       </div>
+      <SearchControls searchParams={searchParams} total={total} />
       <MapListingsView properties={properties} />
       <div className="merged-list-header">
         <strong>列表房源</strong>
@@ -179,7 +198,6 @@ export default function ListingsPage({ searchParams }) {
     <>
       <Navbar />
       <main className="section-wrap">
-        <SearchControls searchParams={searchParams} />
         <Suspense fallback={<PropertySkeleton />}>
           <PropertiesSection searchParams={searchParams} />
         </Suspense>
