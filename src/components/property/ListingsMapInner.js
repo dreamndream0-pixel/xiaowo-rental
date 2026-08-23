@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { GoogleMap, InfoWindow, OVERLAY_MOUSE_TARGET, OverlayViewF, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, InfoWindow, MarkerF, useJsApiLoader } from '@react-google-maps/api'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const TAIWAN_CENTER = { lat: 23.6978, lng: 120.9605 }
@@ -40,6 +40,30 @@ function addressQuery(property) {
 
 function priceLabel(property) {
   return `NT$ ${Number(property.price || 0).toLocaleString()}`
+}
+
+function markerIcon(property, selected) {
+  const label = `${property.featured ? '★ ' : ''}${priceLabel(property)}`
+  const width = Math.max(94, Math.min(150, 42 + label.length * 7))
+  const height = 34
+  const bg = property.status === 'COMING_SOON' ? '#C9913A' : selected ? '#3A5740' : '#4E7153'
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + 8}" viewBox="0 0 ${width} ${height + 8}">
+      <filter id="s" x="-20%" y="-30%" width="140%" height="160%">
+        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#2E2D2A" flood-opacity=".28"/>
+      </filter>
+      <g filter="url(#s)">
+        <rect x="2" y="2" width="${width - 4}" height="${height}" rx="17" fill="${bg}" stroke="#fff" stroke-width="3"/>
+        <path d="M${width / 2 - 6} ${height - 1} L${width / 2} ${height + 7} L${width / 2 + 6} ${height - 1}" fill="${bg}" stroke="#fff" stroke-width="2"/>
+      </g>
+      <text x="${width / 2}" y="23" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="800" fill="#fff">${label}</text>
+    </svg>`
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new window.google.maps.Size(width, height + 8),
+    anchor: new window.google.maps.Point(width / 2, height + 8),
+  }
 }
 
 export default function ListingsMapInner({ properties, selectedId, onSelect }) {
@@ -97,8 +121,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
 
     const missing = properties.filter(property => {
       if (resolvedPositions[property.id]) return false
-      if (!addressQuery(property)) return false
-      return true
+      return !!addressQuery(property)
     })
     if (!missing.length) return
 
@@ -108,10 +131,9 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
     async function resolveAddresses() {
       const next = {}
       for (const property of missing.slice(0, 80)) {
-        const query = addressQuery(property)
         try {
           const result = await geocoder.geocode({
-            address: query,
+            address: addressQuery(property),
             region: 'TW',
             componentRestrictions: { country: 'TW' },
           })
@@ -166,7 +188,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
   const activePopup = popupId ? mapped.find(p => p.id === popupId) : null
 
   return (
-      <GoogleMap
+    <GoogleMap
       mapContainerClassName="listings-map-canvas"
       center={mapped[0]?.mapPosition || TAIWAN_CENTER}
       zoom={mapped[0] ? 14 : 7}
@@ -178,25 +200,17 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
     >
       {mapped.map(property => {
         const selected = property.id === selectedId
-        const isComingSoon = property.status === 'COMING_SOON'
         return (
-          <OverlayViewF
+          <MarkerF
             key={property.id}
             position={property.mapPosition}
-            mapPaneName={OVERLAY_MOUSE_TARGET}
-          >
-            <button
-              type="button"
-              className={`google-price-marker ${selected ? 'is-selected' : ''} ${isComingSoon ? 'is-soon' : ''}`}
-              onClick={() => {
-                onSelect(property.id)
-                setPopupId(property.id)
-              }}
-            >
-              {property.featured && <span>★</span>}
-              {priceLabel(property)}
-            </button>
-          </OverlayViewF>
+            icon={markerIcon(property, selected)}
+            zIndex={selected ? 20 : 10}
+            onClick={() => {
+              onSelect(property.id)
+              setPopupId(property.id)
+            }}
+          />
         )
       })}
 
