@@ -3,7 +3,6 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
-import PropertyGrid from '@/components/property/PropertyGrid'
 import MapListingsView from '@/components/property/MapListingsView'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
@@ -146,12 +145,7 @@ async function PropertiesSection({ searchParams }) {
   return (
     <>
       <SearchControls searchParams={searchParams} total={total} />
-      <MapListingsView properties={properties} />
-      <div className="merged-list-header">
-        <strong>列表房源</strong>
-        <span>點卡片可查看完整房源資訊</span>
-      </div>
-      <PropertyGrid properties={properties} />
+      <MapListingsView properties={properties} total={total} />
       {totalPages > 1 && (
         <div className="pagination-row">
           {Array.from({ length: totalPages }, (_, i) => (

@@ -119,7 +119,7 @@ function coverImage(property) {
   return property.coverUrl || property.images?.[0]?.url || null
 }
 
-export default function ListingsMapInner({ properties, selectedId, onSelect }) {
+export default function ListingsMapInner({ properties, selectedId, onSelect, onPreviewProperty }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
   const [popupId, setPopupId] = useState(null)
@@ -238,6 +238,15 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
   if (!isLoaded) return <div className="listings-map-loading">Google 地圖載入中</div>
 
   const activePopup = popupId ? mapped.find(p => p.id === popupId) : null
+  const openProperty = (property) => {
+    onSelect(property.id)
+    if (onPreviewProperty) {
+      setPopupId(null)
+      onPreviewProperty(property)
+    } else {
+      setPopupId(property.id)
+    }
+  }
 
   return (
     <GoogleMap
@@ -258,10 +267,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
               position={property.mapPosition}
               icon={markerDotIcon(property, selected)}
               zIndex={selected ? 20 : 10}
-              onClick={() => {
-                onSelect(property.id)
-                setPopupId(property.id)
-              }}
+              onClick={() => openProperty(property)}
             />
             <OverlayViewF
               position={property.mapPosition}
@@ -274,10 +280,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect }) {
               <button
                 type="button"
                 className={`google-price-marker ${selected ? 'is-selected' : ''} ${property.status === 'COMING_SOON' ? 'is-soon' : ''}`}
-                onClick={() => {
-                  onSelect(property.id)
-                  setPopupId(property.id)
-                }}
+                onClick={() => openProperty(property)}
               >
                 {property.featured && <span>★</span>}
                 {priceLabel(property)}
