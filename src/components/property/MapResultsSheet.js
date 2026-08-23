@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 
@@ -21,12 +20,16 @@ function tagNames(property) {
   return property.tags?.map(tag => typeof tag === 'string' ? tag : tag.name).filter(Boolean) ?? []
 }
 
+function propertyHref(property) {
+  return `/property/${property.id}`
+}
+
 function MapSheetCard({ property }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 5)
 
   return (
-    <Link href={`/property/${property.id}`} className="map-sheet-card">
+    <a href={propertyHref(property)} className="map-sheet-card">
       <div className="map-sheet-card-image">
         {image ? <img src={image} alt={property.title} /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
@@ -45,24 +48,33 @@ function MapSheetCard({ property }) {
         )}
         <div className="map-sheet-card-footer">
           <span>NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
-          <b>查看房源</b>
         </div>
       </div>
-    </Link>
+    </a>
   )
 }
 
 function SelectedMapCard({ property, onClose }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
-  const propertyHref = `/property/${property.id}`
+  const href = propertyHref(property)
+  const openProperty = () => window.location.assign(href)
 
   return (
-    <article className="map-selected-sheet-card">
+    <article className="map-selected-sheet-card" onClick={openProperty} role="link" tabIndex={0}>
       <div className="map-selected-sheet-image">
         {image ? <img src={image} alt={property.title} /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
-        <button type="button" onClick={onClose} aria-label="關閉房源卡">×</button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onClose?.()
+          }}
+          aria-label="關閉房源卡"
+        >
+          ×
+        </button>
       </div>
       <div className="map-selected-sheet-body">
         <div className="map-selected-sheet-tags">
@@ -70,20 +82,36 @@ function SelectedMapCard({ property, onClose }) {
           {property.featured ? <span>精選</span> : null}
           {tags.map(tag => <span key={tag}>{tag}</span>)}
         </div>
-        <Link href={propertyHref} className="map-selected-sheet-title">
-          {property.title}
-        </Link>
+        <strong className="map-selected-sheet-title">{property.title}</strong>
         <p>{property.city}{property.district}</p>
         <div className="map-selected-sheet-footer">
           <strong>NT$ {Number(property.price || 0).toLocaleString()} / 月</strong>
-          <button type="button" onClick={() => window.location.assign(propertyHref)}>查看房源</button>
         </div>
       </div>
     </article>
   )
 }
 
-export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', selectedMode = false, expanded, onToggle, onClearSelected }) {
+function nextLevel(level) {
+  if (level === 'collapsed') return 'peek'
+  if (level === 'peek') return 'full'
+  return 'full'
+}
+
+function previousLevel(level) {
+  if (level === 'full') return 'peek'
+  return 'collapsed'
+}
+
+export default function MapResultsSheet({
+  properties = [],
+  total = 0,
+  subtitle = '目前地圖範圍內',
+  selectedMode = false,
+  level = 'collapsed',
+  onLevelChange,
+  onClearSelected,
+}) {
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const [dragY, setDragY] = useState(0)
@@ -94,7 +122,7 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
   }, [properties])
 
   useEffect(() => {
-    if (!expanded) return undefined
+    if (level === 'collapsed') return undefined
 
     const previousOverflow = document.body.style.overflow
     const previousOverscroll = document.body.style.overscrollBehavior
@@ -105,20 +133,20 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
       document.body.style.overflow = previousOverflow
       document.body.style.overscrollBehavior = previousOverscroll
     }
-  }, [expanded])
+  }, [level])
 
-  const beginDrag = event => {
+  const beginDrag = (event) => {
     dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
 
-  const moveDrag = event => {
+  const moveDrag = (event) => {
     if (!dragRef.current.active) return
     const delta = event.clientY - dragRef.current.startY
     dragRef.current.deltaY = delta
-    const bounded = expanded
-      ? Math.max(0, Math.min(320, delta))
-      : Math.min(0, Math.max(-320, delta))
+    const bounded = level === 'full' || level === 'selected'
+      ? Math.max(0, Math.min(360, delta))
+      : Math.max(-360, Math.min(240, delta))
     setDragY(bounded)
     event.preventDefault()
   }
@@ -129,8 +157,13 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
     dragRef.current.active = false
     setDragY(0)
     ignoreClickRef.current = Math.abs(delta) > 8
-    if (!expanded && delta < -26) onToggle()
-    if (expanded && delta > 26) onToggle()
+
+    if (selectedMode) {
+      if (delta > 34) onClearSelected?.()
+      return
+    }
+    if (delta < -28) onLevelChange?.(nextLevel(level))
+    if (delta > 28) onLevelChange?.(previousLevel(level))
   }
 
   const handleClick = () => {
@@ -138,10 +171,10 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
       ignoreClickRef.current = false
       return
     }
-    onToggle()
+    if (!selectedMode) onLevelChange?.(nextLevel(level))
   }
 
-  const handleListScroll = event => {
+  const handleListScroll = (event) => {
     const element = event.currentTarget
     const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 180
     if (nearBottom) {
@@ -150,10 +183,11 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
   }
 
   const visibleProperties = properties.slice(0, visibleCount)
+  const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
 
   return (
     <section
-      className={`map-results-sheet ${expanded ? 'is-expanded' : ''} ${selectedMode ? 'is-selected-mode' : ''}`}
+      className={`map-results-sheet is-${level} ${selectedMode ? 'is-selected-mode' : ''}`}
       style={dragY ? { '--sheet-offset': `${dragY}px` } : undefined}
     >
       <button
@@ -170,10 +204,16 @@ export default function MapResultsSheet({ properties = [], total = 0, subtitle =
           <span />
         </span>
         <span className="map-results-sheet-title">
-          <strong>{selectedMode ? '已選取房源' : `${Number(total || properties.length).toLocaleString()} 間房源`}</strong>
-          <span>{expanded ? subtitle : '上拉查看此區域房源'}</span>
+          <strong>{selectedMode ? '已選取房源' : countText}</strong>
+          <span>{level === 'collapsed' ? '上拉查看此區域房源' : subtitle}</span>
         </span>
       </button>
+
+      {!selectedMode && level === 'full' && (
+        <button type="button" className="map-return-button" onClick={() => onLevelChange?.('collapsed')}>
+          地圖
+        </button>
+      )}
 
       <div className="map-results-sheet-grid" onScroll={handleListScroll}>
         {selectedMode && visibleProperties[0] ? (

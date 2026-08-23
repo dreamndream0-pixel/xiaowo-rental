@@ -8,6 +8,7 @@ import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import LandlordSiteHeader from '@/components/landlord/LandlordSiteHeader'
 import PropertyDetail from '@/components/property/PropertyDetail'
+import PropertyBackButton from '@/components/property/PropertyBackButton'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 import { buildLineContactUrl } from '@/lib/lineContact'
 
@@ -120,6 +121,7 @@ export default async function PropertyPage({ params, searchParams }) {
   return (
     <>
       {siteLandlord ? <LandlordSiteHeader landlord={siteLandlord} /> : <Navbar />}
+      <PropertyBackButton />
       <PropertyDetail property={{ ...safeProperty, lineUrl }} />
       {!siteLandlord && <Footer />}
     </>

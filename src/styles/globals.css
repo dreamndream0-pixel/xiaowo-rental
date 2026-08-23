@@ -482,6 +482,7 @@ body {
   border-radius: 24px;
   background: white;
   box-shadow: 0 18px 48px rgba(46,45,42,0.18);
+  cursor: pointer;
 }
 
 .map-selected-sheet-image {
@@ -589,6 +590,49 @@ body {
   font-family: var(--font-latin), sans-serif;
   font-size: 21px;
   font-weight: 900;
+}
+
+.map-return-button {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 2;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--charcoal);
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 12px 28px rgba(46,45,42,0.22);
+}
+
+.property-back-button {
+  position: fixed;
+  left: 18px;
+  top: 92px;
+  z-index: 220;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--oat-mid);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.94);
+  color: var(--charcoal);
+  cursor: pointer;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  box-shadow: 0 10px 26px rgba(46,45,42,0.12);
 }
 
 .map-selected-sheet-footer a,
@@ -2366,5 +2410,207 @@ a { color: inherit; }
   .property-contact-card {
     position: static !important;
     padding: 18px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .listings-map-main {
+    padding: 0 14px 0 !important;
+  }
+
+  .merged-map-topbar {
+    grid-template-columns: 34px minmax(0, 1fr) 34px !important;
+    gap: 5px !important;
+    margin: 3px 0 5px !important;
+  }
+
+  .map-back-button {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+  }
+
+  .map-area-pill {
+    min-height: 38px !important;
+    padding: 5px 12px !important;
+  }
+
+  .map-area-pill strong {
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+  }
+
+  .map-area-pill span {
+    margin-top: 1px !important;
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .merged-search-controls {
+    gap: 8px !important;
+    margin: 0 0 6px !important;
+  }
+
+  .merged-control-card {
+    border-radius: 16px !important;
+  }
+
+  .merged-control-card summary {
+    min-height: 38px !important;
+    padding: 7px 12px !important;
+  }
+
+  .merged-control-card summary span {
+    font-size: 13px !important;
+  }
+
+  .merged-control-card[open] summary::after {
+    right: 30px !important;
+    top: 152px !important;
+    font-size: 26px !important;
+  }
+
+  .merged-control-card[open] .merged-control-body {
+    top: 136px !important;
+    bottom: 64px !important;
+    padding-top: 48px !important;
+  }
+
+  .merged-map-panel {
+    height: calc(100vh - 142px) !important;
+    height: calc(100svh - 142px) !important;
+    min-height: 520px !important;
+    margin-left: -14px !important;
+    margin-right: -14px !important;
+  }
+
+  .map-results-sheet {
+    --sheet-collapsed: 82px;
+    --sheet-peek: 328px;
+    transform: translateY(calc(100% - var(--sheet-collapsed) + var(--sheet-offset, 0px))) !important;
+  }
+
+  .map-results-sheet.is-peek {
+    transform: translateY(calc(100% - var(--sheet-peek) + var(--sheet-offset, 0px))) !important;
+  }
+
+  .map-results-sheet.is-full {
+    transform: translateY(var(--sheet-offset, 0px)) !important;
+  }
+
+  .map-results-sheet.is-selected-mode {
+    height: auto !important;
+    max-height: min(82%, 620px) !important;
+    left: 18px !important;
+    right: 18px !important;
+    bottom: 18px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: translateY(var(--sheet-offset, 0px)) !important;
+  }
+
+  .map-results-sheet.is-collapsed .map-results-sheet-grid {
+    display: none !important;
+  }
+
+  .map-results-sheet.is-peek .map-results-sheet-grid,
+  .map-results-sheet.is-full .map-results-sheet-grid {
+    display: grid !important;
+  }
+
+  .map-results-sheet.is-full .map-results-sheet-header {
+    min-height: 10px !important;
+    pointer-events: none !important;
+  }
+
+  .map-results-sheet.is-full .map-results-sheet-handle,
+  .map-results-sheet.is-full .map-results-sheet-title {
+    display: none !important;
+  }
+
+  .map-results-sheet.is-selected-mode .map-results-sheet-header {
+    display: none !important;
+  }
+
+  .map-results-sheet.is-selected-mode .map-results-sheet-grid {
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .map-results-sheet.is-selected-mode .map-selected-sheet-card {
+    animation: mapPreviewSlideUp 0.22s ease-out;
+  }
+
+  .map-results-sheet-title {
+    height: auto !important;
+    min-height: 48px !important;
+    overflow: visible !important;
+    padding: 0 18px 12px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .map-results-sheet-title strong {
+    font-size: 18px !important;
+  }
+
+  .map-results-sheet-title span {
+    margin-top: 3px !important;
+    font-size: 12px !important;
+  }
+
+  .map-results-sheet-handle {
+    height: 24px !important;
+  }
+
+  .map-results-sheet-grid {
+    padding: 0 14px 14px !important;
+  }
+
+  .map-results-sheet.is-peek .map-results-sheet-grid {
+    max-height: 230px !important;
+    overflow-y: auto !important;
+  }
+
+  .map-results-sheet.is-full .map-results-sheet-grid {
+    padding-bottom: 76px !important;
+  }
+
+  .map-sheet-card {
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    min-height: 154px !important;
+    gap: 12px !important;
+    padding: 10px !important;
+  }
+
+  .map-sheet-card-image {
+    height: 126px !important;
+  }
+
+  .map-sheet-card-footer {
+    justify-content: flex-end !important;
+    margin-top: 8px !important;
+  }
+
+  .map-sheet-card-footer span {
+    margin-left: auto !important;
+    text-align: right !important;
+    font-size: 18px !important;
+  }
+
+  .map-results-sheet:not(.is-full) .map-return-button {
+    display: none !important;
+  }
+
+  .property-back-button {
+    left: 14px !important;
+    top: 78px !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 28px !important;
   }
 }

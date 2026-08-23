@@ -73,13 +73,13 @@ function resultTitle(searchParams) {
   return `${area}的房源`
 }
 
-function resultLabel(searchParams, total) {
+function resultLabel(searchParams) {
   const parts = [
     searchParams.city,
     cleanList(searchParams.district).join('、'),
     searchParams.keyword,
   ].filter(Boolean)
-  return `${parts.join(' · ') || '全部房源'} · 共 ${Number(total || 0).toLocaleString()} 筆`
+  return parts.join(' · ') || '全部房源'
 }
 
 function SearchControls({ searchParams, total }) {
@@ -89,7 +89,7 @@ function SearchControls({ searchParams, total }) {
         <ListingsBackButton />
         <div className="map-area-pill">
           <strong>{resultTitle(searchParams)}</strong>
-          <span>{resultLabel(searchParams, total)}</span>
+          <span>{resultLabel(searchParams)}</span>
         </div>
         <span aria-hidden="true" />
       </div>

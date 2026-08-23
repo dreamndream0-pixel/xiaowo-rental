@@ -42,12 +42,25 @@ export default function FilterBar({ basePath = '/listings' }) {
     )
   }
 
+  const navigateWithParams = (nextParams) => {
+    const query = nextParams.toString()
+    const target = `${basePath}${query ? `?${query}` : ''}`
+    document.querySelectorAll('.merged-control-card[open]').forEach(detail => {
+      detail.removeAttribute('open')
+    })
+    if (window.location.pathname === basePath && window.location.search === (query ? `?${query}` : '')) {
+      router.refresh()
+      return
+    }
+    window.location.assign(target)
+  }
+
   const applyFilter = () => {
     const p = new URLSearchParams(params.toString())
     if (pendingTags.length === 0) p.delete('tags')
     else p.set('tags', pendingTags.join(','))
     p.delete('page')
-    router.push(`${basePath}?${p.toString()}`)
+    navigateWithParams(p)
   }
 
   const clearAll = () => {
@@ -55,14 +68,14 @@ export default function FilterBar({ basePath = '/listings' }) {
     const p = new URLSearchParams(params.toString())
     p.delete('tags')
     p.delete('page')
-    router.push(`${basePath}?${p.toString()}`)
+    navigateWithParams(p)
   }
 
   const setSort = (sort) => {
     const p = new URLSearchParams(params.toString())
     if (sort === 'newest') p.delete('sort')
     else p.set('sort', sort)
-    router.push(`${basePath}?${p.toString()}`)
+    navigateWithParams(p)
   }
 
   const hasApplied = appliedTags.length > 0

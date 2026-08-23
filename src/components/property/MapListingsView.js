@@ -19,7 +19,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
   const mappedCount = useMemo(() => properties.filter(canShowOnMap).length, [properties])
   const [selectedId, setSelectedId] = useState(properties[0]?.id || null)
   const [selectedProperty, setSelectedProperty] = useState(null)
-  const [sheetExpanded, setSheetExpanded] = useState(false)
+  const [sheetLevel, setSheetLevel] = useState('collapsed')
   const [visibleProperties, setVisibleProperties] = useState(null)
   const sheetProperties = selectedProperty ? [selectedProperty] : (visibleProperties ?? properties)
 
@@ -27,11 +27,11 @@ export default function MapListingsView({ properties = [], total = 0 }) {
     setVisibleProperties(null)
     setSelectedId(properties[0]?.id || null)
     setSelectedProperty(null)
-    setSheetExpanded(false)
+    setSheetLevel('collapsed')
   }, [properties])
 
   return (
-    <section className={`merged-map-panel ${sheetExpanded ? 'is-sheet-expanded' : ''}`}>
+    <section className={`merged-map-panel ${sheetLevel !== 'collapsed' || selectedProperty ? 'is-sheet-expanded' : ''}`}>
       <div className="merged-map-meta">
         <strong>地圖找房</strong>
         <span>{mappedCount.toLocaleString()} 間可在地圖顯示</span>
@@ -44,7 +44,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           onPreviewProperty={property => {
             setSelectedId(property.id)
             setSelectedProperty(property)
-            setSheetExpanded(true)
+            setSheetLevel('peek')
           }}
           onVisiblePropertiesChange={nextProperties => {
             setVisibleProperties(nextProperties)
@@ -56,14 +56,12 @@ export default function MapListingsView({ properties = [], total = 0 }) {
         total={sheetProperties.length}
         subtitle={selectedProperty ? '點卡片查看完整房源資訊' : (visibleProperties ? '目前地圖範圍內' : '目前搜尋條件')}
         selectedMode={Boolean(selectedProperty)}
-        expanded={sheetExpanded}
+        level={selectedProperty ? 'selected' : sheetLevel}
         onClearSelected={() => {
           setSelectedProperty(null)
-          setSheetExpanded(false)
+          setSheetLevel('collapsed')
         }}
-        onToggle={() => {
-          setSheetExpanded(value => !value)
-        }}
+        onLevelChange={nextLevel => setSheetLevel(nextLevel)}
       />
     </section>
   )
