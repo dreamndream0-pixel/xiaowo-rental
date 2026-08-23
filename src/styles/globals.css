@@ -591,12 +591,16 @@ body {
   font-weight: 900;
 }
 
-.map-selected-sheet-footer a {
+.map-selected-sheet-footer a,
+.map-selected-sheet-footer button {
   flex: 0 0 auto;
   padding: 9px 13px;
+  border: 0;
   border-radius: 999px;
   background: var(--sage-dark);
   color: white;
+  cursor: pointer;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 900;
   text-decoration: none;
@@ -1672,8 +1676,8 @@ body {
   }
 
   .merged-control-card summary {
-    min-height: 54px;
-    padding: 12px 14px;
+    min-height: 46px;
+    padding: 9px 14px;
   }
 
   .merged-control-card[open] summary::after {
@@ -1739,25 +1743,35 @@ body {
   .merged-map-topbar {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
     gap: 8px;
-    margin: 0 0 6px;
+    margin: 6px 0 8px;
   }
 
   .map-back-button {
-    width: 34px;
+    width: 40px;
     height: 40px;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     font-size: 30px;
+    cursor: pointer;
   }
 
   .map-area-pill {
-    padding: 9px 14px;
+    min-height: 48px;
+    padding: 7px 14px;
+    display: grid;
+    align-content: center;
   }
 
   .map-area-pill strong {
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .map-area-pill span {
+    font-size: 11px;
+    line-height: 1.2;
   }
 
   .merged-map-panel {

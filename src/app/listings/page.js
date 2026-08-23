@@ -1,9 +1,9 @@
 // src/app/listings/page.js
 import { Suspense } from 'react'
-import Link from 'next/link'
 import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import MapListingsView from '@/components/property/MapListingsView'
+import ListingsBackButton from '@/components/property/ListingsBackButton'
 import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
@@ -86,7 +86,7 @@ function SearchControls({ searchParams, total }) {
   return (
     <>
       <div className="merged-map-topbar">
-        <Link href="/" className="map-back-button" aria-label="返回首頁">‹</Link>
+        <ListingsBackButton />
         <div className="map-area-pill">
           <strong>{resultTitle(searchParams)}</strong>
           <span>{resultLabel(searchParams, total)}</span>

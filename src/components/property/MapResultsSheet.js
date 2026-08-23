@@ -55,6 +55,7 @@ function MapSheetCard({ property }) {
 function SelectedMapCard({ property, onClose }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
+  const propertyHref = `/property/${property.id}`
 
   return (
     <article className="map-selected-sheet-card">
@@ -69,13 +70,13 @@ function SelectedMapCard({ property, onClose }) {
           {property.featured ? <span>精選</span> : null}
           {tags.map(tag => <span key={tag}>{tag}</span>)}
         </div>
-        <Link href={`/property/${property.id}`} className="map-selected-sheet-title">
+        <Link href={propertyHref} className="map-selected-sheet-title">
           {property.title}
         </Link>
         <p>{property.city}{property.district}</p>
         <div className="map-selected-sheet-footer">
           <strong>NT$ {Number(property.price || 0).toLocaleString()} / 月</strong>
-          <Link href={`/property/${property.id}`}>查看房源</Link>
+          <button type="button" onClick={() => window.location.assign(propertyHref)}>查看房源</button>
         </div>
       </div>
     </article>
