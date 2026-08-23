@@ -145,12 +145,6 @@ async function PropertiesSection({ searchParams }) {
 
   return (
     <>
-      <div className="section-header merged-results-header">
-        <div>
-          <h1 className="section-title-main">{hasSearch ? '搜尋房源' : '全部房源'}</h1>
-          <span>{resultLabel(searchParams, total)}</span>
-        </div>
-      </div>
       <SearchControls searchParams={searchParams} total={total} />
       <MapListingsView properties={properties} />
       <div className="merged-list-header">
