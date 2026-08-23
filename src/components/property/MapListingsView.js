@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 import MapResultsSheet from './MapResultsSheet'
 
@@ -62,6 +62,14 @@ export default function MapListingsView({ properties = [], total = 0 }) {
   const [selectedId, setSelectedId] = useState(properties[0]?.id || null)
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [sheetExpanded, setSheetExpanded] = useState(false)
+  const [visibleProperties, setVisibleProperties] = useState(null)
+  const sheetProperties = visibleProperties ?? properties
+
+  useEffect(() => {
+    setVisibleProperties(null)
+    setSelectedId(properties[0]?.id || null)
+    setSelectedProperty(null)
+  }, [properties])
 
   return (
     <section className={`merged-map-panel ${sheetExpanded ? 'is-sheet-expanded' : ''}`}>
@@ -79,12 +87,14 @@ export default function MapListingsView({ properties = [], total = 0 }) {
             setSelectedProperty(property)
             setSheetExpanded(false)
           }}
+          onVisiblePropertiesChange={setVisibleProperties}
         />
         <MapSelectedCard property={selectedProperty} onClose={() => setSelectedProperty(null)} />
       </div>
       <MapResultsSheet
-        properties={properties}
-        total={total}
+        properties={sheetProperties}
+        total={sheetProperties.length}
+        subtitle={visibleProperties ? '目前地圖範圍內' : '目前搜尋條件'}
         expanded={sheetExpanded}
         onToggle={() => {
           setSelectedProperty(null)

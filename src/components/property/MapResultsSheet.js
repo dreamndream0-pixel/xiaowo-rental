@@ -16,7 +16,7 @@ function toCardProperty(property) {
   }
 }
 
-export default function MapResultsSheet({ properties = [], total = 0, expanded, onToggle }) {
+export default function MapResultsSheet({ properties = [], total = 0, subtitle = '目前地圖範圍內', expanded, onToggle }) {
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const [dragY, setDragY] = useState(0)
@@ -31,8 +31,8 @@ export default function MapResultsSheet({ properties = [], total = 0, expanded, 
     const delta = event.clientY - dragRef.current.startY
     dragRef.current.deltaY = delta
     const bounded = expanded
-      ? Math.max(0, Math.min(220, delta))
-      : Math.min(0, Math.max(-220, delta))
+      ? Math.max(0, Math.min(260, delta))
+      : Math.min(0, Math.max(-260, delta))
     setDragY(bounded)
     event.preventDefault()
   }
@@ -43,8 +43,8 @@ export default function MapResultsSheet({ properties = [], total = 0, expanded, 
     dragRef.current.active = false
     setDragY(0)
     ignoreClickRef.current = Math.abs(delta) > 8
-    if (!expanded && delta < -36) onToggle()
-    if (expanded && delta > 36) onToggle()
+    if (!expanded && delta < -32) onToggle()
+    if (expanded && delta > 32) onToggle()
   }
 
   const handleClick = () => {
@@ -62,7 +62,7 @@ export default function MapResultsSheet({ properties = [], total = 0, expanded, 
     >
       <button
         type="button"
-        className="map-results-sheet-handle"
+        className="map-results-sheet-header"
         onClick={handleClick}
         onPointerDown={beginDrag}
         onPointerMove={moveDrag}
@@ -70,20 +70,24 @@ export default function MapResultsSheet({ properties = [], total = 0, expanded, 
         onPointerCancel={endDrag}
         aria-label="切換房源列表高度"
       >
-        <span />
+        <span className="map-results-sheet-handle" aria-hidden="true">
+          <span />
+        </span>
+        <span className="map-results-sheet-title">
+          <strong>{Number(total || properties.length).toLocaleString()} 間房源</strong>
+          <span>{expanded ? subtitle : '上拉查看此區域房源'}</span>
+        </span>
       </button>
-      <div className="map-results-sheet-title">
-        <strong>{Number(total || properties.length).toLocaleString()} 間房源</strong>
-        <span>上拉查看更多房源</span>
-      </div>
       <div className="map-results-sheet-grid">
-        {properties.map(property => (
+        {properties.length ? properties.map(property => (
           <PropertyCard
             key={property.id}
             detailHref={`/property/${property.id}`}
             property={toCardProperty(property)}
           />
-        ))}
+        )) : (
+          <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
+        )}
       </div>
     </section>
   )

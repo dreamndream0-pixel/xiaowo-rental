@@ -108,7 +108,7 @@ function markerDotIcon(property, selected) {
 }
 
 
-export default function ListingsMapInner({ properties, selectedId, onSelect, onPreviewProperty }) {
+export default function ListingsMapInner({ properties, selectedId, onSelect, onPreviewProperty, onVisiblePropertiesChange }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
   const [resolvedPositions, setResolvedPositions] = useState({})
@@ -144,6 +144,20 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
     mapped.forEach(property => bounds.extend(property.mapPosition))
     map.fitBounds(bounds, 60)
   }, [mapped])
+
+  const publishVisibleProperties = useCallback(() => {
+    const map = mapRef.current
+    if (!map || !window.google || !onVisiblePropertiesChange) return
+
+    const bounds = map.getBounds()
+    if (!bounds) {
+      onVisiblePropertiesChange(mapped)
+      return
+    }
+
+    const visible = mapped.filter(property => bounds.contains(property.mapPosition))
+    onVisiblePropertiesChange(visible)
+  }, [mapped, onVisiblePropertiesChange])
 
   useEffect(() => {
     if (!mapRef.current || !window.google) return
@@ -200,6 +214,10 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
     fitBounds()
   }, [fitBounds])
 
+  useEffect(() => {
+    publishVisibleProperties()
+  }, [publishVisibleProperties])
+
   if (!apiKey) {
     return (
       <div className="listings-map-loading">
@@ -238,7 +256,9 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
       onLoad={map => {
         mapRef.current = map
         fitBounds()
+        window.setTimeout(publishVisibleProperties, 0)
       }}
+      onIdle={publishVisibleProperties}
     >
       {mapped.map(property => {
         const selected = property.id === selectedId
