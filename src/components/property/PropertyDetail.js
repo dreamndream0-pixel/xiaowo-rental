@@ -3,7 +3,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 import Button from '@/components/ui/Button'
 
@@ -289,6 +289,35 @@ export default function PropertyDetail({ property }) {
   const [communityData, setCommunityData] = useState(null)
   const [communityLoading, setCommunityLoading] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const closeDragRef = useRef(null)
+
+  const navigateBack = useCallback(() => {
+    if (window.history.length > 1) {
+      window.history.back()
+      return
+    }
+    window.location.assign('/listings')
+  }, [])
+
+  const closeWithTransition = useCallback(() => {
+    if (closing) return
+    setClosing(true)
+    window.setTimeout(navigateBack, 240)
+  }, [closing, navigateBack])
+
+  const beginCloseDrag = (event) => {
+    if (lightboxOpen || bookingOpen || communityModal) return
+    closeDragRef.current = event.clientY
+  }
+
+  const endCloseDrag = (event) => {
+    const startY = closeDragRef.current
+    closeDragRef.current = null
+    if (typeof startY === 'number' && window.scrollY <= 12 && event.clientY - startY > 96) {
+      closeWithTransition()
+    }
+  }
 
   async function handleShare() {
     const url = window.location.href
@@ -345,6 +374,34 @@ export default function PropertyDetail({ property }) {
     return () => clearTimeout(t)
   }, [])
 
+  useEffect(() => {
+    let enteredFromCard = false
+    try {
+      enteredFromCard = window.sessionStorage.getItem('xiaowo:property-transition') === 'open'
+      window.sessionStorage.removeItem('xiaowo:property-transition')
+    } catch (_) {}
+
+    if (!enteredFromCard) return undefined
+
+    document.body.classList.add('property-detail-entering')
+    const timer = window.setTimeout(() => {
+      document.body.classList.remove('property-detail-entering')
+    }, 340)
+    return () => {
+      window.clearTimeout(timer)
+      document.body.classList.remove('property-detail-entering')
+    }
+  }, [])
+
+  useEffect(() => {
+    const handler = (event) => {
+      event.preventDefault()
+      closeWithTransition()
+    }
+    window.addEventListener('xiaowo:property-close-request', handler)
+    return () => window.removeEventListener('xiaowo:property-close-request', handler)
+  }, [closeWithTransition])
+
   return (
     <>
       <style>{`
@@ -365,6 +422,15 @@ export default function PropertyDetail({ property }) {
 
       {lightboxOpen && <Lightbox images={images} startIndex={currentImg} onClose={() => setLightboxOpen(false)} />}
       {bookingOpen && <BookingModal property={property} onClose={() => setBookingOpen(false)} />}
+
+      <div
+        className={`property-detail-shell ${closing ? 'is-closing' : ''}`}
+        onPointerDown={beginCloseDrag}
+        onPointerUp={endCloseDrag}
+        onPointerCancel={() => {
+          closeDragRef.current = null
+        }}
+      >
 
       {/* Photo Gallery */}
       <div className="property-gallery-wrap" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 32px 0' }}>
@@ -796,6 +862,7 @@ export default function PropertyDetail({ property }) {
           textDecoration: 'none', fontSize: 28,
         }} title="LINE 詢問房東">💬</a>
       )}
+      </div>
     </>
   )
 }

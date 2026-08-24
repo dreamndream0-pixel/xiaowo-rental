@@ -24,12 +24,90 @@ function propertyHref(property) {
   return `/property/${property.id}`
 }
 
+function openPropertyWithTransition(source, href, beforeNavigate) {
+  beforeNavigate?.()
+
+  if (typeof window === 'undefined') return
+
+  try {
+    window.sessionStorage.setItem('xiaowo:property-transition', 'open')
+  } catch (_) {}
+
+  if (!source || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    window.location.assign(href)
+    return
+  }
+
+  try {
+    const rect = source.getBoundingClientRect()
+    const clone = source.cloneNode(true)
+    clone.classList.add('map-card-transition-clone')
+    clone.style.position = 'fixed'
+    clone.style.left = `${rect.left}px`
+    clone.style.top = `${rect.top}px`
+    clone.style.width = `${rect.width}px`
+    clone.style.height = `${rect.height}px`
+    clone.style.margin = '0'
+    clone.style.zIndex = '9999'
+    clone.style.pointerEvents = 'none'
+    clone.style.transformOrigin = 'top left'
+    clone.style.transition = 'transform 280ms cubic-bezier(.2,.8,.2,1), opacity 280ms ease, border-radius 280ms ease'
+    document.body.appendChild(clone)
+    document.body.classList.add('property-transition-active')
+
+    const scaleX = window.innerWidth / Math.max(rect.width, 1)
+    const scaleY = window.innerHeight / Math.max(rect.height, 1)
+
+    window.requestAnimationFrame(() => {
+      clone.style.transform = `translate3d(${-rect.left}px, ${-rect.top}px, 0) scale(${scaleX}, ${scaleY})`
+      clone.style.opacity = '0.96'
+      clone.style.borderRadius = '0'
+    })
+
+    window.setTimeout(() => {
+      window.location.assign(href)
+    }, 260)
+  } catch (_) {
+    window.location.assign(href)
+  }
+}
+
 function MapSheetCard({ property, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 5)
+  const dragStartRef = useRef(null)
+  const openedRef = useRef(false)
+  const href = propertyHref(property)
+
+  const openFrom = (source) => {
+    if (openedRef.current) return
+    openedRef.current = true
+    openPropertyWithTransition(source, href, onNavigateProperty)
+  }
 
   return (
-    <a href={propertyHref(property)} className="map-sheet-card" onClick={() => onNavigateProperty?.()}>
+    <a
+      href={href}
+      className="map-sheet-card"
+      onClick={(event) => {
+        event.preventDefault()
+        openFrom(event.currentTarget)
+      }}
+      onPointerDown={(event) => {
+        dragStartRef.current = event.clientY
+      }}
+      onPointerUp={(event) => {
+        const startY = dragStartRef.current
+        dragStartRef.current = null
+        if (typeof startY === 'number' && startY - event.clientY > 48) {
+          event.preventDefault()
+          openFrom(event.currentTarget)
+        }
+      }}
+      onPointerCancel={() => {
+        dragStartRef.current = null
+      }}
+    >
       <div className="map-sheet-card-image">
         {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
@@ -58,13 +136,34 @@ function SelectedMapCard({ property, onClose, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
   const href = propertyHref(property)
-  const openProperty = () => {
-    onNavigateProperty?.()
-    window.location.assign(href)
+  const dragStartRef = useRef(null)
+  const openedRef = useRef(false)
+  const openProperty = (source) => {
+    if (openedRef.current) return
+    openedRef.current = true
+    openPropertyWithTransition(source, href, onNavigateProperty)
   }
 
   return (
-    <article className="map-selected-sheet-card" onClick={openProperty} role="link" tabIndex={0}>
+    <article
+      className="map-selected-sheet-card"
+      onClick={(event) => openProperty(event.currentTarget)}
+      onPointerDown={(event) => {
+        dragStartRef.current = event.clientY
+      }}
+      onPointerUp={(event) => {
+        const startY = dragStartRef.current
+        dragStartRef.current = null
+        if (typeof startY === 'number' && startY - event.clientY > 48) {
+          openProperty(event.currentTarget)
+        }
+      }}
+      onPointerCancel={() => {
+        dragStartRef.current = null
+      }}
+      role="link"
+      tabIndex={0}
+    >
       <div className="map-selected-sheet-image">
         {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
