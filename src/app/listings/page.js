@@ -82,32 +82,37 @@ function resultLabel(searchParams) {
   return parts.join(' · ') || '全部房源'
 }
 
+function primaryFilterLabel(searchParams) {
+  const tags = cleanList(searchParams.tags)
+  const type = cleanList(searchParams.type)
+  if (tags.length) return tags[0]
+  if (type.length) return type[0]
+  if (searchParams.minPrice || searchParams.maxPrice) return '租金篩選'
+  return '熱門篩選'
+}
+
 function SearchControls({ searchParams, total }) {
   return (
     <>
       <div className="merged-map-topbar">
         <ListingsBackButton />
-        <div className="map-area-pill">
-          <strong>{resultTitle(searchParams)}</strong>
-          <span>{resultLabel(searchParams)}</span>
-        </div>
-        <span aria-hidden="true" />
-      </div>
-
-      <div className="merged-search-controls">
-        <details className="merged-control-card">
-          <summary>
-            <span>搜尋條件</span>
-            <b>{resultTitle(searchParams)}</b>
+        <details className="merged-control-card map-search-control">
+          <summary className="map-area-pill">
+            <strong>{resultTitle(searchParams)}</strong>
+            <span>{resultLabel(searchParams)}</span>
           </summary>
           <div className="merged-control-body">
             <SearchBar initialParams={searchParams} />
           </div>
         </details>
-        <details className="merged-control-card">
+        <span aria-hidden="true" />
+      </div>
+
+      <div className="merged-filter-strip">
+        <details className="merged-control-card filter-control-card">
           <summary>
-            <span>篩選條件</span>
-            <b>標籤、排序與條件</b>
+            <span>{primaryFilterLabel(searchParams)}</span>
+            <b>篩選條件</b>
           </summary>
           <div className="merged-control-body">
             <FilterBar />

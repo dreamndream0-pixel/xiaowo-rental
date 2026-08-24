@@ -44,9 +44,15 @@ async function getFilteredTags({ city, district, keyword, type, landlord }) {
     where,
     select: { tags: { select: { name: true } } },
   })
-  const nameSet = new Set()
-  props.forEach(p => p.tags.forEach(t => nameSet.add(t.name)))
-  return Array.from(nameSet).sort()
+  const counts = new Map()
+  props.forEach(p => {
+    p.tags.forEach(t => {
+      counts.set(t.name, (counts.get(t.name) || 0) + 1)
+    })
+  })
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'))
+    .map(([name]) => name)
 }
 
 export async function GET(request) {
