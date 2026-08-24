@@ -48,6 +48,8 @@ export default function SearchBar({ searchBase = '/listings', initialParams = {}
     if (initialParams.keyword)  p.set('keyword',  initialParams.keyword)
     if (initialParams.type)     p.set('type',     initialParams.type)
     if (initialParams.landlord) p.set('landlord', initialParams.landlord)
+    if (initialParams.minPrice) p.set('minPrice', initialParams.minPrice)
+    if (initialParams.maxPrice) p.set('maxPrice', initialParams.maxPrice)
     fetch('/api/tags?' + p.toString()).then(r => r.json()).then(data => {
       if (Array.isArray(data)) setAllTags(data)
     }).catch(() => {})

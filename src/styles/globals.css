@@ -2537,7 +2537,7 @@ a { color: inherit; }
     overflow: hidden !important;
     font-size: 15px !important;
     font-weight: 500 !important;
-    line-height: 1.08 !important;
+    line-height: 1.14 !important;
     text-align: center !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -2547,11 +2547,11 @@ a { color: inherit; }
     display: block !important;
     width: 100% !important;
     overflow: hidden !important;
-    margin-top: 2px !important;
+    margin-top: 6px !important;
     color: var(--gray-mid) !important;
     font-size: 13px !important;
     font-weight: 400 !important;
-    line-height: 1.08 !important;
+    line-height: 1.14 !important;
     text-align: center !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -2682,6 +2682,25 @@ a { color: inherit; }
     font-size: 26px !important;
   }
 
+  .map-search-control[open] summary::after {
+    content: '\00d7' !important;
+    display: inline-flex !important;
+    position: fixed !important;
+    right: 30px !important;
+    top: 152px !important;
+    z-index: 980 !important;
+    width: auto !important;
+    height: auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--charcoal) !important;
+    font-size: 26px !important;
+    font-weight: 300 !important;
+    line-height: 1 !important;
+  }
+
   .merged-control-card[open] .merged-control-body {
     top: 136px !important;
     bottom: 64px !important;
@@ -2708,6 +2727,10 @@ a { color: inherit; }
 
   .map-results-sheet.is-full {
     transform: translateY(var(--sheet-offset, 0px)) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
   }
 
   .map-results-sheet.is-selected-mode {
@@ -2815,6 +2838,7 @@ a { color: inherit; }
     min-height: 0 !important;
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
     padding: 0 14px 14px !important;
   }
 
@@ -2824,8 +2848,17 @@ a { color: inherit; }
   }
 
   .map-results-sheet.is-full .map-results-sheet-grid {
-    height: calc(100% - 10px) !important;
-    padding-bottom: 14px !important;
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .map-results-sheet-sentinel {
+    width: 100% !important;
+    height: 1px !important;
+    grid-column: 1 / -1 !important;
   }
 
   .map-sheet-card {
@@ -2873,7 +2906,8 @@ a { color: inherit; }
 
   .map-results-sheet.is-full .map-return-button {
     display: inline-flex !important;
-    bottom: 10px !important;
+    position: fixed !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
     min-height: 38px !important;
     padding: 0 18px !important;
     border: 0 !important;

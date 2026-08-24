@@ -115,6 +115,7 @@ export default function MapResultsSheet({
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const gridRef = useRef(null)
+  const sentinelRef = useRef(null)
   const [dragY, setDragY] = useState(0)
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
 
@@ -144,6 +145,21 @@ export default function MapResultsSheet({
       setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))
     }
   }, [level, visibleCount, properties.length])
+
+  useEffect(() => {
+    const root = gridRef.current
+    const target = sentinelRef.current
+    if (!root || !target || level === 'collapsed') return undefined
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))
+      }
+    }, { root, rootMargin: '160px 0px 220px', threshold: 0.01 })
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [level, properties.length])
 
   const beginDrag = (event) => {
     dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
@@ -242,6 +258,7 @@ export default function MapResultsSheet({
             繼續上滑載入更多
           </button>
         )}
+        <div ref={sentinelRef} className="map-results-sheet-sentinel" aria-hidden="true" />
       </div>
     </section>
   )

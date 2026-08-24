@@ -23,6 +23,8 @@ export default function MapFilterStrip({ basePath = '/listings' }) {
     if (params.get('keyword')) p.set('keyword', params.get('keyword'))
     if (params.get('type')) p.set('type', params.get('type'))
     if (params.get('landlord')) p.set('landlord', params.get('landlord'))
+    if (params.get('minPrice')) p.set('minPrice', params.get('minPrice'))
+    if (params.get('maxPrice')) p.set('maxPrice', params.get('maxPrice'))
     fetch('/api/tags?' + p.toString())
       .then(r => r.json())
       .then(data => {

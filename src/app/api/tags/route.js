@@ -21,14 +21,15 @@ const getAllTags = unstable_cache(
 )
 
 // 有過濾條件：動態查詢符合房源的標籤
-async function getFilteredTags({ city, district, keyword, type, landlord }) {
+async function getFilteredTags({ city, district, keyword, type, landlord, minPrice = 0, maxPrice = 999999 }) {
   const where = {
     deletedAt: null,
-    status: { in: ['AVAILABLE', 'COMING_SOON', 'RENTED'] },
+    status: { in: ['AVAILABLE', 'COMING_SOON'] },
     ...(city     && { city }),
-    ...(district && { district }),
+    ...(district && { district: { in: district.split(',').filter(Boolean) } }),
     ...(landlord && { ownerId: landlord }),
     ...(type     && { type: { in: type.split(',') } }),
+    price: { gte: Number(minPrice) || 0, lte: Number(maxPrice) || 999999 },
     ...(keyword  && {
       OR: [
         { title:       { contains: keyword, mode: 'insensitive' } },
@@ -63,11 +64,13 @@ export async function GET(request) {
     const keyword  = searchParams.get('keyword')  || null
     const type     = searchParams.get('type')     || null
     const landlord = searchParams.get('landlord') || null
+    const minPrice = searchParams.get('minPrice') || 0
+    const maxPrice = searchParams.get('maxPrice') || 999999
 
-    const hasFilter = city || district || keyword || type || landlord
+    const hasFilter = city || district || keyword || type || landlord || searchParams.get('minPrice') || searchParams.get('maxPrice')
 
     const tags = hasFilter
-      ? await getFilteredTags({ city, district, keyword, type, landlord })
+      ? await getFilteredTags({ city, district, keyword, type, landlord, minPrice, maxPrice })
       : await getAllTags()
 
     return NextResponse.json(tags, {

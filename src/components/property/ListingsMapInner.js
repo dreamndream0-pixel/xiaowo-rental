@@ -112,6 +112,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
   const [resolvedPositions, setResolvedPositions] = useState({})
+  const [visibleIds, setVisibleIds] = useState(null)
 
   const getResolvedPosition = useCallback((property) => {
     return resolvedPositions[property.id] || getInitialPosition(property)
@@ -122,6 +123,17 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
       .map(property => ({ ...property, mapPosition: getResolvedPosition(property) }))
       .filter(property => property.mapPosition)
   }, [properties, getResolvedPosition])
+
+  const renderedMarkers = useMemo(() => {
+    const selected = selectedId ? mapped.find(property => property.id === selectedId) : null
+    const visibleSet = visibleIds ? new Set(visibleIds) : null
+    const candidates = visibleSet ? mapped.filter(property => visibleSet.has(property.id)) : mapped
+    const limited = candidates.slice(0, 160)
+    if (selected && !limited.some(property => property.id === selected.id)) {
+      return [selected, ...limited.slice(0, 159)]
+    }
+    return limited
+  }, [mapped, selectedId, visibleIds])
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'xiaowo-google-maps',
@@ -156,6 +168,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
     }
 
     const visible = mapped.filter(property => bounds.contains(property.mapPosition))
+    setVisibleIds(visible.map(property => property.id))
     onVisiblePropertiesChange(visible)
   }, [mapped, onVisiblePropertiesChange])
 
@@ -260,7 +273,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
       }}
       onIdle={publishVisibleProperties}
     >
-      {mapped.map(property => {
+      {renderedMarkers.map(property => {
         const selected = property.id === selectedId
         return (
           <Fragment key={property.id}>
