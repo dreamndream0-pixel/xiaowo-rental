@@ -4,10 +4,25 @@ import Navbar from '@/components/layout/NavbarWrapper'
 import Footer from '@/components/layout/Footer'
 import MapListingsView from '@/components/property/MapListingsView'
 import ListingsBackButton from '@/components/property/ListingsBackButton'
-import FilterBar from '@/components/search/FilterBar'
+import MapFilterStrip from '@/components/search/MapFilterStrip'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
+
+const TYPE_LABELS = {
+  SUITE: '套房',
+  ROOM: '雅房',
+  WHOLE_FLOOR: '整層住家',
+  SHARED_SUITE: '分租套房',
+  STUDIO: '獨立套房',
+  STORE: '店面',
+  OFFICE: '辦公',
+  LIVE_OFFICE: '住辦',
+  FACTORY: '廠房',
+  PARKING: '車位',
+  LAND: '土地',
+  OTHER: '其他',
+}
 
 export const metadata = { title: '搜尋房源' }
 export const dynamic = 'force-dynamic'
@@ -78,17 +93,19 @@ function resultLabel(searchParams) {
     searchParams.city,
     cleanList(searchParams.district).join('、'),
     searchParams.keyword,
+    cleanList(searchParams.type).map(type => TYPE_LABELS[type] || type).join('、'),
+    priceLabel(searchParams),
   ].filter(Boolean)
   return parts.join(' · ') || '全部房源'
 }
 
-function primaryFilterLabel(searchParams) {
-  const tags = cleanList(searchParams.tags)
-  const type = cleanList(searchParams.type)
-  if (tags.length) return tags[0]
-  if (type.length) return type[0]
-  if (searchParams.minPrice || searchParams.maxPrice) return '租金篩選'
-  return '熱門篩選'
+function priceLabel(searchParams) {
+  const min = Number(searchParams.minPrice || 0)
+  const max = Number(searchParams.maxPrice || 0)
+  if (!min && !max) return ''
+  if (min && max) return `NT$ ${min.toLocaleString()}-${max.toLocaleString()}`
+  if (min) return `NT$ ${min.toLocaleString()} 以上`
+  return `NT$ ${max.toLocaleString()} 以下`
 }
 
 function SearchControls({ searchParams, total }) {
@@ -108,17 +125,7 @@ function SearchControls({ searchParams, total }) {
         <span aria-hidden="true" />
       </div>
 
-      <div className="merged-filter-strip">
-        <details className="merged-control-card filter-control-card">
-          <summary>
-            <span>{primaryFilterLabel(searchParams)}</span>
-            <b>篩選條件</b>
-          </summary>
-          <div className="merged-control-body">
-            <FilterBar />
-          </div>
-        </details>
-      </div>
+      <MapFilterStrip />
     </>
   )
 }
