@@ -2913,6 +2913,15 @@ a { color: inherit; }
     padding: 0 14px 14px !important;
   }
 
+  .map-results-sheet.is-selected-mode .map-results-sheet-grid {
+    background: transparent !important;
+    touch-action: none !important;
+  }
+
+  .map-results-sheet.is-selected-mode .map-selected-sheet-card {
+    touch-action: none !important;
+  }
+
   .map-results-sheet.is-peek .map-results-sheet-grid {
     max-height: 230px !important;
     overflow-y: auto !important;
