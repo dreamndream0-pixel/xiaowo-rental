@@ -120,17 +120,16 @@ export default function MapResultsSheet({
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
 
   useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE_COUNT)
-  }, [properties])
+    if (level === 'collapsed') {
+      setVisibleCount(INITIAL_VISIBLE_COUNT)
+      return
+    }
 
-  useEffect(() => {
-    if (level === 'full') {
-      setVisibleCount(properties.length)
-    }
-    if (level === 'peek') {
-      setVisibleCount(count => Math.max(count, Math.min(properties.length, INITIAL_VISIBLE_COUNT + LOAD_MORE_COUNT)))
-    }
-  }, [level, properties.length])
+    setVisibleCount(count => {
+      const baseCount = count || INITIAL_VISIBLE_COUNT
+      return Math.min(properties.length, Math.max(baseCount, Math.min(properties.length, INITIAL_VISIBLE_COUNT)))
+    })
+  }, [level, properties])
 
   useEffect(() => {
     if (level === 'collapsed') return undefined
@@ -218,6 +217,7 @@ export default function MapResultsSheet({
   }
 
   const visibleProperties = properties.slice(0, visibleCount)
+  const showList = selectedMode || level !== 'collapsed'
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
 
   return (
@@ -250,6 +250,7 @@ export default function MapResultsSheet({
         </button>
       )}
 
+      {showList && (
       <div className="map-results-sheet-grid" ref={gridRef} onScroll={handleListScroll}>
         {selectedMode && visibleProperties[0] ? (
           <SelectedMapCard property={visibleProperties[0]} onClose={onClearSelected} />
@@ -269,6 +270,7 @@ export default function MapResultsSheet({
         )}
         <div ref={sentinelRef} className="map-results-sheet-sentinel" aria-hidden="true" />
       </div>
+      )}
     </section>
   )
 }
