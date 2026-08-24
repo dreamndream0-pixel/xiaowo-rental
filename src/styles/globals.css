@@ -2527,6 +2527,14 @@ a { color: inherit; }
     overflow: hidden;
   }
 
+  /* 讓 body 以「實際可視高度」為主軸做直向 flex，
+     main 以 flex:1 填滿導覽列以下的所有空間，避免用固定扣除值而在底部露白 */
+  body:has(.listings-map-main) {
+    display: flex;
+    flex-direction: column;
+    height: var(--xiaowo-visual-height, 100svh);
+  }
+
   .merged-map-topbar {
     grid-template-columns: 34px minmax(0, 1fr) 34px !important;
     gap: 5px !important;
@@ -3016,12 +3024,16 @@ a { color: inherit; }
   }
 
   .listings-map-main {
-    height: calc(var(--xiaowo-visual-height, 100svh) - 80px) !important;
+    flex: 1 1 auto !important;
+    height: auto !important;
     min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .merged-map-panel {
-    height: calc(var(--xiaowo-visual-height, 100svh) - 184px) !important;
+    flex: 1 1 auto !important;
+    height: auto !important;
     min-height: 0 !important;
   }
 

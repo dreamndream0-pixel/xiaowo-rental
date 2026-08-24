@@ -46,7 +46,6 @@ export default function MapListingsView({ properties = [], total = 0 }) {
     visibleCount: Number(savedState?.visibleCount || 0),
   })
   const didHandleInitialPropertiesRef = useRef(false)
-  const panelRef = useRef(null)
   const [selectedId, setSelectedId] = useState(null)
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [sheetLevel, setSheetLevel] = useState(savedState?.sheetLevel || 'collapsed')
@@ -72,13 +71,8 @@ export default function MapListingsView({ properties = [], total = 0 }) {
     const updateVisualHeight = () => {
       if (typeof window === 'undefined') return
       const height = window.visualViewport?.height || window.innerHeight
+      // body 以此高度做直向 flex，main / 面板再以 flex 填滿至可視底部，避免底部露白
       document.documentElement.style.setProperty('--xiaowo-visual-height', `${height}px`)
-      // 面板高度以「實際上緣到可視底部」精算，避免固定扣除的表頭高度與實際不符而在底部露白
-      const panel = panelRef.current
-      if (panel) {
-        const top = panel.getBoundingClientRect().top
-        document.documentElement.style.setProperty('--merged-panel-height', `${Math.max(0, Math.round(height - top))}px`)
-      }
     }
     updateVisualHeight()
     window.visualViewport?.addEventListener('resize', updateVisualHeight)
@@ -103,7 +97,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
   }, [properties])
 
   return (
-    <section ref={panelRef} className={`merged-map-panel ${sheetLevel !== 'collapsed' || selectedProperty ? 'is-sheet-expanded' : ''}`}>
+    <section className={`merged-map-panel ${sheetLevel !== 'collapsed' || selectedProperty ? 'is-sheet-expanded' : ''}`}>
       <div className="merged-map-meta">
         <strong>地圖找房</strong>
         <span>{mappedCount.toLocaleString()} 間可在地圖顯示</span>
