@@ -39,34 +39,12 @@ function openPropertyWithTransition(source, href, beforeNavigate) {
   }
 
   try {
-    const rect = source.getBoundingClientRect()
-    const clone = source.cloneNode(true)
-    clone.classList.add('map-card-transition-clone')
-    clone.style.position = 'fixed'
-    clone.style.left = `${rect.left}px`
-    clone.style.top = `${rect.top}px`
-    clone.style.width = `${rect.width}px`
-    clone.style.height = `${rect.height}px`
-    clone.style.margin = '0'
-    clone.style.zIndex = '9999'
-    clone.style.pointerEvents = 'none'
-    clone.style.transformOrigin = 'top left'
-    clone.style.transition = 'transform 280ms cubic-bezier(.2,.8,.2,1), opacity 280ms ease, border-radius 280ms ease'
-    document.body.appendChild(clone)
+    source.classList.add('is-opening-property')
     document.body.classList.add('property-transition-active')
-
-    const scaleX = window.innerWidth / Math.max(rect.width, 1)
-    const scaleY = window.innerHeight / Math.max(rect.height, 1)
-
-    window.requestAnimationFrame(() => {
-      clone.style.transform = `translate3d(${-rect.left}px, ${-rect.top}px, 0) scale(${scaleX}, ${scaleY})`
-      clone.style.opacity = '0.96'
-      clone.style.borderRadius = '0'
-    })
 
     window.setTimeout(() => {
       window.location.assign(href)
-    }, 260)
+    }, 190)
   } catch (_) {
     window.location.assign(href)
   }
