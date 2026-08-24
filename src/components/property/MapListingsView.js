@@ -22,6 +22,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
   const [sheetLevel, setSheetLevel] = useState('collapsed')
   const [visibleProperties, setVisibleProperties] = useState(null)
   const sheetProperties = selectedProperty ? [selectedProperty] : (visibleProperties ?? properties)
+  const sheetTotal = selectedProperty ? 1 : (visibleProperties ? sheetProperties.length : total)
 
   useEffect(() => {
     setVisibleProperties(null)
@@ -53,7 +54,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
       </div>
       <MapResultsSheet
         properties={sheetProperties}
-        total={sheetProperties.length}
+        total={sheetTotal}
         subtitle={selectedProperty ? '點卡片查看完整房源資訊' : (visibleProperties ? '目前地圖範圍內' : '目前搜尋條件')}
         selectedMode={Boolean(selectedProperty)}
         level={selectedProperty ? 'selected' : sheetLevel}

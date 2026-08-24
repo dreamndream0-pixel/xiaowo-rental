@@ -2860,9 +2860,18 @@ a { color: inherit; }
     white-space: nowrap !important;
   }
 
-  .map-return-button,
   .map-results-sheet:not(.is-full) .map-return-button {
     display: none !important;
+  }
+
+  .map-results-sheet.is-full .map-return-button {
+    display: inline-flex !important;
+    bottom: 10px !important;
+    min-height: 38px !important;
+    padding: 0 18px !important;
+    border: 0 !important;
+    background: var(--charcoal) !important;
+    box-shadow: 0 10px 24px rgba(46,45,42,0.18) !important;
   }
 
   .property-back-button {
