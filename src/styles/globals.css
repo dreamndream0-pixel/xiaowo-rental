@@ -521,10 +521,10 @@ body {
 }
 
 .map-selected-sheet-card {
-  overflow: hidden;
-  border: 1px solid var(--oat-mid);
+  overflow: visible;
+  border: 0;
   border-radius: 24px;
-  background: white;
+  background: transparent;
   box-shadow: 0 18px 48px rgba(46,45,42,0.18);
   cursor: pointer;
 }
@@ -533,6 +533,7 @@ body {
   position: relative;
   height: 220px;
   overflow: hidden;
+  border-radius: 24px 24px 0 0;
   background: var(--oat);
 }
 
@@ -586,6 +587,8 @@ body {
 
 .map-selected-sheet-body {
   padding: 16px;
+  border-radius: 0 0 24px 24px;
+  background: white;
 }
 
 .map-selected-sheet-tags {

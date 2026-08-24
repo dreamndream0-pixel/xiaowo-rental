@@ -53,7 +53,6 @@ function openPropertyWithTransition(source, href, beforeNavigate) {
 function MapSheetCard({ property, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 5)
-  const dragStartRef = useRef(null)
   const openedRef = useRef(false)
   const href = propertyHref(property)
 
@@ -70,20 +69,6 @@ function MapSheetCard({ property, onNavigateProperty }) {
       onClick={(event) => {
         event.preventDefault()
         openFrom(event.currentTarget)
-      }}
-      onPointerDown={(event) => {
-        dragStartRef.current = event.clientY
-      }}
-      onPointerUp={(event) => {
-        const startY = dragStartRef.current
-        dragStartRef.current = null
-        if (typeof startY === 'number' && startY - event.clientY > 48) {
-          event.preventDefault()
-          openFrom(event.currentTarget)
-        }
-      }}
-      onPointerCancel={() => {
-        dragStartRef.current = null
       }}
     >
       <div className="map-sheet-card-image">
@@ -114,7 +99,6 @@ function SelectedMapCard({ property, onClose, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
   const href = propertyHref(property)
-  const dragStartRef = useRef(null)
   const openedRef = useRef(false)
   const openProperty = (source) => {
     if (openedRef.current) return
@@ -126,19 +110,6 @@ function SelectedMapCard({ property, onClose, onNavigateProperty }) {
     <article
       className="map-selected-sheet-card"
       onClick={(event) => openProperty(event.currentTarget)}
-      onPointerDown={(event) => {
-        dragStartRef.current = event.clientY
-      }}
-      onPointerUp={(event) => {
-        const startY = dragStartRef.current
-        dragStartRef.current = null
-        if (typeof startY === 'number' && startY - event.clientY > 48) {
-          openProperty(event.currentTarget)
-        }
-      }}
-      onPointerCancel={() => {
-        dragStartRef.current = null
-      }}
       role="link"
       tabIndex={0}
     >
