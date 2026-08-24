@@ -95,11 +95,13 @@ function MapSheetCard({ property, onNavigateProperty }) {
   )
 }
 
-function SelectedMapCard({ property, onClose, onNavigateProperty }) {
+function SelectedMapCard({ property, onClose, onExpand, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
   const href = propertyHref(property)
   const openedRef = useRef(false)
+  const dragRef = useRef({ startY: 0, active: false })
+  const suppressClickRef = useRef(false)
   const openProperty = (source) => {
     if (openedRef.current) return
     openedRef.current = true
@@ -109,7 +111,38 @@ function SelectedMapCard({ property, onClose, onNavigateProperty }) {
   return (
     <article
       className="map-selected-sheet-card"
-      onClick={(event) => openProperty(event.currentTarget)}
+      onClick={(event) => {
+        if (suppressClickRef.current) {
+          suppressClickRef.current = false
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+        openProperty(event.currentTarget)
+      }}
+      onPointerDown={(event) => {
+        dragRef.current = { startY: event.clientY, active: true }
+        suppressClickRef.current = false
+      }}
+      onPointerMove={(event) => {
+        if (!dragRef.current.active) return
+        const delta = event.clientY - dragRef.current.startY
+        if (Math.abs(delta) > 8) suppressClickRef.current = true
+      }}
+      onPointerUp={(event) => {
+        if (!dragRef.current.active) return
+        const delta = event.clientY - dragRef.current.startY
+        dragRef.current.active = false
+        if (delta < -44) {
+          suppressClickRef.current = true
+          event.preventDefault()
+          event.stopPropagation()
+          onExpand?.()
+        }
+      }}
+      onPointerCancel={() => {
+        dragRef.current.active = false
+      }}
       role="link"
       tabIndex={0}
     >
@@ -331,7 +364,15 @@ export default function MapResultsSheet({
       {showList && (
       <div className="map-results-sheet-grid" ref={gridRef} onScroll={handleListScroll}>
         {selectedMode && visibleProperties[0] ? (
-          <SelectedMapCard property={visibleProperties[0]} onClose={onClearSelected} onNavigateProperty={onNavigateProperty} />
+          <SelectedMapCard
+            property={visibleProperties[0]}
+            onClose={onClearSelected}
+            onExpand={() => {
+              onClearSelected?.()
+              onLevelChange?.('full')
+            }}
+            onNavigateProperty={onNavigateProperty}
+          />
         ) : visibleProperties.length ? visibleProperties.map(property => (
           <MapSheetCard key={property.id} property={property} onNavigateProperty={onNavigateProperty} />
         )) : (
