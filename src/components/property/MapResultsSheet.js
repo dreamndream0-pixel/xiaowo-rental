@@ -31,7 +31,7 @@ function MapSheetCard({ property }) {
   return (
     <a href={propertyHref(property)} className="map-sheet-card">
       <div className="map-sheet-card-image">
-        {image ? <img src={image} alt={property.title} /> : <span>無照片</span>}
+        {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
       </div>
       <div className="map-sheet-card-body">
@@ -63,7 +63,7 @@ function SelectedMapCard({ property, onClose }) {
   return (
     <article className="map-selected-sheet-card" onClick={openProperty} role="link" tabIndex={0}>
       <div className="map-selected-sheet-image">
-        {image ? <img src={image} alt={property.title} /> : <span>無照片</span>}
+        {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
         <button
           type="button"
@@ -122,6 +122,15 @@ export default function MapResultsSheet({
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_COUNT)
   }, [properties])
+
+  useEffect(() => {
+    if (level === 'full') {
+      setVisibleCount(properties.length)
+    }
+    if (level === 'peek') {
+      setVisibleCount(count => Math.max(count, Math.min(properties.length, INITIAL_VISIBLE_COUNT + LOAD_MORE_COUNT)))
+    }
+  }, [level, properties.length])
 
   useEffect(() => {
     if (level === 'collapsed') return undefined
