@@ -692,8 +692,8 @@ body {
 
 .map-sheet-card.is-opening-property,
 .map-selected-sheet-card.is-opening-property {
-  opacity: 0.86;
-  transform: translateY(-14px) scale(0.99);
+  opacity: 0.9;
+  transform: translate3d(0, -10px, 0);
   transition:
     transform 180ms cubic-bezier(.2,.8,.2,1),
     opacity 180ms ease,
@@ -2867,6 +2867,11 @@ a { color: inherit; }
     pointer-events: auto !important;
   }
 
+  .map-results-sheet.is-peek .map-results-sheet-header {
+    min-height: 104px !important;
+    flex: 0 0 auto !important;
+  }
+
   .map-results-sheet.is-peek .map-results-sheet-header,
   .map-results-sheet.is-full .map-results-sheet-header {
     border-radius: 26px 26px 0 0 !important;
@@ -2892,6 +2897,25 @@ a { color: inherit; }
 
   .map-results-sheet.is-full .map-results-sheet-title span {
     display: none !important;
+  }
+
+  .map-results-sheet.is-peek .map-results-sheet-title {
+    display: block !important;
+    min-height: 72px !important;
+    padding: 16px 18px 18px !important;
+    opacity: 1 !important;
+  }
+
+  .map-results-sheet.is-peek .map-results-sheet-title strong {
+    font-size: 20px !important;
+    line-height: 1.25 !important;
+  }
+
+  .map-results-sheet.is-peek .map-results-sheet-title span {
+    display: block !important;
+    margin-top: 8px !important;
+    font-size: 13px !important;
+    line-height: 1.25 !important;
   }
 
   .map-results-sheet.is-selected-mode .map-results-sheet-header {
@@ -2955,6 +2979,7 @@ a { color: inherit; }
     min-height: 0 !important;
     max-height: none !important;
     overflow-y: auto !important;
+    padding-top: 8px !important;
   }
 
   .map-results-sheet.is-full .map-results-sheet-grid {
@@ -2973,8 +2998,8 @@ a { color: inherit; }
   }
 
   .map-sheet-card {
-    grid-template-columns: 128px minmax(0, 1fr) !important;
-    min-height: 158px !important;
+    grid-template-columns: 126px minmax(0, 1fr) !important;
+    min-height: 184px !important;
     gap: 12px !important;
     padding: 10px !important;
     overflow: hidden !important;
@@ -2982,7 +3007,7 @@ a { color: inherit; }
   }
 
   .map-sheet-card-image {
-    height: 126px !important;
+    height: 136px !important;
   }
 
   .map-sheet-card-body {
@@ -2995,9 +3020,9 @@ a { color: inherit; }
 
   .map-sheet-card-body strong {
     margin-top: 2px !important;
-    font-size: 17px !important;
+    font-size: 16px !important;
     font-weight: 500 !important;
-    line-height: 1.35 !important;
+    line-height: 1.25 !important;
   }
 
   .map-sheet-card-body p {
@@ -3011,20 +3036,23 @@ a { color: inherit; }
 
   .map-sheet-card-tags {
     margin-top: 2px !important;
+    max-height: 27px !important;
+    overflow: hidden !important;
   }
 
   .map-sheet-card-footer {
     justify-content: flex-end !important;
     margin-top: auto !important;
-    padding-top: 8px !important;
+    padding-top: 7px !important;
     width: 100% !important;
+    min-height: 34px !important;
   }
 
   .map-sheet-card-footer span {
     margin-left: auto !important;
     max-width: 100% !important;
     text-align: right !important;
-    font-size: 17px !important;
+    font-size: 16px !important;
     line-height: 1.15 !important;
     white-space: nowrap !important;
   }
@@ -3071,6 +3099,16 @@ a { color: inherit; }
     flex: 1 1 auto !important;
     height: auto !important;
     min-height: 0 !important;
+    min-width: 0 !important;
+    width: calc(100% + 28px) !important;
+    max-width: none !important;
+  }
+
+  .merged-map-panel .map-listings-map,
+  .listings-map-canvas,
+  .listings-map-loading {
+    width: 100% !important;
+    max-width: none !important;
     min-width: 0 !important;
   }
 
