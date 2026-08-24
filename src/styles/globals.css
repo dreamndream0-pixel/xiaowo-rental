@@ -2725,6 +2725,13 @@ a { color: inherit; }
     transform: translateY(calc(100% - var(--sheet-peek) + var(--sheet-offset, 0px))) !important;
   }
 
+  .map-results-sheet.is-peek,
+  .map-results-sheet.is-full {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
   .map-results-sheet.is-full {
     transform: translateY(var(--sheet-offset, 0px)) !important;
     display: flex !important;
@@ -2774,6 +2781,13 @@ a { color: inherit; }
   .map-results-sheet.is-full .map-results-sheet-header {
     min-height: 70px !important;
     pointer-events: auto !important;
+  }
+
+  .map-results-sheet.is-peek .map-results-sheet-header,
+  .map-results-sheet.is-full .map-results-sheet-header {
+    border-radius: 26px 26px 0 0 !important;
+    background: white !important;
+    box-shadow: 0 -12px 30px rgba(46,45,42,0.12) !important;
   }
 
   .map-results-sheet.is-full .map-results-sheet-handle {
@@ -2839,6 +2853,7 @@ a { color: inherit; }
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
     touch-action: pan-y !important;
+    background: transparent !important;
     padding: 0 14px 14px !important;
   }
 

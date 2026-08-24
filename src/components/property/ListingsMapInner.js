@@ -120,6 +120,9 @@ export default function ListingsMapInner({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
   const restoredMapRef = useRef(false)
+  const didFitBoundsRef = useRef(false)
+  const visibleTimerRef = useRef(null)
+  const lastVisibleKeyRef = useRef('')
   const [resolvedPositions, setResolvedPositions] = useState({})
   const [visibleIds, setVisibleIds] = useState(null)
 
@@ -132,6 +135,7 @@ export default function ListingsMapInner({
       .map(property => ({ ...property, mapPosition: getResolvedPosition(property) }))
       .filter(property => property.mapPosition)
   }, [properties, getResolvedPosition])
+  const propertyKey = useMemo(() => properties.map(property => property.id).join('|'), [properties])
 
   const renderedMarkers = useMemo(() => {
     const selected = selectedId ? mapped.find(property => property.id === selectedId) : null
@@ -170,22 +174,31 @@ export default function ListingsMapInner({
     const map = mapRef.current
     if (!map || !window.google || !onVisiblePropertiesChange) return
 
-    const bounds = map.getBounds()
-    const center = map.getCenter()
-    if (center && onMapStateChange) {
-      onMapStateChange({
-        center: { lat: center.lat(), lng: center.lng() },
-        zoom: map.getZoom(),
-      })
-    }
-    if (!bounds) {
-      onVisiblePropertiesChange(mapped)
-      return
-    }
+    if (visibleTimerRef.current) window.clearTimeout(visibleTimerRef.current)
+    visibleTimerRef.current = window.setTimeout(() => {
+      const currentMap = mapRef.current
+      if (!currentMap || !window.google) return
 
-    const visible = mapped.filter(property => bounds.contains(property.mapPosition))
-    setVisibleIds(visible.map(property => property.id))
-    onVisiblePropertiesChange(visible)
+      const bounds = currentMap.getBounds()
+      const center = currentMap.getCenter()
+      if (center && onMapStateChange) {
+        onMapStateChange({
+          center: { lat: center.lat(), lng: center.lng() },
+          zoom: currentMap.getZoom(),
+        })
+      }
+
+      const visible = bounds
+        ? mapped.filter(property => bounds.contains(property.mapPosition))
+        : mapped
+      const nextIds = visible.map(property => property.id)
+      const nextKey = nextIds.join('|')
+      if (nextKey === lastVisibleKeyRef.current) return
+
+      lastVisibleKeyRef.current = nextKey
+      setVisibleIds(nextIds)
+      onVisiblePropertiesChange(visible)
+    }, 180)
   }, [mapped, onMapStateChange, onVisiblePropertiesChange])
 
   const restoreMapState = useCallback((map) => {
@@ -256,12 +269,27 @@ export default function ListingsMapInner({
   }, [isLoaded, properties, resolvedPositions])
 
   useEffect(() => {
+    didFitBoundsRef.current = false
+    lastVisibleKeyRef.current = ''
+    setVisibleIds(null)
+  }, [propertyKey])
+
+  useEffect(() => {
+    if (!mapRef.current || !window.google || restoredMapRef.current || didFitBoundsRef.current) return
     fitBounds()
-  }, [fitBounds])
+    didFitBoundsRef.current = true
+    window.setTimeout(publishVisibleProperties, 0)
+  }, [fitBounds, publishVisibleProperties, propertyKey])
 
   useEffect(() => {
     publishVisibleProperties()
   }, [publishVisibleProperties])
+
+  useEffect(() => {
+    return () => {
+      if (visibleTimerRef.current) window.clearTimeout(visibleTimerRef.current)
+    }
+  }, [])
 
   if (!apiKey) {
     return (
@@ -301,6 +329,7 @@ export default function ListingsMapInner({
       onLoad={map => {
         mapRef.current = map
         if (!restoreMapState(map)) fitBounds()
+        didFitBoundsRef.current = true
         window.setTimeout(publishVisibleProperties, 0)
       }}
       onIdle={publishVisibleProperties}
