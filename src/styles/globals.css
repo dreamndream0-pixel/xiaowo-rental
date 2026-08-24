@@ -3024,4 +3024,19 @@ a { color: inherit; }
     height: calc(var(--xiaowo-visual-height, 100svh) - 184px) !important;
     min-height: 0 !important;
   }
+
+  .map-results-sheet.is-peek,
+  .map-results-sheet.is-full,
+  .map-results-sheet.is-selected-mode {
+    bottom: -8px !important;
+  }
+
+  .map-results-sheet.is-selected-mode .map-results-sheet-grid {
+    background: transparent !important;
+    touch-action: none !important;
+  }
+
+  .map-results-sheet.is-selected-mode .map-selected-sheet-card {
+    touch-action: none !important;
+  }
 }
