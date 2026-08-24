@@ -71,7 +71,7 @@ export default function MapFilterStrip({ basePath = '/listings' }) {
       <details className="merged-control-card filter-control-card">
         <summary>
           <span>篩選條件</span>
-          <b>{allTags.length > INLINE_TAG_COUNT ? '更多篩選' : '篩選條件'}</b>
+          <b>更多篩選</b>
         </summary>
         <div className="merged-control-body">
           <FilterBar />

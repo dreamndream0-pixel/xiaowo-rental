@@ -2486,8 +2486,8 @@ a { color: inherit; }
     display: grid !important;
     align-content: center !important;
     justify-items: center !important;
-    min-height: 38px !important;
-    padding: 5px 12px !important;
+    min-height: 58px !important;
+    padding: 8px 22px !important;
     list-style: none !important;
     text-align: center !important;
   }
@@ -2504,16 +2504,16 @@ a { color: inherit; }
   }
 
   .map-area-pill {
-    min-height: 38px !important;
-    padding: 5px 12px !important;
+    min-height: 58px !important;
+    padding: 8px 22px !important;
   }
 
   .map-area-pill strong {
     display: block !important;
     width: 100% !important;
     overflow: hidden !important;
-    font-size: 13px !important;
-    line-height: 1.15 !important;
+    font-size: 18px !important;
+    line-height: 1.18 !important;
     text-align: center !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -2523,9 +2523,11 @@ a { color: inherit; }
     display: block !important;
     width: 100% !important;
     overflow: hidden !important;
-    margin-top: 1px !important;
-    font-size: 10px !important;
-    line-height: 1.15 !important;
+    margin-top: 5px !important;
+    color: var(--gray-mid) !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1.18 !important;
     text-align: center !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -2566,10 +2568,10 @@ a { color: inherit; }
   }
 
   .filter-control-card summary {
-    justify-content: flex-start !important;
+    justify-content: center !important;
     min-height: 36px !important;
     padding: 0 !important;
-    gap: 8px !important;
+    gap: 0 !important;
   }
 
   .filter-control-card summary span {
@@ -2577,17 +2579,12 @@ a { color: inherit; }
   }
 
   .filter-control-card summary b {
-    display: inline-flex !important;
-    flex: 0 0 auto !important;
-    margin-left: 0 !important;
-    padding: 8px 14px !important;
-    border: 1px solid var(--oat-mid) !important;
-    border-radius: 999px !important;
-    background: white !important;
-    color: var(--charcoal) !important;
-    box-shadow: var(--shadow-sm) !important;
-    font-size: 13px !important;
-    font-weight: 900 !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
   }
 
   .filter-chip-row:empty + .filter-control-card summary span {
@@ -2612,7 +2609,7 @@ a { color: inherit; }
     justify-content: center !important;
     width: 34px !important;
     height: 34px !important;
-    margin-left: auto !important;
+    margin-left: 0 !important;
     border: 1px solid var(--oat-mid) !important;
     border-radius: 999px !important;
     background: white !important;
@@ -2668,15 +2665,15 @@ a { color: inherit; }
   }
 
   .merged-map-panel {
-    height: calc(100vh - 170px) !important;
-    height: calc(100svh - 170px) !important;
+    height: calc(100vh - 190px) !important;
+    height: calc(100svh - 190px) !important;
     min-height: 360px !important;
     margin-left: -14px !important;
     margin-right: -14px !important;
   }
 
   .map-results-sheet {
-    --sheet-collapsed: 28px;
+    --sheet-collapsed: 86px;
     --sheet-peek: 328px;
     transform: translateY(calc(100% - var(--sheet-collapsed) + var(--sheet-offset, 0px))) !important;
   }
@@ -2707,7 +2704,20 @@ a { color: inherit; }
   }
 
   .map-results-sheet.is-collapsed .map-results-sheet-title {
-    display: none !important;
+    display: block !important;
+    min-height: auto !important;
+    padding: 0 18px 12px !important;
+    opacity: 1 !important;
+  }
+
+  .map-results-sheet.is-collapsed .map-results-sheet-title strong {
+    font-size: 18px !important;
+  }
+
+  .map-results-sheet.is-collapsed .map-results-sheet-title span {
+    display: block !important;
+    margin-top: 2px !important;
+    font-size: 12px !important;
   }
 
   .map-results-sheet.is-peek .map-results-sheet-grid,
