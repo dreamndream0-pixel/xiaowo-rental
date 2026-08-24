@@ -2800,7 +2800,7 @@ a { color: inherit; }
     max-height: min(82%, 620px) !important;
     left: 18px !important;
     right: 18px !important;
-    bottom: 0 !important;
+    bottom: -8px !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
