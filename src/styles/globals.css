@@ -2483,13 +2483,23 @@ a { color: inherit; }
   }
 
   .map-search-control summary {
-    display: grid !important;
-    align-content: center !important;
-    justify-items: center !important;
+    display: flex !important;
+    width: 100% !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     min-height: 54px !important;
     padding: 7px 24px !important;
     list-style: none !important;
     text-align: center !important;
+  }
+
+  .map-search-control summary::-webkit-details-marker,
+  .map-search-control summary::marker {
+    display: none !important;
+    content: '' !important;
   }
 
   .map-search-control summary::after {
@@ -2506,9 +2516,22 @@ a { color: inherit; }
   .map-area-pill {
     min-height: 54px !important;
     padding: 7px 24px !important;
+    text-align: center !important;
   }
 
-  .map-area-pill strong {
+  .map-area-pill-content {
+    display: flex !important;
+    width: min(100%, 280px) !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    justify-self: center !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+  }
+
+  .map-area-pill-content strong {
     display: block !important;
     width: 100% !important;
     overflow: hidden !important;
@@ -2520,7 +2543,7 @@ a { color: inherit; }
     white-space: nowrap !important;
   }
 
-  .map-area-pill span {
+  .map-area-pill-content > span {
     display: block !important;
     width: 100% !important;
     overflow: hidden !important;
@@ -2799,7 +2822,7 @@ a { color: inherit; }
 
   .map-results-sheet.is-full .map-results-sheet-grid {
     height: calc(100% - 10px) !important;
-    padding-bottom: 76px !important;
+    padding-bottom: 14px !important;
   }
 
   .map-sheet-card {
@@ -2837,6 +2860,7 @@ a { color: inherit; }
     white-space: nowrap !important;
   }
 
+  .map-return-button,
   .map-results-sheet:not(.is-full) .map-return-button {
     display: none !important;
   }

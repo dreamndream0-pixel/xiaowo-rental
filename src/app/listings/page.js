@@ -115,8 +115,10 @@ function SearchControls({ searchParams, total }) {
         <ListingsBackButton />
         <details className="merged-control-card map-search-control">
           <summary className="map-area-pill">
-            <strong>{resultTitle(searchParams)}</strong>
-            <span>{resultLabel(searchParams)}</span>
+            <span className="map-area-pill-content">
+              <strong>{resultTitle(searchParams)}</strong>
+              <span>{resultLabel(searchParams)}</span>
+            </span>
           </summary>
           <div className="merged-control-body">
             <SearchBar initialParams={searchParams} />
