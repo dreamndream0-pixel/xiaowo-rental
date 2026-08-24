@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 
 const INITIAL_VISIBLE_COUNT = 10
@@ -24,7 +25,7 @@ function propertyHref(property) {
   return `/property/${property.id}`
 }
 
-function openPropertyWithTransition(source, href, beforeNavigate) {
+function openPropertyWithTransition(source, href, beforeNavigate, navigate) {
   beforeNavigate?.()
 
   if (typeof window === 'undefined') return
@@ -34,7 +35,7 @@ function openPropertyWithTransition(source, href, beforeNavigate) {
   } catch (_) {}
 
   if (!source || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    window.location.assign(href)
+    navigate ? navigate(href) : window.location.assign(href)
     return
   }
 
@@ -43,14 +44,14 @@ function openPropertyWithTransition(source, href, beforeNavigate) {
     document.body.classList.add('property-transition-active')
 
     window.setTimeout(() => {
-      window.location.assign(href)
+      navigate ? navigate(href) : window.location.assign(href)
     }, 190)
   } catch (_) {
-    window.location.assign(href)
+    navigate ? navigate(href) : window.location.assign(href)
   }
 }
 
-function MapSheetCard({ property, onNavigateProperty }) {
+function MapSheetCard({ property, onNavigateProperty, navigate }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 5)
   const openedRef = useRef(false)
@@ -59,7 +60,7 @@ function MapSheetCard({ property, onNavigateProperty }) {
   const openFrom = (source) => {
     if (openedRef.current) return
     openedRef.current = true
-    openPropertyWithTransition(source, href, onNavigateProperty)
+    openPropertyWithTransition(source, href, onNavigateProperty, navigate)
   }
 
   return (
@@ -95,7 +96,7 @@ function MapSheetCard({ property, onNavigateProperty }) {
   )
 }
 
-function SelectedMapCard({ property, onClose, onExpand, onNavigateProperty }) {
+function SelectedMapCard({ property, onClose, onNavigateProperty, navigate }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
   const href = propertyHref(property)
@@ -105,7 +106,7 @@ function SelectedMapCard({ property, onClose, onExpand, onNavigateProperty }) {
   const openProperty = (source) => {
     if (openedRef.current) return
     openedRef.current = true
-    openPropertyWithTransition(source, href, onNavigateProperty)
+    openPropertyWithTransition(source, href, onNavigateProperty, navigate)
   }
   const beginCardDrag = (clientY) => {
     dragRef.current = { startY: clientY, active: true }
@@ -124,7 +125,7 @@ function SelectedMapCard({ property, onClose, onExpand, onNavigateProperty }) {
       suppressClickRef.current = true
       event.preventDefault()
       event.stopPropagation()
-      onExpand?.()
+      openProperty(event.currentTarget)
     }
   }
 
@@ -223,6 +224,8 @@ export default function MapResultsSheet({
   onScrollStateChange,
   onNavigateProperty,
 }) {
+  const router = useRouter()
+  const navigateProperty = (href) => router.push(href)
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const gridRef = useRef(null)
@@ -390,14 +393,11 @@ export default function MapResultsSheet({
           <SelectedMapCard
             property={visibleProperties[0]}
             onClose={onClearSelected}
-            onExpand={() => {
-              onClearSelected?.()
-              onLevelChange?.('full')
-            }}
             onNavigateProperty={onNavigateProperty}
+            navigate={navigateProperty}
           />
         ) : visibleProperties.length ? visibleProperties.map(property => (
-          <MapSheetCard key={property.id} property={property} onNavigateProperty={onNavigateProperty} />
+          <MapSheetCard key={property.id} property={property} onNavigateProperty={onNavigateProperty} navigate={navigateProperty} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
         )}

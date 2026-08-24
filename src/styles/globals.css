@@ -2836,7 +2836,7 @@ a { color: inherit; }
 
   .map-results-sheet.is-peek,
   .map-results-sheet.is-full {
-    bottom: -8px !important;
+    bottom: 0 !important;
   }
 
   .map-results-sheet.is-full .map-results-sheet-header {
@@ -3026,7 +3026,10 @@ a { color: inherit; }
   }
 
   .map-results-sheet.is-peek,
-  .map-results-sheet.is-full,
+  .map-results-sheet.is-full {
+    bottom: 0 !important;
+  }
+
   .map-results-sheet.is-selected-mode {
     bottom: -8px !important;
   }
@@ -3037,6 +3040,7 @@ a { color: inherit; }
   }
 
   .map-results-sheet.is-selected-mode .map-selected-sheet-card {
+    box-shadow: none !important;
     touch-action: none !important;
   }
 }
