@@ -71,8 +71,13 @@ export default function MapListingsView({ properties = [], total = 0 }) {
     const updateVisualHeight = () => {
       if (typeof window === 'undefined') return
       const height = window.visualViewport?.height || window.innerHeight
-      // body 以此高度做直向 flex，main / 面板再以 flex 填滿至可視底部，避免底部露白
+      // main 高度＝可視高度 − 導覽列實際高度，面板再 flex 填滿到可視底部，避免底部露白
       document.documentElement.style.setProperty('--xiaowo-visual-height', `${height}px`)
+      const nav = document.querySelector('nav')
+      if (nav) {
+        const navHeight = Math.round(nav.getBoundingClientRect().height)
+        if (navHeight > 0) document.documentElement.style.setProperty('--xiaowo-nav-height', `${navHeight}px`)
+      }
     }
     updateVisualHeight()
     window.visualViewport?.addEventListener('resize', updateVisualHeight)

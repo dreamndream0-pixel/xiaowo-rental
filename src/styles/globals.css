@@ -2529,23 +2529,6 @@ a { color: inherit; }
     overflow: hidden;
   }
 
-  /* 讓 body 以「實際可視高度」為主軸做直向 flex，
-     main 以 flex:1 填滿導覽列以下的所有空間，避免用固定扣除值而在底部露白 */
-  body:has(.listings-map-main) {
-    display: flex;
-    flex-direction: column;
-    height: var(--xiaowo-visual-height, 100svh);
-    width: 100%;
-    overflow: hidden;
-  }
-
-  /* flex 子項預設 min-width:auto，會被內容最小寬撐爆版面（搜尋列/標籤）；
-     一律歸零，讓 main 收斂回可視寬度而非內容寬度 */
-  body:has(.listings-map-main) > * {
-    min-width: 0;
-    max-width: 100%;
-  }
-
   .merged-map-topbar {
     grid-template-columns: 34px minmax(0, 1fr) 34px !important;
     gap: 5px !important;
@@ -2874,6 +2857,7 @@ a { color: inherit; }
 
   .map-results-sheet.is-peek .map-results-sheet-header,
   .map-results-sheet.is-full .map-results-sheet-header {
+    flex: 0 0 auto !important;
     border-radius: 26px 26px 0 0 !important;
     background: white !important;
     box-shadow: 0 -12px 30px rgba(46,45,42,0.12) !important;
@@ -3044,6 +3028,7 @@ a { color: inherit; }
     justify-content: flex-end !important;
     margin-top: auto !important;
     padding-top: 7px !important;
+    padding-right: 6px !important;
     width: 100% !important;
     min-height: 34px !important;
   }
@@ -3086,9 +3071,10 @@ a { color: inherit; }
     box-shadow: 0 4px 14px rgba(46,45,42,0.12) !important;
   }
 
+  /* main 維持一般區塊（永遠等於可視寬度、不會被 flex 子項的內容寬撐爆或在載入時縮成內容寬），
+     高度用「可視高度 - 實際導覽列高度」精算填滿到底，面板再以 flex 填滿 main */
   .listings-map-main {
-    flex: 1 1 auto !important;
-    height: auto !important;
+    height: calc(var(--xiaowo-visual-height, 100svh) - var(--xiaowo-nav-height, 62px)) !important;
     min-height: 0 !important;
     min-width: 0 !important;
     display: flex !important;
