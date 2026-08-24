@@ -1920,8 +1920,9 @@ body.property-detail-entering .property-detail-shell {
 
   .merged-map-panel {
     position: relative;
-    /* 用 JS 量到的實際可視高度，避免 100svh 與實際不符而在底部留下白色空隙 */
-    height: calc(var(--xiaowo-visual-height, 100svh) - 190px);
+    /* 高度以 JS 量到的「實際上緣到可視底部」為主（--merged-panel-height），
+       避免固定扣除的表頭高度與實際不符而在底部露白；未量到時退回估算 */
+    height: var(--merged-panel-height, calc(var(--xiaowo-visual-height, 100svh) - 190px));
     min-height: 520px;
     margin-left: -16px;
     margin-right: -16px;
@@ -2764,7 +2765,7 @@ a { color: inherit; }
   }
 
   .merged-map-panel {
-    height: calc(var(--xiaowo-visual-height, 100svh) - 184px) !important;
+    height: var(--merged-panel-height, calc(var(--xiaowo-visual-height, 100svh) - 184px)) !important;
     min-height: 360px !important;
     margin-left: -14px !important;
     margin-right: -14px !important;
