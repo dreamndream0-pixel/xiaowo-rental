@@ -2834,6 +2834,11 @@ a { color: inherit; }
     display: grid !important;
   }
 
+  .map-results-sheet.is-peek,
+  .map-results-sheet.is-full {
+    bottom: -8px !important;
+  }
+
   .map-results-sheet.is-full .map-results-sheet-header {
     min-height: 70px !important;
     pointer-events: auto !important;
