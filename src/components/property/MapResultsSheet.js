@@ -107,6 +107,26 @@ function SelectedMapCard({ property, onClose, onExpand, onNavigateProperty }) {
     openedRef.current = true
     openPropertyWithTransition(source, href, onNavigateProperty)
   }
+  const beginCardDrag = (clientY) => {
+    dragRef.current = { startY: clientY, active: true }
+    suppressClickRef.current = false
+  }
+  const moveCardDrag = (clientY) => {
+    if (!dragRef.current.active) return
+    const delta = clientY - dragRef.current.startY
+    if (Math.abs(delta) > 8) suppressClickRef.current = true
+  }
+  const endCardDrag = (event, clientY) => {
+    if (!dragRef.current.active) return
+    const delta = clientY - dragRef.current.startY
+    dragRef.current.active = false
+    if (delta < -44) {
+      suppressClickRef.current = true
+      event.preventDefault()
+      event.stopPropagation()
+      onExpand?.()
+    }
+  }
 
   return (
     <article
@@ -121,27 +141,30 @@ function SelectedMapCard({ property, onClose, onExpand, onNavigateProperty }) {
         openProperty(event.currentTarget)
       }}
       onPointerDown={(event) => {
-        dragRef.current = { startY: event.clientY, active: true }
-        suppressClickRef.current = false
+        beginCardDrag(event.clientY)
       }}
       onPointerMove={(event) => {
-        if (!dragRef.current.active) return
-        const delta = event.clientY - dragRef.current.startY
-        if (Math.abs(delta) > 8) suppressClickRef.current = true
+        moveCardDrag(event.clientY)
       }}
       onPointerUp={(event) => {
-        if (!dragRef.current.active) return
-        const delta = event.clientY - dragRef.current.startY
-        dragRef.current.active = false
-        if (delta < -44) {
-          suppressClickRef.current = true
-          event.preventDefault()
-          event.stopPropagation()
-          onExpand?.()
-        }
+        endCardDrag(event, event.clientY)
       }}
       onPointerCancel={() => {
         dragRef.current.active = false
+      }}
+      onTouchStart={(event) => {
+        beginCardDrag(event.touches[0]?.clientY ?? 0)
+      }}
+      onTouchMove={(event) => {
+        const clientY = event.touches[0]?.clientY
+        if (typeof clientY !== 'number') return
+        moveCardDrag(clientY)
+        if (suppressClickRef.current) event.preventDefault()
+      }}
+      onTouchEnd={(event) => {
+        const clientY = event.changedTouches[0]?.clientY
+        if (typeof clientY !== 'number') return
+        endCardDrag(event, clientY)
       }}
       role="link"
       tabIndex={0}
