@@ -35,7 +35,15 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* 文件永遠不超過可視寬度：避免任何暫時性的水平溢出讓 iOS Safari
+     自動縮放整頁（返回轉場時的「左右壓縮跳一下」），並鎖住文字自動縮放 */
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body { overflow-x: hidden; }
 
 /* ── 全域按鈕特效 ─────────────────────────────────── */
 button, a[role="button"] {
@@ -317,7 +325,6 @@ body {
   box-shadow: var(--shadow-md);
   overflow: hidden;
   transition: transform 0.18s ease, margin 0.18s ease;
-  will-change: transform;
 }
 
 .map-results-sheet-header {
@@ -703,16 +710,17 @@ body {
 
 .property-detail-shell {
   transform-origin: bottom center;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
 }
 
+/* 只在動畫進行中才提升為合成層，避免 iOS 返回轉場時常駐圖層被重繪縮放而左右跳動 */
 body.property-detail-entering .property-detail-shell {
   animation: propertyDetailSlideIn 320ms cubic-bezier(.22,.72,.28,1) both;
+  will-change: transform, opacity;
 }
 
 .property-detail-shell.is-closing {
   animation: propertyDetailSlideOut 260ms cubic-bezier(.32,.72,.32,1) both;
+  will-change: transform, opacity;
 }
 
 @keyframes propertyDetailSlideIn {
