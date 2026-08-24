@@ -703,14 +703,16 @@ body {
 
 .property-detail-shell {
   transform-origin: bottom center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 body.property-detail-entering .property-detail-shell {
-  animation: propertyDetailSlideIn 300ms cubic-bezier(.2,.8,.2,1) both;
+  animation: propertyDetailSlideIn 320ms cubic-bezier(.22,.72,.28,1) both;
 }
 
 .property-detail-shell.is-closing {
-  animation: propertyDetailSlideOut 240ms cubic-bezier(.4,0,1,1) both;
+  animation: propertyDetailSlideOut 260ms cubic-bezier(.32,.72,.32,1) both;
 }
 
 @keyframes propertyDetailSlideIn {
@@ -731,7 +733,7 @@ body.property-detail-entering .property-detail-shell {
   }
   to {
     opacity: 0;
-    transform: translate3d(0, 120px, 0);
+    transform: translate3d(0, 88px, 0);
   }
 }
 
@@ -2533,6 +2535,15 @@ a { color: inherit; }
     display: flex;
     flex-direction: column;
     height: var(--xiaowo-visual-height, 100svh);
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* flex 子項預設 min-width:auto，會被內容最小寬撐爆版面（搜尋列/標籤）；
+     一律歸零，讓 main 收斂回可視寬度而非內容寬度 */
+  body:has(.listings-map-main) > * {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .merged-map-topbar {
@@ -2787,6 +2798,10 @@ a { color: inherit; }
 
   .map-results-sheet.is-peek {
     transform: translateY(calc(100% - var(--sheet-peek) + var(--sheet-offset, 0px))) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
   }
 
   .map-results-sheet.is-peek,
@@ -2936,7 +2951,9 @@ a { color: inherit; }
   }
 
   .map-results-sheet.is-peek .map-results-sheet-grid {
-    max-height: 230px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     overflow-y: auto !important;
   }
 
@@ -2972,10 +2989,28 @@ a { color: inherit; }
     display: flex !important;
     min-width: 0 !important;
     flex-direction: column !important;
+    gap: 6px !important;
+    padding: 2px 0 !important;
   }
 
   .map-sheet-card-body strong {
+    margin-top: 2px !important;
+    font-size: 17px !important;
     font-weight: 500 !important;
+    line-height: 1.35 !important;
+  }
+
+  .map-sheet-card-body p {
+    margin: 0 !important;
+    line-height: 1.4 !important;
+  }
+
+  .map-sheet-card-meta {
+    margin: 0 !important;
+  }
+
+  .map-sheet-card-tags {
+    margin-top: 2px !important;
   }
 
   .map-sheet-card-footer {
@@ -3027,6 +3062,7 @@ a { color: inherit; }
     flex: 1 1 auto !important;
     height: auto !important;
     min-height: 0 !important;
+    min-width: 0 !important;
     display: flex !important;
     flex-direction: column !important;
   }
@@ -3035,6 +3071,7 @@ a { color: inherit; }
     flex: 1 1 auto !important;
     height: auto !important;
     min-height: 0 !important;
+    min-width: 0 !important;
   }
 
   .map-results-sheet.is-peek,
