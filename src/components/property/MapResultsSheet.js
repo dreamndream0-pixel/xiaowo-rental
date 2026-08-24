@@ -24,12 +24,12 @@ function propertyHref(property) {
   return `/property/${property.id}`
 }
 
-function MapSheetCard({ property }) {
+function MapSheetCard({ property, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 5)
 
   return (
-    <a href={propertyHref(property)} className="map-sheet-card">
+    <a href={propertyHref(property)} className="map-sheet-card" onClick={() => onNavigateProperty?.()}>
       <div className="map-sheet-card-image">
         {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
         <em>{statusText(property)}</em>
@@ -54,11 +54,14 @@ function MapSheetCard({ property }) {
   )
 }
 
-function SelectedMapCard({ property, onClose }) {
+function SelectedMapCard({ property, onClose, onNavigateProperty }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 3)
   const href = propertyHref(property)
-  const openProperty = () => window.location.assign(href)
+  const openProperty = () => {
+    onNavigateProperty?.()
+    window.location.assign(href)
+  }
 
   return (
     <article className="map-selected-sheet-card" onClick={openProperty} role="link" tabIndex={0}>
@@ -111,13 +114,20 @@ export default function MapResultsSheet({
   level = 'collapsed',
   onLevelChange,
   onClearSelected,
+  initialScrollTop = 0,
+  initialVisibleCount = 0,
+  onScrollStateChange,
+  onNavigateProperty,
 }) {
   const dragRef = useRef({ active: false, startY: 0, deltaY: 0 })
   const ignoreClickRef = useRef(false)
   const gridRef = useRef(null)
   const sentinelRef = useRef(null)
   const [dragY, setDragY] = useState(0)
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT)
+  const restoredScrollRef = useRef(false)
+  const [visibleCount, setVisibleCount] = useState(
+    Math.max(INITIAL_VISIBLE_COUNT, Number(initialVisibleCount || 0))
+  )
 
   useEffect(() => {
     if (level === 'collapsed') {
@@ -130,6 +140,13 @@ export default function MapResultsSheet({
       return Math.min(properties.length, Math.max(baseCount, Math.min(properties.length, INITIAL_VISIBLE_COUNT)))
     })
   }, [level, properties])
+
+  useEffect(() => {
+    onScrollStateChange?.({
+      scrollTop: gridRef.current?.scrollTop || 0,
+      visibleCount,
+    })
+  }, [onScrollStateChange, visibleCount])
 
   useEffect(() => {
     if (level === 'collapsed') return undefined
@@ -210,11 +227,24 @@ export default function MapResultsSheet({
 
   const handleListScroll = (event) => {
     const element = event.currentTarget
+    onScrollStateChange?.({ scrollTop: element.scrollTop, visibleCount })
     const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 120
     if (nearBottom) {
       setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))
     }
   }
+
+  useEffect(() => {
+    const element = gridRef.current
+    if (!element || restoredScrollRef.current || level === 'collapsed') return
+    const scrollTop = Number(initialScrollTop || 0)
+    if (scrollTop <= 0) return
+
+    restoredScrollRef.current = true
+    requestAnimationFrame(() => {
+      element.scrollTop = scrollTop
+    })
+  }, [initialScrollTop, level, visibleCount])
 
   const visibleProperties = properties.slice(0, visibleCount)
   const showList = selectedMode || level !== 'collapsed'
@@ -253,9 +283,9 @@ export default function MapResultsSheet({
       {showList && (
       <div className="map-results-sheet-grid" ref={gridRef} onScroll={handleListScroll}>
         {selectedMode && visibleProperties[0] ? (
-          <SelectedMapCard property={visibleProperties[0]} onClose={onClearSelected} />
+          <SelectedMapCard property={visibleProperties[0]} onClose={onClearSelected} onNavigateProperty={onNavigateProperty} />
         ) : visibleProperties.length ? visibleProperties.map(property => (
-          <MapSheetCard key={property.id} property={property} />
+          <MapSheetCard key={property.id} property={property} onNavigateProperty={onNavigateProperty} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
         )}

@@ -108,9 +108,18 @@ function markerDotIcon(property, selected) {
 }
 
 
-export default function ListingsMapInner({ properties, selectedId, onSelect, onPreviewProperty, onVisiblePropertiesChange }) {
+export default function ListingsMapInner({
+  properties,
+  selectedId,
+  onSelect,
+  onPreviewProperty,
+  onVisiblePropertiesChange,
+  initialMapState,
+  onMapStateChange,
+}) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
+  const restoredMapRef = useRef(false)
   const [resolvedPositions, setResolvedPositions] = useState({})
   const [visibleIds, setVisibleIds] = useState(null)
 
@@ -162,6 +171,13 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
     if (!map || !window.google || !onVisiblePropertiesChange) return
 
     const bounds = map.getBounds()
+    const center = map.getCenter()
+    if (center && onMapStateChange) {
+      onMapStateChange({
+        center: { lat: center.lat(), lng: center.lng() },
+        zoom: map.getZoom(),
+      })
+    }
     if (!bounds) {
       onVisiblePropertiesChange(mapped)
       return
@@ -170,7 +186,23 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
     const visible = mapped.filter(property => bounds.contains(property.mapPosition))
     setVisibleIds(visible.map(property => property.id))
     onVisiblePropertiesChange(visible)
-  }, [mapped, onVisiblePropertiesChange])
+  }, [mapped, onMapStateChange, onVisiblePropertiesChange])
+
+  const restoreMapState = useCallback((map) => {
+    const center = initialMapState?.center
+    const zoom = Number(initialMapState?.zoom)
+    if (
+      restoredMapRef.current ||
+      !center ||
+      !Number.isFinite(Number(center.lat)) ||
+      !Number.isFinite(Number(center.lng))
+    ) return false
+
+    map.setCenter({ lat: Number(center.lat), lng: Number(center.lng) })
+    if (Number.isFinite(zoom)) map.setZoom(zoom)
+    restoredMapRef.current = true
+    return true
+  }, [initialMapState])
 
   useEffect(() => {
     if (!mapRef.current || !window.google) return
@@ -268,7 +300,7 @@ export default function ListingsMapInner({ properties, selectedId, onSelect, onP
       options={mapOptions}
       onLoad={map => {
         mapRef.current = map
-        fitBounds()
+        if (!restoreMapState(map)) fitBounds()
         window.setTimeout(publishVisibleProperties, 0)
       }}
       onIdle={publishVisibleProperties}

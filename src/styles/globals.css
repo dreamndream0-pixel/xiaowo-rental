@@ -2928,4 +2928,14 @@ a { color: inherit; }
     backdrop-filter: blur(5px) !important;
     box-shadow: 0 4px 14px rgba(46,45,42,0.12) !important;
   }
+
+  .listings-map-main {
+    height: calc(var(--xiaowo-visual-height, 100svh) - 80px) !important;
+    min-height: 0 !important;
+  }
+
+  .merged-map-panel {
+    height: calc(var(--xiaowo-visual-height, 100svh) - 184px) !important;
+    min-height: 0 !important;
+  }
 }
