@@ -3125,3 +3125,92 @@ a { color: inherit; }
     touch-action: none !important;
   }
 }
+
+/* ============================================================
+   桌機版 /listings（≥900px）：左清單／右地圖 雙欄，滿版寬、地圖固定、清單獨立捲動
+   完全以 min-width:900px 隔離，不影響手機（max-width:640px）版面
+   ============================================================ */
+@media (min-width: 900px) {
+  .section-wrap.listings-map-main {
+    max-width: 1600px;
+    height: calc(var(--xiaowo-visual-height, 100vh) - var(--xiaowo-nav-height, 62px));
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  /* 頂部搜尋／篩選維持自然高度，面板吃滿剩餘高度 */
+  .listings-map-main .merged-map-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 0;
+    display: grid;
+    grid-template-columns: minmax(380px, 460px) 1fr;
+    grid-template-rows: 100%;
+    gap: 18px;
+  }
+
+  .listings-map-main .merged-map-meta { display: none; }
+
+  /* 右欄：地圖，填滿整欄高度、固定不動（清單捲動時不會跑掉） */
+  .listings-map-main .merged-map-panel .map-listings-map {
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    top: auto;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  /* 左欄：房源清單，常駐顯示、內部獨立捲動 */
+  .listings-map-main .map-results-sheet.is-desktop {
+    grid-column: 1;
+    grid-row: 1;
+    position: static;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    transform: none !important;
+    border: 1px solid var(--oat-mid);
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  /* 清單標題列：改為靠左的清單表頭，不再是可拖曳的收合把手 */
+  .map-results-sheet.is-desktop .map-results-sheet-header {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 16px 18px;
+    cursor: default;
+    border-bottom: 1px solid var(--oat-mid);
+  }
+  .map-results-sheet.is-desktop .map-results-sheet-handle { display: none; }
+  .map-results-sheet.is-desktop .map-results-sheet-title {
+    padding: 0;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .map-results-sheet.is-desktop .map-results-sheet-title strong { font-size: 17px; }
+  .map-results-sheet.is-desktop .map-results-sheet-title span { margin-top: 0; font-size: 13px; color: var(--gray-mid); }
+
+  /* 清單本體：單欄卡片、內部捲動 */
+  .map-results-sheet.is-desktop .map-results-sheet-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px;
+  }
+}
