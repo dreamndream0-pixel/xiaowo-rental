@@ -51,7 +51,7 @@ function openPropertyWithTransition(source, href, beforeNavigate, navigate) {
   }
 }
 
-function MapSheetCard({ property, onNavigateProperty, navigate }) {
+function MapSheetCard({ property, onNavigateProperty, navigate, selected }) {
   const image = coverImage(property)
   const tags = tagNames(property).slice(0, 5)
   const openedRef = useRef(false)
@@ -66,7 +66,8 @@ function MapSheetCard({ property, onNavigateProperty, navigate }) {
   return (
     <a
       href={href}
-      className="map-sheet-card"
+      data-pid={property.id}
+      className={`map-sheet-card ${selected ? 'is-selected' : ''}`}
       onClick={(event) => {
         event.preventDefault()
         openFrom(event.currentTarget)
@@ -216,6 +217,7 @@ export default function MapResultsSheet({
   total = 0,
   subtitle = '目前地圖範圍內',
   selectedMode = false,
+  selectedId = null,
   level = 'collapsed',
   onLevelChange,
   onClearSelected,
@@ -366,6 +368,18 @@ export default function MapResultsSheet({
     })
   }, [initialScrollTop, level, visibleCount])
 
+  // 桌機：選取地圖圖釘 → 確保該卡片已載入、高亮並捲動到可視範圍
+  useEffect(() => {
+    if (!isDesktop || !selectedId) return
+    const idx = properties.findIndex(p => String(p.id) === String(selectedId))
+    if (idx < 0) return
+    if (idx >= visibleCount) { setVisibleCount(c => Math.min(properties.length, Math.max(c, idx + 3))); return }
+    const grid = gridRef.current
+    if (!grid) return
+    const el = grid.querySelector(`[data-pid="${(window.CSS && CSS.escape) ? CSS.escape(String(selectedId)) : String(selectedId)}"]`)
+    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedId, isDesktop, properties, visibleCount])
+
   const visibleProperties = properties.slice(0, visibleCount)
   const showList = selectedMode || level !== 'collapsed' || isDesktop
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
@@ -410,7 +424,7 @@ export default function MapResultsSheet({
             navigate={navigateProperty}
           />
         ) : visibleProperties.length ? visibleProperties.map(property => (
-          <MapSheetCard key={property.id} property={property} onNavigateProperty={onNavigateProperty} navigate={navigateProperty} />
+          <MapSheetCard key={property.id} property={property} selected={String(property.id) === String(selectedId)} onNavigateProperty={onNavigateProperty} navigate={navigateProperty} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
         )}
