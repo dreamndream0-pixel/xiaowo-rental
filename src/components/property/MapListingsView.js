@@ -46,12 +46,23 @@ export default function MapListingsView({ properties = [], total = 0 }) {
     visibleCount: Number(savedState?.visibleCount || 0),
   })
   const didHandleInitialPropertiesRef = useRef(false)
+  const [isDesktop, setIsDesktop] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [sheetLevel, setSheetLevel] = useState(savedState?.sheetLevel || 'collapsed')
   const [visibleProperties, setVisibleProperties] = useState(null)
-  const sheetProperties = selectedProperty ? [selectedProperty] : (visibleProperties ?? properties)
-  const sheetTotal = selectedProperty ? 1 : (visibleProperties ? sheetProperties.length : total)
+  // 桌機雙欄：清單常駐，選取圖釘只高亮對應卡片、不收合成單張
+  const sheetProperties = (selectedProperty && !isDesktop) ? [selectedProperty] : (visibleProperties ?? properties)
+  const sheetTotal = (selectedProperty && !isDesktop) ? 1 : (visibleProperties ? sheetProperties.length : total)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(min-width: 900px)')
+    const onChange = () => setIsDesktop(mq.matches)
+    onChange()
+    mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange)
+    return () => { mq.removeEventListener ? mq.removeEventListener('change', onChange) : mq.removeListener(onChange) }
+  }, [])
 
   const saveViewState = useCallback(() => {
     if (typeof window === 'undefined') return
@@ -114,8 +125,11 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           onSelect={setSelectedId}
           onPreviewProperty={property => {
             setSelectedId(property.id)
-            setSelectedProperty(property)
-            setSheetLevel('peek')
+            // 桌機：清單常駐，只高亮＋捲動到對應卡片；手機維持底部單張預覽卡
+            if (!isDesktop) {
+              setSelectedProperty(property)
+              setSheetLevel('peek')
+            }
           }}
           onVisiblePropertiesChange={nextProperties => {
             setVisibleProperties(nextProperties)
@@ -129,9 +143,10 @@ export default function MapListingsView({ properties = [], total = 0 }) {
       <MapResultsSheet
         properties={sheetProperties}
         total={sheetTotal}
-        subtitle={selectedProperty ? '點卡片查看完整房源資訊' : (visibleProperties ? '目前地圖範圍內' : '目前搜尋條件')}
-        selectedMode={Boolean(selectedProperty)}
-        level={selectedProperty ? 'selected' : sheetLevel}
+        selectedId={selectedId}
+        subtitle={(selectedProperty && !isDesktop) ? '點卡片查看完整房源資訊' : (visibleProperties ? '目前地圖範圍內' : '目前搜尋條件')}
+        selectedMode={Boolean(selectedProperty) && !isDesktop}
+        level={(selectedProperty && !isDesktop) ? 'selected' : sheetLevel}
         onClearSelected={() => {
           setSelectedProperty(null)
           setSheetLevel('collapsed')
