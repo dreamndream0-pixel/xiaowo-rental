@@ -232,9 +232,20 @@ export default function MapResultsSheet({
   const sentinelRef = useRef(null)
   const [dragY, setDragY] = useState(0)
   const restoredScrollRef = useRef(false)
+  // 桌機（≥900px）採「左清單／右地圖」雙欄，清單常駐顯示、不套用手機的拖曳收合
+  const [isDesktop, setIsDesktop] = useState(false)
   const [visibleCount, setVisibleCount] = useState(
     Math.max(INITIAL_VISIBLE_COUNT, Number(initialVisibleCount || 0))
   )
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(min-width: 900px)')
+    const onChange = () => setIsDesktop(mq.matches)
+    onChange()
+    mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange)
+    return () => { mq.removeEventListener ? mq.removeEventListener('change', onChange) : mq.removeListener(onChange) }
+  }, [])
 
   useEffect(() => {
     if (level === 'collapsed') {
@@ -294,6 +305,7 @@ export default function MapResultsSheet({
   }, [level, properties.length])
 
   const beginDrag = (event) => {
+    if (isDesktop) return   // 桌機不使用拖曳收合
     dragRef.current = { active: true, startY: event.clientY, deltaY: 0 }
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
@@ -325,6 +337,7 @@ export default function MapResultsSheet({
   }
 
   const handleClick = () => {
+    if (isDesktop) return   // 桌機清單常駐，點標題不收合
     if (ignoreClickRef.current) {
       ignoreClickRef.current = false
       return
@@ -354,12 +367,12 @@ export default function MapResultsSheet({
   }, [initialScrollTop, level, visibleCount])
 
   const visibleProperties = properties.slice(0, visibleCount)
-  const showList = selectedMode || level !== 'collapsed'
+  const showList = selectedMode || level !== 'collapsed' || isDesktop
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
 
   return (
     <section
-      className={`map-results-sheet is-${level} ${selectedMode ? 'is-selected-mode' : ''}`}
+      className={`map-results-sheet is-${level} ${selectedMode ? 'is-selected-mode' : ''} ${isDesktop ? 'is-desktop' : ''}`}
       style={dragY ? { '--sheet-offset': `${dragY}px` } : undefined}
     >
       <button
@@ -377,7 +390,7 @@ export default function MapResultsSheet({
         </span>
         <span className="map-results-sheet-title">
           <strong>{selectedMode ? '已選取房源' : countText}</strong>
-          <span>{level === 'collapsed' ? '上拉查看此區域房源' : subtitle}</span>
+          <span>{(level === 'collapsed' && !isDesktop) ? '上拉查看此區域房源' : subtitle}</span>
         </span>
       </button>
 
