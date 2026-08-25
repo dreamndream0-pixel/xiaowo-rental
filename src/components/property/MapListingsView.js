@@ -51,13 +51,13 @@ export default function MapListingsView({ properties = [], total = 0 }) {
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [sheetLevel, setSheetLevel] = useState(savedState?.sheetLevel || 'collapsed')
   const [visibleProperties, setVisibleProperties] = useState(null)
-  // 桌機雙欄：清單常駐，選取圖釘只高亮對應卡片、不收合成單張
+  // 非手機（≥641px）：清單常駐，選取圖釘只高亮對應卡片、不收合成單張
   const sheetProperties = (selectedProperty && !isDesktop) ? [selectedProperty] : (visibleProperties ?? properties)
   const sheetTotal = (selectedProperty && !isDesktop) ? 1 : (visibleProperties ? sheetProperties.length : total)
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return
-    const mq = window.matchMedia('(min-width: 900px)')
+    const mq = window.matchMedia('(min-width: 641px)')
     const onChange = () => setIsDesktop(mq.matches)
     onChange()
     mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange)

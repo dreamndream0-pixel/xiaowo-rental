@@ -3127,6 +3127,72 @@ a { color: inherit; }
 }
 
 /* ============================================================
+   非手機（≥641px）共用：清單常駐的版面細修（平板與桌機皆適用）
+   —— 兩排篩選併一排、頂部搜尋列靠左、清單表頭化、選取卡片高亮
+   （≥900px 另在下方套用左右雙欄；手機 ≤640px 完全不受影響）
+   ============================================================ */
+@media (min-width: 641px) {
+  /* C8：快速標籤列 ＋ 篩選條件 併為單一橫向工具列 */
+  .listings-map-main .merged-filter-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .listings-map-main .merged-filter-strip .filter-chip-row {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .listings-map-main .merged-filter-strip .filter-chip-row::-webkit-scrollbar { display: none; }
+  .listings-map-main .merged-filter-strip .filter-control-card { flex: 0 0 auto; }
+
+  /* 頂部搜尋列：靠左、移除返回箭頭與右側佔位 */
+  .listings-map-main .merged-map-topbar {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0;
+    margin: 4px 0 12px;
+  }
+  .listings-map-main .merged-map-topbar .map-back-button,
+  .listings-map-main .merged-map-topbar > span[aria-hidden="true"] { display: none; }
+  .listings-map-main .merged-map-topbar .map-search-control { width: 100%; max-width: 460px; }
+  .listings-map-main .map-area-pill { text-align: left; }
+
+  /* 清單常駐：隱藏地圖小標與拖曳把手，標題改為靠左清單表頭 */
+  .listings-map-main .merged-map-meta { display: none; }
+  .map-results-sheet.is-desktop .map-results-sheet-handle { display: none; }
+  .map-results-sheet.is-desktop .map-results-sheet-header {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 14px 18px;
+    cursor: default;
+    border-bottom: 1px solid var(--oat-mid);
+  }
+  .map-results-sheet.is-desktop .map-results-sheet-title {
+    padding: 0;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .map-results-sheet.is-desktop .map-results-sheet-title strong { font-size: 17px; }
+  .map-results-sheet.is-desktop .map-results-sheet-title span { margin-top: 0; font-size: 13px; color: var(--gray-mid); }
+
+  /* 選取地圖圖釘對應的房源卡片：高亮外框 */
+  .map-results-sheet.is-desktop .map-sheet-card {
+    scroll-margin: 12px;
+    transition: box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .map-results-sheet.is-desktop .map-sheet-card.is-selected {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 2px var(--sage), 0 12px 26px rgba(46,45,42,0.14);
+  }
+}
+
+/* ============================================================
    桌機版 /listings（≥900px）：左清單／右地圖 雙欄，滿版寬、地圖固定、清單獨立捲動
    完全以 min-width:900px 隔離，不影響手機（max-width:640px）版面
    ============================================================ */
@@ -3237,5 +3303,70 @@ a { color: inherit; }
   .map-results-sheet.is-desktop .map-sheet-card.is-selected {
     border-color: var(--sage);
     box-shadow: 0 0 0 2px var(--sage), 0 12px 26px rgba(46,45,42,0.14);
+  }
+}
+
+/* ============================================================
+   /listings 載入骨架（配合新版版面，D11）
+   ============================================================ */
+@keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.55 } }
+
+.listings-skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.listings-skeleton-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.listings-skeleton-card {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--oat-mid);
+  border-radius: 18px;
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+.listings-skeleton-thumb {
+  height: 118px;
+  border-radius: 12px;
+  background: var(--oat-mid);
+}
+.listings-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+}
+.listings-skeleton-lines span {
+  height: 14px;
+  border-radius: 6px;
+  background: var(--oat-mid);
+}
+.listings-skeleton-lines span:nth-child(1) { width: 45% }
+.listings-skeleton-lines span:nth-child(2) { width: 80% }
+.listings-skeleton-lines span:nth-child(3) { width: 60% }
+.listings-skeleton-map { display: none; }
+
+/* 桌機：骨架也用左清單／右地圖雙欄並填滿版面 */
+@media (min-width: 900px) {
+  .listings-skeleton {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(380px, 460px) 1fr;
+    gap: 18px;
+  }
+  .listings-skeleton-list {
+    grid-template-columns: 1fr;
+    align-content: start;
+    overflow: hidden;
+  }
+  .listings-skeleton-map {
+    display: block;
+    border-radius: 20px;
+    background: var(--oat-mid);
   }
 }

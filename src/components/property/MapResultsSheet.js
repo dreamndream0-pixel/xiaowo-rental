@@ -234,7 +234,7 @@ export default function MapResultsSheet({
   const sentinelRef = useRef(null)
   const [dragY, setDragY] = useState(0)
   const restoredScrollRef = useRef(false)
-  // 桌機（≥900px）採「左清單／右地圖」雙欄，清單常駐顯示、不套用手機的拖曳收合
+  // 非手機（≥641px）：清單常駐顯示、不套用手機的拖曳收合（≥900px 另為左右雙欄）
   const [isDesktop, setIsDesktop] = useState(false)
   const [visibleCount, setVisibleCount] = useState(
     Math.max(INITIAL_VISIBLE_COUNT, Number(initialVisibleCount || 0))
@@ -242,7 +242,7 @@ export default function MapResultsSheet({
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return
-    const mq = window.matchMedia('(min-width: 900px)')
+    const mq = window.matchMedia('(min-width: 641px)')
     const onChange = () => setIsDesktop(mq.matches)
     onChange()
     mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange)

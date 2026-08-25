@@ -144,23 +144,20 @@ async function PropertiesSection({ searchParams }) {
 }
 
 function PropertySkeleton() {
+  // 骨架比照新版版面：桌機左清單／右地圖雙欄、平板與手機為清單堆疊，避免載入時版面跳動
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} style={{
-          borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-          boxShadow: 'var(--shadow-sm)', background: 'white',
-          animation: 'pulse 1.5s ease-in-out infinite',
-        }}>
-          <div style={{ height: 190, background: 'var(--oat-mid)' }} />
-          <div style={{ padding: '16px 18px 18px' }}>
-            <div style={{ height: 28, background: 'var(--oat-mid)', borderRadius: 6, marginBottom: 10, width: '60%' }} />
-            <div style={{ height: 18, background: 'var(--oat-mid)', borderRadius: 6, marginBottom: 6, width: '80%' }} />
-            <div style={{ height: 14, background: 'var(--oat-mid)', borderRadius: 6, width: '50%' }} />
+    <div className="listings-skeleton" aria-hidden="true">
+      <div className="listings-skeleton-list">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="listings-skeleton-card">
+            <div className="listings-skeleton-thumb" />
+            <div className="listings-skeleton-lines">
+              <span /><span /><span />
+            </div>
           </div>
-        </div>
-      ))}
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
+        ))}
+      </div>
+      <div className="listings-skeleton-map" />
     </div>
   )
 }
