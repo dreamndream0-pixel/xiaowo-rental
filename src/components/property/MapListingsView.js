@@ -168,7 +168,7 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           properties={properties}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          abbreviatePrice={isDesktop}
+          abbreviatePrice={false}
           onPreviewProperty={property => {
             setSelectedId(property.id)
             // 桌機：清單常駐＋高亮卡片，並於地圖右下角顯示浮動預覽卡；
