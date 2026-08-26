@@ -91,13 +91,14 @@ function getInitialPosition(property) {
   return fallbackPosition(property)
 }
 
-function priceLabel(property) {
+function priceLabel(property, abbreviate) {
   const price = Number(property.price || 0)
-  if (price >= 1000) {
+  // 桌機新版圖釘用 K 簡記（例：9.5K）；手機維持原本 NT$ 完整金額
+  if (abbreviate && price >= 1000) {
     const k = price / 1000
     return `${Number.isInteger(k) ? k : Math.round(k * 10) / 10}K`
   }
-  return `${price}`
+  return `NT$ ${price.toLocaleString()}`
 }
 
 function markerDotIcon(property, selected) {
@@ -121,6 +122,7 @@ export default function ListingsMapInner({
   onVisiblePropertiesChange,
   initialMapState,
   onMapStateChange,
+  abbreviatePrice = false,
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapRef = useRef(null)
@@ -363,7 +365,7 @@ export default function ListingsMapInner({
                 onClick={() => openProperty(property)}
               >
                 {property.featured && <span>★</span>}
-                {priceLabel(property)}
+                {priceLabel(property, abbreviatePrice)}
               </button>
             </OverlayViewF>
           </Fragment>

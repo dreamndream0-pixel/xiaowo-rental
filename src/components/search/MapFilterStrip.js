@@ -56,8 +56,6 @@ export default function MapFilterStrip({ basePath = '/listings', showMoreFilter 
 
   const inlineTags = allTags.slice(0, INLINE_TAG_COUNT)
 
-  if (!inlineTags.length && !showMoreFilter) return null
-
   return (
     <div className={`merged-filter-strip ${showMoreFilter ? '' : 'is-chips-only'}`}>
       <div className="filter-chip-row" aria-label="快速標籤篩選">

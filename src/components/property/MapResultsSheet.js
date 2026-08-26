@@ -7,6 +7,7 @@ import { PROPERTY_TYPE_LABELS } from '@/types'
 const INITIAL_VISIBLE_COUNT = 10
 const LOAD_MORE_COUNT = 10
 
+// 桌機清單排序（手機不顯示排序，維持原本順序）
 const SORT_OPTIONS = [
   { key: 'latest', label: '最新' },
   { key: 'priceAsc', label: '租金低到高' },
@@ -68,10 +69,9 @@ function openPropertyWithTransition(source, href, beforeNavigate, navigate) {
   }
 }
 
-function MapSheetCard({ property, onNavigateProperty, navigate, selected }) {
+function MapSheetCard({ property, onNavigateProperty, navigate, selected, isDesktop }) {
   const image = coverImage(property)
-  // 底部標籤列：房型 → 坪數 → 房源自訂標籤（例：可租補），對齊設計稿一列呈現
-  const extraTags = tagNames(property).slice(0, 3)
+  const tags = tagNames(property).slice(0, 5)
   const openedRef = useRef(false)
   const href = propertyHref(property)
 
@@ -81,6 +81,38 @@ function MapSheetCard({ property, onNavigateProperty, navigate, selected }) {
     openPropertyWithTransition(source, href, onNavigateProperty, navigate)
   }
 
+  // 桌機（≥641px）：新版橫式卡（標題→地區→租金→標籤列＋› 箭頭）
+  if (isDesktop) {
+    const deskTags = tags.slice(0, 3)
+    return (
+      <a
+        href={href}
+        data-pid={property.id}
+        className={`map-sheet-card is-desktop-card ${selected ? 'is-selected' : ''}`}
+        onClick={(event) => { event.preventDefault(); openFrom(event.currentTarget) }}
+      >
+        <div className="map-sheet-card-image">
+          {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
+          <em>{statusText(property)}</em>
+        </div>
+        <div className="map-sheet-card-body">
+          <strong>{property.title}</strong>
+          <p>{property.city}{property.district}</p>
+          <div className="map-sheet-card-footer">
+            <span>NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
+          </div>
+          <div className="map-sheet-card-tags">
+            <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
+            {property.size ? <span>{property.size} 坪</span> : null}
+            {deskTags.map(tag => <span key={tag} className="is-feature">{tag}</span>)}
+          </div>
+        </div>
+        <span className="map-sheet-card-chevron" aria-hidden="true">›</span>
+      </a>
+    )
+  }
+
+  // 手機：維持原本卡片版面
   return (
     <a
       href={href}
@@ -96,18 +128,21 @@ function MapSheetCard({ property, onNavigateProperty, navigate, selected }) {
         <em>{statusText(property)}</em>
       </div>
       <div className="map-sheet-card-body">
+        <div className="map-sheet-card-meta">
+          <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
+          {property.size ? <span>{property.size} 坪</span> : null}
+        </div>
         <strong>{property.title}</strong>
         <p>{property.city}{property.district}</p>
+        {tags.length > 0 && (
+          <div className="map-sheet-card-tags">
+            {tags.map(tag => <span key={tag}>{tag}</span>)}
+          </div>
+        )}
         <div className="map-sheet-card-footer">
           <span>NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
         </div>
-        <div className="map-sheet-card-tags">
-          <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
-          {property.size ? <span>{property.size} 坪</span> : null}
-          {extraTags.map(tag => <span key={tag} className="is-feature">{tag}</span>)}
-        </div>
       </div>
-      <span className="map-sheet-card-chevron" aria-hidden="true">›</span>
     </a>
   )
 }
@@ -254,6 +289,7 @@ export default function MapResultsSheet({
   const [visibleCount, setVisibleCount] = useState(
     Math.max(INITIAL_VISIBLE_COUNT, Number(initialVisibleCount || 0))
   )
+  // 排序僅供桌機；預設 'latest' 等同原順序，手機不受影響
   const [sortKey, setSortKey] = useState('latest')
   const sortedProperties = useMemo(() => sortProperties(properties, sortKey), [properties, sortKey])
 
@@ -400,34 +436,38 @@ export default function MapResultsSheet({
   const visibleProperties = sortedProperties.slice(0, visibleCount)
   const showList = selectedMode || level !== 'collapsed' || isDesktop
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
-  const showSort = !selectedMode && (isDesktop || level !== 'collapsed')
+  // 排序膠囊僅桌機顯示
+  const showSort = !selectedMode && isDesktop
+
+  const headerButton = (
+    <button
+      type="button"
+      className="map-results-sheet-header"
+      onClick={handleClick}
+      onPointerDown={beginDrag}
+      onPointerMove={moveDrag}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      aria-label="展開或收合房源清單"
+    >
+      <span className="map-results-sheet-handle" aria-hidden="true">
+        <span />
+      </span>
+      <span className="map-results-sheet-title">
+        <strong>{selectedMode ? '已選取房源' : countText}</strong>
+        <span>{(level === 'collapsed' && !isDesktop) ? '上拉查看此區域房源' : subtitle}</span>
+      </span>
+    </button>
+  )
 
   return (
     <section
       className={`map-results-sheet is-${level} ${selectedMode ? 'is-selected-mode' : ''} ${isDesktop ? 'is-desktop' : ''}`}
       style={dragY ? { '--sheet-offset': `${dragY}px` } : undefined}
     >
-      <div className="map-results-sheet-top">
-        <button
-          type="button"
-          className="map-results-sheet-header"
-          onClick={handleClick}
-          onPointerDown={beginDrag}
-          onPointerMove={moveDrag}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          aria-label="展開或收合房源清單"
-        >
-          <span className="map-results-sheet-handle" aria-hidden="true">
-            <span />
-          </span>
-          <span className="map-results-sheet-title">
-            <strong>{selectedMode ? '已選取房源' : countText}</strong>
-            <span>{(level === 'collapsed' && !isDesktop) ? '上拉查看此區域房源' : subtitle}</span>
-          </span>
-        </button>
-
-        {showSort && (
+      {showSort ? (
+        <div className="map-results-sheet-top">
+          {headerButton}
           <div className="map-sort-row" role="group" aria-label="排序方式">
             {SORT_OPTIONS.map(opt => (
               <button
@@ -440,8 +480,8 @@ export default function MapResultsSheet({
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      ) : headerButton}
 
       {!selectedMode && level === 'full' && (
         <button type="button" className="map-return-button" onClick={() => onLevelChange?.('collapsed')}>
@@ -459,7 +499,7 @@ export default function MapResultsSheet({
             navigate={navigateProperty}
           />
         ) : visibleProperties.length ? visibleProperties.map(property => (
-          <MapSheetCard key={property.id} property={property} selected={String(property.id) === String(selectedId)} onNavigateProperty={onNavigateProperty} navigate={navigateProperty} />
+          <MapSheetCard key={property.id} property={property} selected={String(property.id) === String(selectedId)} isDesktop={isDesktop} onNavigateProperty={onNavigateProperty} navigate={navigateProperty} />
         )) : (
           <div className="map-results-sheet-empty">目前地圖範圍內沒有房源</div>
         )}
@@ -469,7 +509,7 @@ export default function MapResultsSheet({
             className="map-results-sheet-more"
             onClick={() => setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))}
           >
-            查看更多房源 <span aria-hidden="true">⌄</span>
+            {isDesktop ? <>查看更多房源 <span aria-hidden="true">⌄</span></> : '繼續上滑載入更多'}
           </button>
         )}
         <div ref={sentinelRef} className="map-results-sheet-sentinel" aria-hidden="true" />
