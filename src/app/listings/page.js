@@ -86,6 +86,12 @@ function cleanList(value) {
 function resultTitle(searchParams) {
   const district = cleanList(searchParams.district)
   const area = district[0] || searchParams.city || searchParams.keyword || '全部地區'
+  return `${area}的房源`
+}
+
+function heroTitle(searchParams) {
+  const district = cleanList(searchParams.district)
+  const area = district[0] || searchParams.city || searchParams.keyword || '全部地區'
   return `${area}房源`
 }
 
@@ -119,37 +125,59 @@ function SearchControls({ searchParams, total }) {
   const hasFilters = resultLabel(searchParams) !== '全部房源'
   return (
     <>
-      <div className="listings-hero">
-        <div className="listings-hero-title">
+      {/* 手機：維持原本的地區膠囊搜尋列（此版本僅改桌機） */}
+      <div className="listings-topbar-mobile">
+        <div className="merged-map-topbar">
           <ListingsBackButton />
-          <div>
-            <h1>{resultTitle(searchParams)}</h1>
-            {subtitle ? <p>{subtitle}</p> : null}
-          </div>
-        </div>
-        <div className="listings-hero-tools">
-          <details className="merged-control-card listings-search">
-            <summary className="listings-search-summary">
-              <span className="listings-search-icon" aria-hidden="true">🔍</span>
-              <span className="listings-search-text">{hasFilters ? resultLabel(searchParams) : '搜尋社區、房號、租金…'}</span>
+          <details className="merged-control-card map-search-control">
+            <summary className="map-area-pill">
+              <span className="map-area-pill-content">
+                <strong>{resultTitle(searchParams)}</strong>
+                <span>{resultLabel(searchParams)}</span>
+              </span>
             </summary>
             <div className="merged-control-body">
               <SearchBar initialParams={searchParams} />
             </div>
           </details>
-          <details className="merged-control-card listings-filter-toggle">
-            <summary className="listings-filter-summary">
-              <span className="listings-filter-icon" aria-hidden="true">⚙</span>
-              <span>篩選</span>
-            </summary>
-            <div className="merged-control-body">
-              <FilterBar />
-            </div>
-          </details>
+          <span aria-hidden="true" />
         </div>
+        <MapFilterStrip />
       </div>
 
-      <MapFilterStrip showMoreFilter={false} />
+      {/* 桌機：新版標頭（左標題、右搜尋＋篩選、快速標籤置中） */}
+      <div className="listings-hero-desktop">
+        <div className="listings-hero">
+          <div className="listings-hero-title">
+            <ListingsBackButton />
+            <div>
+              <h1>{heroTitle(searchParams)}</h1>
+              {subtitle ? <p>{subtitle}</p> : null}
+            </div>
+          </div>
+          <div className="listings-hero-tools">
+            <details className="merged-control-card listings-search">
+              <summary className="listings-search-summary">
+                <span className="listings-search-icon" aria-hidden="true">🔍</span>
+                <span className="listings-search-text">{hasFilters ? resultLabel(searchParams) : '搜尋社區、房號、租金…'}</span>
+              </summary>
+              <div className="merged-control-body">
+                <SearchBar initialParams={searchParams} />
+              </div>
+            </details>
+            <details className="merged-control-card listings-filter-toggle">
+              <summary className="listings-filter-summary">
+                <span className="listings-filter-icon" aria-hidden="true">⚙</span>
+                <span>篩選</span>
+              </summary>
+              <div className="merged-control-body">
+                <FilterBar />
+              </div>
+            </details>
+          </div>
+        </div>
+        <MapFilterStrip showMoreFilter={false} />
+      </div>
     </>
   )
 }

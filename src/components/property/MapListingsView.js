@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 import MapResultsSheet from './MapResultsSheet'
 
+const ListingsMapInner = dynamic(() => import('./ListingsMapInner'), {
+  ssr: false,
+  loading: () => <div className="listings-map-loading">地圖載入中</div>,
+})
+
 function previewImage(property) {
   return property.images?.[0]?.url ?? property.coverUrl ?? null
 }
@@ -14,7 +19,7 @@ function previewTags(property) {
   return property.tags?.map(tag => typeof tag === 'string' ? tag : tag.name).filter(Boolean) ?? []
 }
 
-// 桌機：地圖右下角的浮動房源預覽卡
+// 桌機專用：地圖右下角浮動房源預覽卡（手機仍使用底部單張卡，不受影響）
 function DesktopMapPreview({ property, onClose }) {
   const router = useRouter()
   const image = previewImage(property)
@@ -48,11 +53,6 @@ function DesktopMapPreview({ property, onClose }) {
     </aside>
   )
 }
-
-const ListingsMapInner = dynamic(() => import('./ListingsMapInner'), {
-  ssr: false,
-  loading: () => <div className="listings-map-loading">地圖載入中</div>,
-})
 
 function canShowOnMap(property) {
   const lat = Number(property.lat)
@@ -168,10 +168,11 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           properties={properties}
           selectedId={selectedId}
           onSelect={setSelectedId}
+          abbreviatePrice={isDesktop}
           onPreviewProperty={property => {
             setSelectedId(property.id)
-            // 桌機：清單常駐＋高亮對應卡片，並於地圖右下角顯示浮動預覽卡；
-            // 手機：維持底部單張預覽卡
+            // 桌機：清單常駐＋高亮卡片，並於地圖右下角顯示浮動預覽卡；
+            // 手機：維持底部單張預覽卡（收合層級 peek）
             setSelectedProperty(property)
             if (!isDesktop) setSheetLevel('peek')
           }}
