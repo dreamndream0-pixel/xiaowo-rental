@@ -8,6 +8,18 @@ import Button from '@/components/ui/Button'
 
 export default function DashboardLayout({ user, properties, stats }) {
   const [view, setView] = useState('overview')
+  const [listingQuery, setListingQuery] = useState('')
+
+  // 房源搜尋：比對名稱、類型、地址、社區等欄位（不分大小寫）
+  const q = listingQuery.trim().toLowerCase()
+  const filteredProperties = q
+    ? properties.filter(p => {
+        const typeLabel = PROPERTY_TYPE_LABELS[p.type] || p.type || ''
+        return [p.title, typeLabel, p.city, p.district, p.address, p.communityName, p.roomNumber]
+          .filter(Boolean)
+          .some(field => String(field).toLowerCase().includes(q))
+      })
+    : properties
 
   const menuItems = [
     { key: 'overview',      icon: '📊', label: '總覽' },
@@ -113,16 +125,47 @@ export default function DashboardLayout({ user, properties, stats }) {
         {/* LISTINGS */}
         {view === 'listings' && (
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 16, flexWrap: 'wrap' }}>
               <div>
                 <h1 style={{ fontSize: 20, fontWeight: 900 }}>我的房源</h1>
-                <div style={{ fontSize: 12, color: 'var(--gray-light)', marginTop: 3 }}>共 {properties.length} 筆</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-light)', marginTop: 3 }}>
+                  {q ? `符合 ${filteredProperties.length} 筆 / 共 ${properties.length} 筆` : `共 ${properties.length} 筆`}
+                </div>
               </div>
               <Link href="/post-listing">
                 <Button>＋ 新增房源</Button>
               </Link>
             </div>
-            <ListingTable properties={properties} />
+            <div style={{ position: 'relative', marginBottom: 16, maxWidth: 460 }}>
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-light)', display: 'inline-flex', pointerEvents: 'none' }} aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+              </span>
+              <input
+                type="search"
+                value={listingQuery}
+                onChange={e => setListingQuery(e.target.value)}
+                placeholder="搜尋房源名稱、類型、地址、社區…"
+                aria-label="搜尋房源"
+                style={{ width: '100%', boxSizing: 'border-box', height: 44, padding: '0 40px 0 40px', border: '1px solid var(--oat-mid)', borderRadius: 999, background: 'white', fontSize: 14, color: 'var(--charcoal)', outline: 'none' }}
+              />
+              {listingQuery && (
+                <button
+                  type="button"
+                  onClick={() => setListingQuery('')}
+                  aria-label="清除搜尋"
+                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, border: 0, borderRadius: 999, background: 'var(--oat-light)', color: 'var(--gray-mid)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {q && filteredProperties.length === 0 ? (
+              <div style={{ background: 'white', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', padding: 40, textAlign: 'center', color: 'var(--gray-light)' }}>
+                找不到符合「{listingQuery}」的房源
+              </div>
+            ) : (
+              <ListingTable properties={filteredProperties} />
+            )}
           </>
         )}
 
