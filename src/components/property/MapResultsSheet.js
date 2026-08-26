@@ -1,11 +1,28 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PROPERTY_TYPE_LABELS } from '@/types'
 
 const INITIAL_VISIBLE_COUNT = 10
 const LOAD_MORE_COUNT = 10
+
+const SORT_OPTIONS = [
+  { key: 'latest', label: '最新' },
+  { key: 'priceAsc', label: '租金低到高' },
+  { key: 'size', label: '坪數' },
+]
+
+function sortProperties(list, sortKey) {
+  if (sortKey === 'latest') return list
+  const copy = list.slice()
+  if (sortKey === 'priceAsc') {
+    copy.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+  } else if (sortKey === 'size') {
+    copy.sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0))
+  }
+  return copy
+}
 
 function coverImage(property) {
   return property.images?.[0]?.url ?? property.coverUrl ?? null
@@ -53,7 +70,8 @@ function openPropertyWithTransition(source, href, beforeNavigate, navigate) {
 
 function MapSheetCard({ property, onNavigateProperty, navigate, selected }) {
   const image = coverImage(property)
-  const tags = tagNames(property).slice(0, 5)
+  // 底部標籤列：房型 → 坪數 → 房源自訂標籤（例：可租補），對齊設計稿一列呈現
+  const extraTags = tagNames(property).slice(0, 3)
   const openedRef = useRef(false)
   const href = propertyHref(property)
 
@@ -78,21 +96,18 @@ function MapSheetCard({ property, onNavigateProperty, navigate, selected }) {
         <em>{statusText(property)}</em>
       </div>
       <div className="map-sheet-card-body">
-        <div className="map-sheet-card-meta">
-          <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
-          {property.size ? <span>{property.size} 坪</span> : null}
-        </div>
         <strong>{property.title}</strong>
         <p>{property.city}{property.district}</p>
-        {tags.length > 0 && (
-          <div className="map-sheet-card-tags">
-            {tags.map(tag => <span key={tag}>{tag}</span>)}
-          </div>
-        )}
         <div className="map-sheet-card-footer">
           <span>NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
         </div>
+        <div className="map-sheet-card-tags">
+          <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
+          {property.size ? <span>{property.size} 坪</span> : null}
+          {extraTags.map(tag => <span key={tag} className="is-feature">{tag}</span>)}
+        </div>
       </div>
+      <span className="map-sheet-card-chevron" aria-hidden="true">›</span>
     </a>
   )
 }
@@ -239,6 +254,8 @@ export default function MapResultsSheet({
   const [visibleCount, setVisibleCount] = useState(
     Math.max(INITIAL_VISIBLE_COUNT, Number(initialVisibleCount || 0))
   )
+  const [sortKey, setSortKey] = useState('latest')
+  const sortedProperties = useMemo(() => sortProperties(properties, sortKey), [properties, sortKey])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return
@@ -380,33 +397,51 @@ export default function MapResultsSheet({
     if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedId, isDesktop, properties, visibleCount])
 
-  const visibleProperties = properties.slice(0, visibleCount)
+  const visibleProperties = sortedProperties.slice(0, visibleCount)
   const showList = selectedMode || level !== 'collapsed' || isDesktop
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
+  const showSort = !selectedMode && (isDesktop || level !== 'collapsed')
 
   return (
     <section
       className={`map-results-sheet is-${level} ${selectedMode ? 'is-selected-mode' : ''} ${isDesktop ? 'is-desktop' : ''}`}
       style={dragY ? { '--sheet-offset': `${dragY}px` } : undefined}
     >
-      <button
-        type="button"
-        className="map-results-sheet-header"
-        onClick={handleClick}
-        onPointerDown={beginDrag}
-        onPointerMove={moveDrag}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        aria-label="展開或收合房源清單"
-      >
-        <span className="map-results-sheet-handle" aria-hidden="true">
-          <span />
-        </span>
-        <span className="map-results-sheet-title">
-          <strong>{selectedMode ? '已選取房源' : countText}</strong>
-          <span>{(level === 'collapsed' && !isDesktop) ? '上拉查看此區域房源' : subtitle}</span>
-        </span>
-      </button>
+      <div className="map-results-sheet-top">
+        <button
+          type="button"
+          className="map-results-sheet-header"
+          onClick={handleClick}
+          onPointerDown={beginDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          aria-label="展開或收合房源清單"
+        >
+          <span className="map-results-sheet-handle" aria-hidden="true">
+            <span />
+          </span>
+          <span className="map-results-sheet-title">
+            <strong>{selectedMode ? '已選取房源' : countText}</strong>
+            <span>{(level === 'collapsed' && !isDesktop) ? '上拉查看此區域房源' : subtitle}</span>
+          </span>
+        </button>
+
+        {showSort && (
+          <div className="map-sort-row" role="group" aria-label="排序方式">
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                type="button"
+                className={`map-sort-chip ${sortKey === opt.key ? 'is-active' : ''} ${opt.key === 'size' ? 'has-caret' : ''}`}
+                onClick={() => setSortKey(opt.key)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {!selectedMode && level === 'full' && (
         <button type="button" className="map-return-button" onClick={() => onLevelChange?.('collapsed')}>
@@ -434,7 +469,7 @@ export default function MapResultsSheet({
             className="map-results-sheet-more"
             onClick={() => setVisibleCount(count => Math.min(properties.length, count + LOAD_MORE_COUNT))}
           >
-            繼續上滑載入更多
+            查看更多房源 <span aria-hidden="true">⌄</span>
           </button>
         )}
         <div ref={sentinelRef} className="map-results-sheet-sentinel" aria-hidden="true" />

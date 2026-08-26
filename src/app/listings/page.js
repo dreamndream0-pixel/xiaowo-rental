@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer'
 import MapListingsView from '@/components/property/MapListingsView'
 import ListingsBackButton from '@/components/property/ListingsBackButton'
 import MapFilterStrip from '@/components/search/MapFilterStrip'
+import FilterBar from '@/components/search/FilterBar'
 import SearchBar from '@/components/search/SearchBar'
 import { db } from '@/lib/db'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
@@ -85,7 +86,12 @@ function cleanList(value) {
 function resultTitle(searchParams) {
   const district = cleanList(searchParams.district)
   const area = district[0] || searchParams.city || searchParams.keyword || '全部地區'
-  return `${area}的房源`
+  return `${area}房源`
+}
+
+function heroSubtitle(searchParams) {
+  const parts = [searchParams.city, cleanList(searchParams.district).join('、')].filter(Boolean)
+  return parts.join(' · ')
 }
 
 function resultLabel(searchParams) {
@@ -109,25 +115,41 @@ function priceLabel(searchParams) {
 }
 
 function SearchControls({ searchParams, total }) {
+  const subtitle = heroSubtitle(searchParams)
+  const hasFilters = resultLabel(searchParams) !== '全部房源'
   return (
     <>
-      <div className="merged-map-topbar">
-        <ListingsBackButton />
-        <details className="merged-control-card map-search-control">
-          <summary className="map-area-pill">
-            <span className="map-area-pill-content">
-              <strong>{resultTitle(searchParams)}</strong>
-              <span>{resultLabel(searchParams)}</span>
-            </span>
-          </summary>
-          <div className="merged-control-body">
-            <SearchBar initialParams={searchParams} />
+      <div className="listings-hero">
+        <div className="listings-hero-title">
+          <ListingsBackButton />
+          <div>
+            <h1>{resultTitle(searchParams)}</h1>
+            {subtitle ? <p>{subtitle}</p> : null}
           </div>
-        </details>
-        <span aria-hidden="true" />
+        </div>
+        <div className="listings-hero-tools">
+          <details className="merged-control-card listings-search">
+            <summary className="listings-search-summary">
+              <span className="listings-search-icon" aria-hidden="true">🔍</span>
+              <span className="listings-search-text">{hasFilters ? resultLabel(searchParams) : '搜尋社區、房號、租金…'}</span>
+            </summary>
+            <div className="merged-control-body">
+              <SearchBar initialParams={searchParams} />
+            </div>
+          </details>
+          <details className="merged-control-card listings-filter-toggle">
+            <summary className="listings-filter-summary">
+              <span className="listings-filter-icon" aria-hidden="true">⚙</span>
+              <span>篩選</span>
+            </summary>
+            <div className="merged-control-body">
+              <FilterBar />
+            </div>
+          </details>
+        </div>
       </div>
 
-      <MapFilterStrip />
+      <MapFilterStrip showMoreFilter={false} />
     </>
   )
 }

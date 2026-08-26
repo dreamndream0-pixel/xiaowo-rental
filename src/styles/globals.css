@@ -107,6 +107,15 @@ body {
 .section-wrap.listings-map-main {
   padding-top: 16px;
   padding-bottom: 0;
+  overflow-x: clip;
+}
+
+.listings-hero,
+.listings-hero-tools,
+.listings-search,
+.listings-search .listings-search-summary {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* listings map view */
@@ -284,8 +293,155 @@ body {
   margin: 0 0 12px;
 }
 
+/* ── 新版房源頁標頭：左標題、右搜尋＋篩選 ── */
+.listings-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.listings-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.listings-hero-title h1 {
+  margin: 0;
+  color: var(--charcoal);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.listings-hero-title p {
+  margin: 4px 0 0;
+  color: var(--gray-mid);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.listings-hero-tools {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex: 1 1 420px;
+  min-width: 0;
+  max-width: 640px;
+}
+
+.listings-search {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 999px;
+}
+
+.listings-search[open] {
+  border-radius: 22px;
+}
+
+.listings-search .listings-search-summary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.listings-search-summary::-webkit-details-marker { display: none; }
+.listings-search .listings-search-summary::after { display: none; }
+
+.listings-search .listings-search-icon {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.listings-search .listings-search-text {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--gray-light);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listings-filter-toggle {
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.listings-filter-toggle[open] {
+  border-radius: 22px;
+}
+
+.listings-filter-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 0 22px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--sage-dark);
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.listings-filter-summary::-webkit-details-marker { display: none; }
+.listings-filter-toggle .listings-filter-summary::after { display: none; }
+
+.listings-filter-icon { font-size: 15px; }
+
+/* 只顯示標籤膠囊時置中 */
+.merged-filter-strip.is-chips-only {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.merged-filter-strip.is-chips-only .filter-chip-row {
+  justify-content: center;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .listings-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .listings-hero-title h1 { font-size: 24px; }
+  .listings-hero-tools {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .listings-search { flex: 1 1 100%; }
+  .listings-filter-toggle { flex: 0 0 auto; }
+  .listings-search-summary,
+  .listings-filter-summary { min-height: 48px; }
+}
+
 .merged-map-panel {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
   margin-bottom: 28px;
 }
 
@@ -388,23 +544,44 @@ body {
 
 .map-sheet-card {
   display: grid;
-  grid-template-columns: 148px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 132px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 16px;
   padding: 12px;
   border: 1px solid var(--oat-mid);
-  border-radius: 20px;
+  border-radius: 18px;
   background: white;
   color: inherit;
   text-decoration: none;
-  box-shadow: 0 10px 24px rgba(46,45,42,0.08);
+  box-shadow: 0 8px 20px rgba(46,45,42,0.06);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.map-sheet-card:hover {
+  border-color: var(--sage);
+  box-shadow: 0 12px 28px rgba(46,45,42,0.10);
+}
+
+.map-sheet-card.is-selected {
+  border-color: var(--sage-dark);
+  box-shadow: 0 0 0 2px var(--sage-bg), 0 12px 28px rgba(46,45,42,0.12);
+}
+
+.map-sheet-card-chevron {
+  align-self: center;
+  color: var(--gray-light);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
 }
 
 .map-sheet-card-image {
   position: relative;
   min-width: 0;
-  height: 126px;
+  height: 108px;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--oat);
 }
 
@@ -442,16 +619,17 @@ body {
   min-width: 0;
 }
 
-.map-sheet-card-meta,
 .map-sheet-card-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--oat-mid);
 }
 
-.map-sheet-card-meta span,
 .map-sheet-card-tags span {
-  padding: 4px 8px;
+  padding: 4px 9px;
   border-radius: 999px;
   background: var(--sage-bg);
   color: var(--sage-dark);
@@ -459,12 +637,16 @@ body {
   font-weight: 900;
 }
 
+.map-sheet-card-tags span.is-feature {
+  background: #EAF2EC;
+  color: var(--sage-dark);
+}
+
 .map-sheet-card-body strong {
   display: block;
   overflow: hidden;
-  margin-top: 8px;
   color: var(--charcoal);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -472,7 +654,7 @@ body {
 
 .map-sheet-card-body p {
   overflow: hidden;
-  margin: 4px 0 8px;
+  margin: 3px 0 0;
   color: var(--gray-mid);
   font-size: 13px;
   font-weight: 700;
@@ -481,26 +663,13 @@ body {
 }
 
 .map-sheet-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--oat-mid);
+  margin-top: 6px;
 }
 
 .map-sheet-card-footer span {
   color: var(--sage-dark);
   font-family: var(--font-latin), sans-serif;
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.map-sheet-card-footer b {
-  flex: 0 0 auto;
-  color: var(--sage-dark);
-  font-size: 12px;
+  font-size: 17px;
   font-weight: 900;
 }
 
@@ -516,16 +685,217 @@ body {
 .map-results-sheet-more {
   display: block;
   width: 100%;
-  padding: 12px;
+  margin-top: 4px;
+  padding: 14px;
   border: 0;
+  border-top: 1px solid var(--oat-mid);
   background: transparent;
-  color: var(--gray-mid);
+  color: var(--sage-dark);
   cursor: pointer;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   text-align: center;
 }
+
+.map-results-sheet-more span {
+  font-size: 15px;
+}
+
+/* 排序列（清單標頭右側） */
+.map-results-sheet-top {
+  display: block;
+}
+
+.map-results-sheet.is-desktop .map-results-sheet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--oat-mid);
+}
+
+.map-results-sheet.is-desktop .map-results-sheet-top .map-results-sheet-header {
+  flex: 0 1 auto;
+  width: auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* 桌機清單標頭：只留「N 間房源」與排序膠囊同列，隱藏副標讓兩者並排 */
+.map-results-sheet.is-desktop .map-results-sheet-top .map-results-sheet-title span {
+  display: none;
+}
+
+.map-sort-row {
+  margin-top: 10px;
+}
+
+.map-results-sheet.is-desktop .map-sort-row {
+  margin-top: 0;
+}
+
+.map-sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-sort-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--oat-mid);
+  border-radius: 999px;
+  background: white;
+  color: var(--gray-mid);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.map-sort-chip.is-active {
+  border-color: var(--sage-dark);
+  background: var(--sage-dark);
+  color: white;
+}
+
+.map-sort-chip.has-caret::after {
+  content: '\2304';
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* ── 桌機：地圖右下角浮動房源預覽卡 ── */
+.map-desktop-preview {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 6;
+  width: 360px;
+  max-width: calc(100% - 40px);
+  padding: 12px 12px 14px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 20px 48px rgba(46,45,42,0.22);
+}
+
+.map-desktop-preview-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 2px 8px rgba(46,45,42,0.18);
+  color: var(--gray-mid);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.map-desktop-preview-main {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.map-desktop-preview-image {
+  height: 108px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--oat);
+}
+
+.map-desktop-preview-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-desktop-preview-image span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--gray-light);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-desktop-preview-body { min-width: 0; }
+
+.map-desktop-preview-body strong {
+  display: block;
+  overflow: hidden;
+  color: var(--charcoal);
+  font-size: 17px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-desktop-preview-body p {
+  margin: 3px 0 8px;
+  color: var(--gray-mid);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.map-desktop-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.map-desktop-preview-tags span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sage-bg);
+  color: var(--sage-dark);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.map-desktop-preview-price {
+  color: var(--sage-dark);
+  font-family: var(--font-latin), sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.map-desktop-preview-cta {
+  display: block;
+  margin-top: 12px;
+  padding: 13px;
+  border-radius: 12px;
+  background: var(--sage-dark);
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.map-desktop-preview-cta:hover { background: var(--sage); }
 
 .map-selected-sheet-card {
   overflow: hidden;
@@ -1479,6 +1849,8 @@ body.property-detail-entering .property-detail-shell {
 .listings-map-loading strong,
 .listings-map-loading span {
   display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .listings-map-loading strong {

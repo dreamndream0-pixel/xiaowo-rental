@@ -92,7 +92,12 @@ function getInitialPosition(property) {
 }
 
 function priceLabel(property) {
-  return `NT$ ${Number(property.price || 0).toLocaleString()}`
+  const price = Number(property.price || 0)
+  if (price >= 1000) {
+    const k = price / 1000
+    return `${Number.isInteger(k) ? k : Math.round(k * 10) / 10}K`
+  }
+  return `${price}`
 }
 
 function markerDotIcon(property, selected) {
