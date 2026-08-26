@@ -3386,7 +3386,7 @@ a { color: inherit; }
   margin: 0 0 18px;
 }
 
-.listings-search { flex: 1 1 auto; min-width: 0; border-radius: 999px; }
+.listings-search { flex: 1 1 0; min-width: 0; border-radius: 999px; }
 .listings-search[open] { border-radius: 22px; }
 .listings-search .listings-search-summary {
   display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
@@ -3394,21 +3394,26 @@ a { color: inherit; }
 }
 .listings-search-summary::-webkit-details-marker { display: none; }
 .listings-search .listings-search-summary::after { display: none; }
-.listings-search .listings-search-icon { flex: 0 0 auto; margin: 0; font-size: 16px; font-weight: 400; opacity: 0.6; }
+.listings-search .listings-search-icon { flex: 0 0 auto; display: inline-flex; margin: 0; color: var(--gray-light); }
 .listings-search .listings-search-text {
   min-width: 0; margin: 0; overflow: hidden; color: var(--gray-light);
   font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap;
 }
 
-.listings-filter-toggle { flex: 0 0 auto; border-radius: 999px; }
-.listings-filter-toggle[open] { border-radius: 22px; }
+.listings-filter-toggle { flex: 1 1 0; min-width: 0; border-radius: 999px; }
+.listings-filter-toggle[open] { border-radius: 999px; }
 .listings-filter-summary {
-  display: flex; align-items: center; gap: 8px; min-height: 54px; padding: 0 22px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; padding: 0 22px;
   cursor: pointer; list-style: none; color: var(--sage-dark); font-size: 15px; font-weight: 900; white-space: nowrap;
 }
 .listings-filter-summary::-webkit-details-marker { display: none; }
 .listings-filter-toggle .listings-filter-summary::after { display: none; }
-.listings-filter-icon { font-size: 15px; }
+.listings-filter-icon { display: inline-flex; color: var(--sage-dark); }
+
+/* 篩選浮層內的快速標籤 */
+.listings-filter-quick { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--oat-mid); }
+.listings-filter-quick .merged-filter-strip.is-chips-only { margin-bottom: 0; }
+.listings-filter-quick .filter-chip-row { justify-content: flex-start; }
 
 .merged-filter-strip.is-chips-only { display: block; margin-bottom: 18px; }
 .merged-filter-strip.is-chips-only .filter-chip-row { justify-content: center; flex-wrap: wrap; overflow: visible; }

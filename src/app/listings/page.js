@@ -139,7 +139,9 @@ function SearchControls({ searchParams, total }) {
           <ListingsBackButton />
           <details className="merged-control-card listings-search listings-popover">
             <summary className="listings-search-summary">
-              <span className="listings-search-icon" aria-hidden="true">🔍</span>
+              <span className="listings-search-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+              </span>
               <span className="listings-search-text">{hasFilters ? resultLabel(searchParams) : '搜尋社區、房號、租金…'}</span>
             </summary>
             <div className="merged-control-body listings-popover-panel">
@@ -148,15 +150,19 @@ function SearchControls({ searchParams, total }) {
           </details>
           <details className="merged-control-card listings-filter-toggle listings-popover listings-popover-right">
             <summary className="listings-filter-summary">
-              <span className="listings-filter-icon" aria-hidden="true">⚙</span>
+              <span className="listings-filter-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6" /><line x1="7" y1="12" x2="17" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
+              </span>
               <span>篩選</span>
             </summary>
             <div className="merged-control-body listings-popover-panel">
+              <div className="listings-filter-quick">
+                <MapFilterStrip showMoreFilter={false} />
+              </div>
               <FilterBar />
             </div>
           </details>
         </div>
-        <MapFilterStrip showMoreFilter={false} />
       </div>
     </>
   )
