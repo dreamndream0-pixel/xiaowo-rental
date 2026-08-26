@@ -2,7 +2,52 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { PROPERTY_TYPE_LABELS } from '@/types'
 import MapResultsSheet from './MapResultsSheet'
+
+function previewImage(property) {
+  return property.images?.[0]?.url ?? property.coverUrl ?? null
+}
+
+function previewTags(property) {
+  return property.tags?.map(tag => typeof tag === 'string' ? tag : tag.name).filter(Boolean) ?? []
+}
+
+// 桌機：地圖右下角的浮動房源預覽卡
+function DesktopMapPreview({ property, onClose }) {
+  const router = useRouter()
+  const image = previewImage(property)
+  const tags = previewTags(property).slice(0, 3)
+  const href = `/property/${property.id}`
+  return (
+    <aside className="map-desktop-preview">
+      <button type="button" className="map-desktop-preview-close" onClick={onClose} aria-label="關閉房源卡">×</button>
+      <div className="map-desktop-preview-main">
+        <div className="map-desktop-preview-image">
+          {image ? <img src={image} alt={property.title} loading="lazy" decoding="async" /> : <span>無照片</span>}
+        </div>
+        <div className="map-desktop-preview-body">
+          <strong>{property.title}</strong>
+          <p>{property.city}{property.district}</p>
+          <div className="map-desktop-preview-tags">
+            <span>{PROPERTY_TYPE_LABELS[property.type] || property.type || '房源'}</span>
+            {property.size ? <span>{property.size} 坪</span> : null}
+            {tags.map(tag => <span key={tag} className="is-feature">{tag}</span>)}
+          </div>
+          <span className="map-desktop-preview-price">NT$ {Number(property.price || 0).toLocaleString()} / 月</span>
+        </div>
+      </div>
+      <a
+        className="map-desktop-preview-cta"
+        href={href}
+        onClick={(event) => { event.preventDefault(); router.push(href) }}
+      >
+        查看房源詳情
+      </a>
+    </aside>
+  )
+}
 
 const ListingsMapInner = dynamic(() => import('./ListingsMapInner'), {
   ssr: false,
@@ -125,11 +170,10 @@ export default function MapListingsView({ properties = [], total = 0 }) {
           onSelect={setSelectedId}
           onPreviewProperty={property => {
             setSelectedId(property.id)
-            // 桌機：清單常駐，只高亮＋捲動到對應卡片；手機維持底部單張預覽卡
-            if (!isDesktop) {
-              setSelectedProperty(property)
-              setSheetLevel('peek')
-            }
+            // 桌機：清單常駐＋高亮對應卡片，並於地圖右下角顯示浮動預覽卡；
+            // 手機：維持底部單張預覽卡
+            setSelectedProperty(property)
+            if (!isDesktop) setSheetLevel('peek')
           }}
           onVisiblePropertiesChange={nextProperties => {
             setVisibleProperties(nextProperties)
@@ -139,6 +183,12 @@ export default function MapListingsView({ properties = [], total = 0 }) {
             mapStateRef.current = nextMapState
           }}
         />
+        {isDesktop && selectedProperty && (
+          <DesktopMapPreview
+            property={selectedProperty}
+            onClose={() => { setSelectedProperty(null); setSelectedId(null) }}
+          />
+        )}
       </div>
       <MapResultsSheet
         properties={sheetProperties}

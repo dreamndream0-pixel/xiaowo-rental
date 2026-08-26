@@ -10,7 +10,7 @@ function readTags(params) {
   return params.get('tags') ? params.get('tags').split(',').filter(Boolean) : []
 }
 
-export default function MapFilterStrip({ basePath = '/listings' }) {
+export default function MapFilterStrip({ basePath = '/listings', showMoreFilter = true }) {
   const router = useRouter()
   const params = useSearchParams()
   const [allTags, setAllTags] = useState([])
@@ -56,8 +56,10 @@ export default function MapFilterStrip({ basePath = '/listings' }) {
 
   const inlineTags = allTags.slice(0, INLINE_TAG_COUNT)
 
+  if (!inlineTags.length && !showMoreFilter) return null
+
   return (
-    <div className="merged-filter-strip">
+    <div className={`merged-filter-strip ${showMoreFilter ? '' : 'is-chips-only'}`}>
       <div className="filter-chip-row" aria-label="快速標籤篩選">
         {inlineTags.map(tag => (
           <button
@@ -70,15 +72,17 @@ export default function MapFilterStrip({ basePath = '/listings' }) {
           </button>
         ))}
       </div>
-      <details className="merged-control-card filter-control-card">
-        <summary>
-          <span>篩選條件</span>
-          <b>更多篩選</b>
-        </summary>
-        <div className="merged-control-body">
-          <FilterBar />
-        </div>
-      </details>
+      {showMoreFilter && (
+        <details className="merged-control-card filter-control-card">
+          <summary>
+            <span>篩選條件</span>
+            <b>更多篩選</b>
+          </summary>
+          <div className="merged-control-body">
+            <FilterBar />
+          </div>
+        </details>
+      )}
     </div>
   )
 }
