@@ -3382,17 +3382,11 @@ a { color: inherit; }
 .listings-hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px 24px;
-  flex-wrap: wrap;
+  gap: 12px;
   margin: 0 0 18px;
 }
-.listings-hero-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.listings-hero-title h1 { margin: 0; color: var(--charcoal); font-size: 30px; font-weight: 900; line-height: 1.15; }
-.listings-hero-title p { margin: 4px 0 0; color: var(--gray-mid); font-size: 14px; font-weight: 700; }
-.listings-hero-tools { display: flex; align-items: stretch; gap: 12px; flex: 1 1 420px; min-width: 0; max-width: 640px; }
 
-.listings-search { flex: 1 1 0; min-width: 0; border-radius: 999px; }
+.listings-search { flex: 1 1 auto; min-width: 0; border-radius: 999px; }
 .listings-search[open] { border-radius: 22px; }
 .listings-search .listings-search-summary {
   display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
@@ -3488,3 +3482,22 @@ a { color: inherit; }
 .map-desktop-preview-price { color: var(--sage-dark); font-family: var(--font-latin), sans-serif; font-size: 18px; font-weight: 900; }
 .map-desktop-preview-cta { display: block; margin-top: 12px; padding: 13px; border-radius: 12px; background: var(--sage-dark); color: white; text-align: center; text-decoration: none; font-size: 15px; font-weight: 900; }
 .map-desktop-preview-cta:hover { background: var(--sage); }
+
+/* 桌機搜尋／篩選：改為懸浮開合，不推擠底下地圖與房源版面 */
+.listings-popover { position: relative; }
+.listings-search[open], .listings-filter-toggle[open] { border-radius: 999px; }
+.listings-popover > .listings-popover-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1200;
+  width: 420px;
+  max-width: min(88vw, 460px);
+  padding: 14px;
+  border: 1px solid var(--oat-mid);
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 20px 48px rgba(46,45,42,0.20);
+}
+.listings-popover-right > .listings-popover-panel { left: auto; right: 0; }
+.listings-popover > .listings-popover-panel > * { box-shadow: none; }
