@@ -2770,8 +2770,24 @@ a { color: inherit; }
 
   .merged-control-card[open] .merged-control-body {
     top: 136px !important;
-    bottom: 64px !important;
-    padding-top: 48px !important;
+    bottom: auto !important;
+    height: auto !important;
+    max-height: calc(var(--xiaowo-visual-height, 100svh) - 200px) !important;
+    padding-top: 40px !important;
+    background: #FCFBF8 !important;
+    box-shadow: 0 -1px 0 rgba(74,103,65,0.10) inset, 0 24px 70px rgba(46,45,42,0.28) !important;
+  }
+  /* 頂部小握把（現代化的開合面板感） */
+  .merged-control-card[open] .merged-control-body::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--oat-mid);
   }
 
   .merged-map-panel {
@@ -3421,11 +3437,10 @@ a { color: inherit; }
 /* 清單標頭＋排序膠囊（只在桌機由 JS 渲染） */
 .map-results-sheet-top {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px 12px; padding-bottom: 12px; margin-bottom: 8px;
-  border-bottom: 1px solid var(--oat-mid);
+  flex-wrap: wrap; gap: 8px 12px; padding: 4px 4px 10px; margin-bottom: 6px;
 }
 .map-results-sheet-top .map-results-sheet-header {
-  flex: 0 1 auto; width: auto; flex-direction: row; align-items: center; justify-content: flex-start;
+  flex: 0 1 auto; width: auto; padding: 0; flex-direction: row; align-items: center; justify-content: flex-start;
 }
 .map-results-sheet-top .map-results-sheet-title span { display: none; }
 .map-sort-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
