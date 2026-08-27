@@ -73,13 +73,6 @@ export default function FilterBar({ basePath = '/listings' }) {
     navigateWithParams(p)
   }
 
-  const setSort = (sort) => {
-    const p = new URLSearchParams(params.toString())
-    if (sort === 'newest') p.delete('sort')
-    else p.set('sort', sort)
-    navigateWithParams(p)
-  }
-
   const hasApplied = appliedTags.length > 0
   const hasPending = pendingTags.length > 0
   // 暫存與已套用不同 → 有未套用的變更
@@ -103,16 +96,6 @@ export default function FilterBar({ basePath = '/listings' }) {
         <span style={{ width: 3, height: 16, background: 'var(--sage)', borderRadius: 99, display: 'inline-block', flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--charcoal)' }}>篩選房源</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <select onChange={e => setSort(e.target.value)} defaultValue={params.get('sort') || 'newest'} style={{
-            padding: '5px 12px', borderRadius: 14,
-            border: '1.5px solid var(--oat-mid)', background: 'none',
-            fontSize: 11, color: 'var(--gray-mid)', cursor: 'pointer',
-            fontFamily: 'inherit', outline: 'none',
-          }}>
-            <option value="newest">最新刊登</option>
-            <option value="price-asc">價格低到高</option>
-            <option value="price-desc">價格高到低</option>
-          </select>
           {hasApplied && (
             <button onClick={clearAll} style={{
               fontSize: 11, color: 'var(--gray-light)',

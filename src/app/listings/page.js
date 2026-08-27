@@ -35,6 +35,7 @@ async function getProperties(searchParams) {
   } = searchParams
 
   const limit = 600
+  const selectedTags = cleanList(tags)
 
   const where = {
     deletedAt: null,
@@ -44,7 +45,9 @@ async function getProperties(searchParams) {
     ...(type && { type: { in: type.split(',') } }),
     ...(landlord && { ownerId: landlord }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
-    ...(tags && { tags: { some: { name: { in: tags.split(',') } } } }),
+    ...(selectedTags.length && {
+      AND: selectedTags.map(name => ({ tags: { some: { name } } })),
+    }),
     ...(keyword && {
       OR: [
         { title: { contains: keyword, mode: 'insensitive' } },
@@ -156,9 +159,6 @@ function SearchControls({ searchParams, total }) {
               <span>篩選</span>
             </summary>
             <div className="merged-control-body listings-popover-panel">
-              <div className="listings-filter-quick">
-                <MapFilterStrip showMoreFilter={false} />
-              </div>
               <FilterBar />
             </div>
           </details>

@@ -4,6 +4,10 @@ import { db } from '@/lib/db'
 import LandlordSite from '@/components/landlord/LandlordSite'
 import { attachAvailableFrom } from '@/lib/propertyReleaseDates'
 
+function cleanList(value) {
+  return String(value || '').split(',').filter(Boolean)
+}
+
 export async function generateMetadata({ params }) {
   const user = await db.user.findUnique({
     where: { handle: params.handle },
@@ -34,6 +38,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
 
   // 搜尋條件
   const { city, district, keyword, minPrice = 0, maxPrice = 999999, tags } = searchParams || {}
+  const selectedTags = cleanList(tags)
   // 是否啟用搜尋/篩選；沒有的話＝首頁，只顯示精選房源
   const hasSearch = !!(
     city || district || keyword || tags ||
@@ -57,8 +62,8 @@ export default async function LandlordSitePage({ params, searchParams }) {
         { tags: { some: { name: { contains: keyword } } } },
       ],
     }),
-    ...(tags && {
-      tags: { some: { name: { in: tags.split(',') } } },
+    ...(selectedTags.length && {
+      AND: selectedTags.map(name => ({ tags: { some: { name } } })),
     }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }

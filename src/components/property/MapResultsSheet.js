@@ -443,7 +443,6 @@ export default function MapResultsSheet({
     if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedId, isDesktop, properties, visibleCount])
 
-  const activeSort = SORT_OPTIONS.find(opt => opt.key === sortKey) || SORT_OPTIONS[0]
   const visibleProperties = sortedProperties.slice(0, visibleCount)
   const showList = selectedMode || level !== 'collapsed' || isDesktop
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
@@ -480,7 +479,6 @@ export default function MapResultsSheet({
         <div className="map-results-sheet-top">
           {headerButton}
           <div className="map-sort-row" aria-label="排序方式">
-            <span className="map-sort-label">排序</span>
             <select
               className="map-sort-select"
               value={sortKey}
@@ -489,21 +487,6 @@ export default function MapResultsSheet({
             >
               {SORT_OPTIONS.map(opt => <option key={opt.key} value={opt.key}>{opt.label}</option>)}
             </select>
-            <button
-              type="button"
-              className={`map-sort-chip ${sortKey === 'latest' ? 'is-active' : ''}`}
-              onClick={() => setSortKey('latest')}
-            >
-              最新
-            </button>
-            <button
-              type="button"
-              className={`map-sort-chip ${sortKey === 'priceAsc' ? 'is-active' : ''}`}
-              onClick={() => setSortKey('priceAsc')}
-            >
-              低租金
-            </button>
-            <span className="map-sort-current">{activeSort.label}</span>
           </div>
         </div>
       ) : headerButton}

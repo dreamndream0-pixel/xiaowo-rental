@@ -58,6 +58,7 @@ export default async function LandlordSitePage({ params, searchParams }) {
     minPrice = 0, maxPrice = 999999,
     tags, type,
   } = searchParams || {}
+  const selectedTags = String(tags || '').split(',').filter(Boolean)
 
   // 是否啟用搜尋/篩選；沒有的話＝首頁，只顯示精選房源
   const hasSearch = !!(
@@ -79,8 +80,8 @@ export default async function LandlordSitePage({ params, searchParams }) {
         { address: { contains: keyword } },
       ],
     }),
-    ...(tags && {
-      tags: { some: { name: { in: tags.split(',') } } },
+    ...(selectedTags.length && {
+      AND: selectedTags.map(name => ({ tags: { some: { name } } })),
     }),
     price: { gte: Number(minPrice), lte: Number(maxPrice) },
   }
