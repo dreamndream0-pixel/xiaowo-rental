@@ -9,18 +9,28 @@ const LOAD_MORE_COUNT = 10
 
 // 桌機清單排序（手機不顯示排序，維持原本順序）
 const SORT_OPTIONS = [
-  { key: 'latest', label: '最新' },
+  { key: 'latest', label: '最新刊登' },
   { key: 'priceAsc', label: '租金低到高' },
-  { key: 'size', label: '坪數' },
+  { key: 'priceDesc', label: '租金高到低' },
+  { key: 'sizeDesc', label: '坪數大到小' },
+  { key: 'sizeAsc', label: '坪數小到大' },
 ]
 
 function sortProperties(list, sortKey) {
-  if (sortKey === 'latest') return list
   const copy = list.slice()
+  const updatedTime = (property) => new Date(property.updatedAt || property.createdAt || 0).getTime() || 0
+  const numberValue = (property, key) => Number(property[key]) || 0
+
   if (sortKey === 'priceAsc') {
-    copy.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
-  } else if (sortKey === 'size') {
-    copy.sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0))
+    copy.sort((a, b) => numberValue(a, 'price') - numberValue(b, 'price'))
+  } else if (sortKey === 'priceDesc') {
+    copy.sort((a, b) => numberValue(b, 'price') - numberValue(a, 'price'))
+  } else if (sortKey === 'sizeDesc') {
+    copy.sort((a, b) => numberValue(b, 'size') - numberValue(a, 'size'))
+  } else if (sortKey === 'sizeAsc') {
+    copy.sort((a, b) => numberValue(a, 'size') - numberValue(b, 'size'))
+  } else {
+    copy.sort((a, b) => updatedTime(b) - updatedTime(a))
   }
   return copy
 }
@@ -433,6 +443,7 @@ export default function MapResultsSheet({
     if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedId, isDesktop, properties, visibleCount])
 
+  const activeSort = SORT_OPTIONS.find(opt => opt.key === sortKey) || SORT_OPTIONS[0]
   const visibleProperties = sortedProperties.slice(0, visibleCount)
   const showList = selectedMode || level !== 'collapsed' || isDesktop
   const countText = `${Number(total || properties.length).toLocaleString()} 間房源`
@@ -468,17 +479,31 @@ export default function MapResultsSheet({
       {showSort ? (
         <div className="map-results-sheet-top">
           {headerButton}
-          <div className="map-sort-row" role="group" aria-label="排序方式">
-            {SORT_OPTIONS.map(opt => (
-              <button
-                key={opt.key}
-                type="button"
-                className={`map-sort-chip ${sortKey === opt.key ? 'is-active' : ''} ${opt.key === 'size' ? 'has-caret' : ''}`}
-                onClick={() => setSortKey(opt.key)}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="map-sort-row" aria-label="排序方式">
+            <span className="map-sort-label">排序</span>
+            <select
+              className="map-sort-select"
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value)}
+              aria-label="選擇排序方式"
+            >
+              {SORT_OPTIONS.map(opt => <option key={opt.key} value={opt.key}>{opt.label}</option>)}
+            </select>
+            <button
+              type="button"
+              className={`map-sort-chip ${sortKey === 'latest' ? 'is-active' : ''}`}
+              onClick={() => setSortKey('latest')}
+            >
+              最新
+            </button>
+            <button
+              type="button"
+              className={`map-sort-chip ${sortKey === 'priceAsc' ? 'is-active' : ''}`}
+              onClick={() => setSortKey('priceAsc')}
+            >
+              低租金
+            </button>
+            <span className="map-sort-current">{activeSort.label}</span>
           </div>
         </div>
       ) : headerButton}
