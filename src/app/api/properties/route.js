@@ -48,8 +48,10 @@ export async function GET(request) {
   const maxPrice = parseInt(searchParams.get('maxPrice') || '999999')
   const landlord = searchParams.get('landlord') || undefined
   const ids      = searchParams.get('ids')      || undefined
-  const page     = parseInt(searchParams.get('page')  || '1')
-  const limit    = parseInt(searchParams.get('limit') || '20')
+  const requestedPage = parseInt(searchParams.get('page') || '1')
+  const requestedLimit = parseInt(searchParams.get('limit') || '20')
+  const page = Math.min(Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1), 100)
+  const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 20, 1), 50)
   const offset   = (page - 1) * limit
 
   // 瀏覽記錄：直接用 id 陣列查詢

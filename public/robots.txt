@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /account/
+Disallow: /tenant/
+Disallow: /property/new
+Disallow: /property/*/edit
+Crawl-delay: 10
