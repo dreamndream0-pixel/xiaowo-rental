@@ -14,6 +14,10 @@ const PARKING_SPACE_CACHE_KEY = `${SOURCE}:parking-spaces`
 const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const MANUAL_REFRESH_CACHE_KEY = `${SOURCE}:manual-refresh`
 const SNAPSHOT_INTERVAL_MS = 30 * 1000
+// 佔用時間軸查詢的上限：只取最近 N 天、最多 M 筆，避免整表狂讀燒光 Supabase egress。
+// （前台每 30 秒輪詢一次；若不設限，每次都會把整張 parking_occupancy_snapshots 撈出來。）
+const TIMELINE_WINDOW_DAYS = 7
+const TIMELINE_MAX_ROWS = 3000
 const CACHE_TTL_MS = SNAPSHOT_INTERVAL_MS
 const FAVORITE_CACHE_TTL_MS = 30 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
@@ -774,12 +778,17 @@ export async function GET(request) {
 
     const timelineCarParkId = selectedCarParkId || latest?.carParkId || ''
     const timelineSource = timelineCarParkId ? favoriteSource(timelineCarParkId) : SOURCE
-    const rows = await db.$queryRaw`
+    // 只取最近 TIMELINE_WINDOW_DAYS 天、最多 TIMELINE_MAX_ROWS 筆（取最新的再反轉成由舊到新），
+    // 避免整表撈出（此表會持續成長）。走 (source, "sampledAt") 索引，速度快、egress 有上限。
+    const recentRows = await db.$queryRaw`
       SELECT "sampledAt", "rawUpdatedAt", available, total, occupied, utilization, "carAvailable", "carTotal", "carOccupied", "motorAvailable", "motorTotal", "motorOccupied"
       FROM parking_occupancy_snapshots
       WHERE source = ${timelineSource}
-      ORDER BY "sampledAt" ASC
+        AND "sampledAt" >= NOW() - (${TIMELINE_WINDOW_DAYS} * INTERVAL '1 day')
+      ORDER BY "sampledAt" DESC
+      LIMIT ${TIMELINE_MAX_ROWS}
     `
+    const rows = recentRows.slice().reverse()
     const timeline = buildTimeline(rows)
     const latestRow = latest
       ? { ...latest, entries: 0, exits: 0, anomaly: false }
