@@ -13,13 +13,12 @@ const CARPARK_CACHE_KEY = `${SOURCE}:carparks`
 const PARKING_SPACE_CACHE_KEY = `${SOURCE}:parking-spaces`
 const RATE_LIMIT_CACHE_KEY = `${SOURCE}:rate-limit`
 const MANUAL_REFRESH_CACHE_KEY = `${SOURCE}:manual-refresh`
-const SNAPSHOT_INTERVAL_MS = 30 * 1000
+const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000
 // 佔用時間軸查詢的上限：只取最近 N 天、最多 M 筆，避免整表狂讀燒光 Supabase egress。
-// （前台每 30 秒輪詢一次；若不設限，每次都會把整張 parking_occupancy_snapshots 撈出來。）
 const TIMELINE_WINDOW_DAYS = 7
 const TIMELINE_MAX_ROWS = 3000
-const CACHE_TTL_MS = SNAPSHOT_INTERVAL_MS
-const FAVORITE_CACHE_TTL_MS = 30 * 1000
+const CACHE_TTL_MS = 60 * 1000
+const FAVORITE_CACHE_TTL_MS = 60 * 1000
 const EMPTY_CACHE_TTL_MS = 30 * 60 * 1000
 const RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
 const MANUAL_REFRESH_COOLDOWN_MS = 10 * 60 * 1000
