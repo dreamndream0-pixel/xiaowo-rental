@@ -183,8 +183,37 @@ const inputStyle = {
 // ── 照片燈箱 ─────────────────────────────────────────────────────
 function Lightbox({ images, startIndex, onClose }) {
   const [idx, setIdx] = useState(startIndex)
+  const swipeStartRef = useRef(null)
+  const ignoreClickRef = useRef(false)
   const prev = useCallback(() => setIdx(i => (i - 1 + images.length) % images.length), [images.length])
   const next = useCallback(() => setIdx(i => (i + 1) % images.length), [images.length])
+
+  const onSwipeStart = useCallback(e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    swipeStartRef.current = { x: e.clientX, y: e.clientY }
+  }, [])
+
+  const onSwipeEnd = useCallback(e => {
+    const start = swipeStartRef.current
+    swipeStartRef.current = null
+    if (!start || images.length <= 1) return
+    const dx = e.clientX - start.x
+    const dy = e.clientY - start.y
+    if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.15) return
+    e.stopPropagation()
+    ignoreClickRef.current = true
+    if (dx > 0) prev()
+    else next()
+    window.setTimeout(() => { ignoreClickRef.current = false }, 0)
+  }, [images.length, next, prev])
+
+  const onImageClick = useCallback(e => {
+    e.stopPropagation()
+    if (ignoreClickRef.current || images.length <= 1) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    if (e.clientX < rect.left + rect.width / 2) prev()
+    else next()
+  }, [images.length, next, prev])
 
   useEffect(() => {
     const handler = e => {
@@ -201,32 +230,50 @@ function Lightbox({ images, startIndex, onClose }) {
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 9999,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     }}>
-      <button onClick={onClose} style={{
+      <button type="button" aria-label="關閉照片瀏覽" onClick={e => { e.stopPropagation(); onClose() }} style={{
         position: 'absolute', top: 20, right: 24, background: 'rgba(255,255,255,0.15)',
         border: 'none', color: 'white', fontSize: 28, width: 44, height: 44,
-        borderRadius: '50%', cursor: 'pointer', display: 'grid', placeItems: 'center',
+        borderRadius: '50%', cursor: 'pointer', display: 'grid', placeItems: 'center', zIndex: 4,
       }}>×</button>
       <div style={{ position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>
         {idx + 1} / {images.length}
       </div>
-      <div onClick={e => e.stopPropagation()} style={{ position: 'relative', width: 'min(90vw, 1000px)', height: 'min(70vh, 680px)' }}>
+      {images.length > 1 && (
+        <>
+          <button type="button" aria-label="上一張照片" onClick={e => { e.stopPropagation(); prev() }} style={{
+            position: 'absolute', left: 0, top: 72, bottom: 96, width: '42%', border: 'none',
+            background: 'transparent', cursor: 'w-resize', zIndex: 1,
+          }} />
+          <button type="button" aria-label="下一張照片" onClick={e => { e.stopPropagation(); next() }} style={{
+            position: 'absolute', right: 0, top: 72, bottom: 96, width: '42%', border: 'none',
+            background: 'transparent', cursor: 'e-resize', zIndex: 1,
+          }} />
+        </>
+      )}
+      <div
+        onClick={onImageClick}
+        onPointerDown={onSwipeStart}
+        onPointerUp={onSwipeEnd}
+        onPointerCancel={() => { swipeStartRef.current = null }}
+        style={{ position: 'relative', width: 'min(90vw, 1000px)', height: 'min(70vh, 680px)', zIndex: 2, touchAction: 'pan-y' }}
+      >
         <Image src={images[idx].url} alt={`照片 ${idx + 1}`} fill style={{ objectFit: 'contain' }} />
       </div>
       {images.length > 1 && <>
-        <button onClick={e => { e.stopPropagation(); prev() }} style={{
+        <button type="button" aria-label="上一張照片" onClick={e => { e.stopPropagation(); prev() }} style={{
           position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
           background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
-          fontSize: 28, width: 52, height: 52, borderRadius: '50%', cursor: 'pointer',
+          fontSize: 28, width: 52, height: 52, borderRadius: '50%', cursor: 'pointer', zIndex: 3,
         }}>‹</button>
-        <button onClick={e => { e.stopPropagation(); next() }} style={{
+        <button type="button" aria-label="下一張照片" onClick={e => { e.stopPropagation(); next() }} style={{
           position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
           background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
-          fontSize: 28, width: 52, height: 52, borderRadius: '50%', cursor: 'pointer',
+          fontSize: 28, width: 52, height: 52, borderRadius: '50%', cursor: 'pointer', zIndex: 3,
         }}>›</button>
       </>}
       {images.length > 1 && (
         <div onClick={e => e.stopPropagation()} style={{
-          display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center', padding: '0 16px',
+          display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center', padding: '0 16px', zIndex: 3,
         }}>
           {images.map((img, i) => (
             <div key={i} onClick={() => setIdx(i)} style={{
