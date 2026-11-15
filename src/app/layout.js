@@ -3,7 +3,7 @@ import { Noto_Sans_TC, Noto_Serif_TC, Montserrat } from 'next/font/google'
 import Providers from './providers'
 import PageProgress from '@/components/layout/PageProgress'
 import PullToRefresh from '@/components/layout/PullToRefresh'
-import ButtonEffectsfrom '@/components/layout/ButtonEffects'
+import ButtonEffects from '@/components/layout/ButtonEffects'
 import EmojiIconRuntime from '@/components/layout/EmojiIconRuntime'
 import '../styles/globals.css'
 
