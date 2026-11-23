@@ -40,9 +40,17 @@ export const metadata = {
   },
 }
 
+// Google Analytics 4（資源「小蝸出租」）。Search Console 也靠這段碼驗證網站擁有權，所以放在 <head> 裡。
+const GA_MEASUREMENT_ID = 'G-F2F3MZRQN0'
+const GA_INIT = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`
+
 export default function RootLayout({ children }) {
   return (
     <html lang="zh-TW" className={`${notoSansTC.variable} ${notoSerifTC.variable} ${montserrat.variable}`}>
+      <head>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} />
+        <script dangerouslySetInnerHTML={{ __html: GA_INIT }} />
+      </head>
       <body><PageProgress /><PullToRefresh /><ButtonEffects /><EmojiIconRuntime /><Providers>{children}</Providers></body>
     </html>
   )
